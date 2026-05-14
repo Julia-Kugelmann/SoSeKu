@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soliday → sevdesk</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d18;
+    --surface: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.07);
+    --accent: #5b8dee;
+    --accent2: #38d9a9;
+    --text: #e2e2f0;
+    --muted: #8888aa;
+    --error: #ff6b6b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at 20% 20%, rgba(91,141,238,0.08) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 80%, rgba(56,217,169,0.06) 0%, transparent 60%);
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+  }
+  header {
+    padding: 22px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; }
+  .logo .soliday { color: #f5a623; }
+  .logo .sevdesk { color: #E5253C; }
+  .logo .arr { color: var(--muted); margin: 0 8px; }
+  .subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .header-reset { font-size: 11px; color: var(--muted); cursor: pointer; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; background: none; transition: all 0.2s; }
+  .header-reset:hover { border-color: var(--accent); color: var(--text); }
+
+main { max-width: 800px; margin: 0 auto; padding: 32px 20px; }
+
+/* Steps */
+.steps { display: flex; align-items: center; margin-bottom: 32px; }
+.step { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.07em; }
+.step.active { color: var(–accent); }
+.step.done { color: var(–accent2); }
+.step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; border: 1px solid currentColor; flex-shrink: 0; }
+.step.active .step-num { background: var(–accent); color: #fff; border-color: var(–accent); }
+.step.done .step-num { background: var(–accent2); color: #0d0d18; border-color: var(–accent2); }
+.step-line { flex: 1; height: 1px; background: var(–border); margin: 0 8px; }
+
+/* Setup screen */
+.setup-wrap { max-width: 480px; margin: 0 auto; }
+.setup-title { font-family: ‘Syne’, sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+.setup-sub { font-size: 12px; color: var(–muted); margin-bottom: 28px; line-height: 1.6; }
+.field { margin-bottom: 18px; }
+.field label { display: block; font-size: 11px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px; }
+.field input {
+width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(–border);
+border-radius: 10px; padding: 12px 14px; font-family: ‘DM Mono’, monospace;
+font-size: 12px; color: var(–text); outline: none; transition: border-color 0.2s;
+letter-spacing: 0.02em;
+}
+.field input:focus { border-color: var(–accent); }
+.field input::placeholder { color: var(–muted); opacity: 0.5; }
+.setup-note { font-size: 10px; color: var(–muted); margin-top: 10px; line-height: 1.7; padding: 10px 14px; background: rgba(91,141,238,0.05); border-radius: 8px; border: 1px solid rgba(91,141,238,0.1); }
+.setup-note strong { color: var(–accent2); }
+
+/* Upload */
+.upload-zone {
+border: 2px dashed rgba(91,141,238,0.3); border-radius: 18px;
+padding: 56px 32px; text-align: center; cursor: pointer;
+transition: all 0.3s; background: rgba(91,141,238,0.02);
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(–accent); background: rgba(91,141,238,0.06); }
+.upload-icon { font-size: 48px; margin-bottom: 14px; }
+.upload-title { font-family: ‘Syne’, sans-serif; font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+.upload-sub { font-size: 12px; color: var(–muted); }
+
+/* Loading */
+.loading-wrap { text-align: center; padding: 72px 0; }
+.spinner { width: 40px; height: 40px; border: 3px solid rgba(91,141,238,0.2); border-top-color: var(–accent); border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 18px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-title { font-family: ‘Syne’, sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 5px; }
+.loading-sub { font-size: 12px; color: var(–accent); animation: pulse 1.6s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.progress-wrap { background: rgba(255,255,255,0.05); border-radius: 4px; height: 3px; margin: 16px auto 0; width: 180px; overflow: hidden; }
+.progress-bar { height: 100%; background: linear-gradient(90deg, var(–accent), var(–accent2)); border-radius: 4px; transition: width 0.4s ease; }
+
+/* Preview */
+.preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.preview-title { font-family: ‘Syne’, sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 3px; }
+.preview-meta { font-size: 11px; color: var(–muted); }
+.total-amount { font-size: 22px; font-weight: 700; color: var(–accent2); }
+.total-label { font-size: 10px; color: var(–muted); }
+
+.card { background: var(–surface); border: 1px solid var(–border); border-radius: 14px; overflow: hidden; margin-bottom: 14px; }
+.table-head { display: grid; grid-template-columns: 32px 1fr 86px 58px 48px 90px; gap: 7px; padding: 11px 12px; font-size: 10px; color: var(–muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(–border); }
+.table-row { display: grid; grid-template-columns: 32px 1fr 86px 58px 48px 90px; gap: 7px; padding: 10px 12px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.025); transition: background 0.15s; align-items: start; }
+.table-row:last-child { border-bottom: none; }
+.table-row:hover { background: rgba(255,255,255,0.02); }
+.pos-num { color: var(–muted); }
+.pos-art { display: inline-block; background: rgba(91,141,238,0.12); color: var(–accent); padding: 1px 5px; border-radius: 3px; font-size: 9px; margin-top: 2px; }
+.num-r { text-align: right; color: #9999bb; }
+.ges { text-align: right; font-weight: 500; }
+.table-footer { display: flex; justify-content: flex-end; gap: 24px; padding: 12px; border-top: 1px solid var(–border); font-size: 11px; }
+.f-muted { color: var(–muted); }
+.f-total { font-size: 14px; font-weight: 700; color: var(–accent2); }
+
+/* Buttons */
+.btn-row { display: flex; justify-content: flex-end; gap: 10px; }
+.btn { padding: 12px 24px; border-radius: 10px; font-family: ‘DM Mono’, monospace; font-size: 13px; cursor: pointer; border: none; transition: all 0.2s; letter-spacing: 0.03em; font-weight: 500; }
+.btn-p { background: rgba(255,255,255,0.13); color: #d8d8e8; border: 1px solid rgba(255,255,255,0.28); }
+.btn-p:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); color: #ffffff; transform: translateY(-1px); }
+/* Secondary button: deutlich sichtbarer Text */
+.btn-s { background: rgba(255,255,255,0.18); color: #e2e2f0; border: 1px solid rgba(255,255,255,0.4); }
+.btn-s:hover { background: rgba(255,255,255,0.26); border-color: rgba(255,255,255,0.6); color: #ffffff; }
+
+/* Done / Error */
+.center-wrap { text-align: center; padding: 56px 0; }
+.big-icon { font-size: 52px; margin-bottom: 16px; }
+.big-title { font-family: ‘Syne’, sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 10px; }
+.big-sub { font-size: 13px; color: var(–muted); margin-bottom: 28px; }
+.done-link { display: inline-block; padding: 13px 28px; background: rgba(255,255,255,0.14); color: #e2e2f0; border: 1px solid rgba(255,255,255,0.35); border-radius: 10px; font-family: ‘DM Mono’, monospace; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s; margin-right: 8px; }
+.done-link:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.55); color: #ffffff; }
+.error-box { background: rgba(255,107,107,0.06); border: 1px solid rgba(255,107,107,0.2); border-radius: 10px; padding: 14px 18px; margin: 14px auto 26px; max-width: 680px; font-size: 11px; color: #ffaaaa; line-height: 1.7; text-align: left; word-break: break-word; white-space: pre-wrap; max-height: 55vh; overflow-y: auto; }
+
+.hidden { display: none !important; }
+
+@media (max-width: 580px) {
+.table-head, .table-row { grid-template-columns: 26px 1fr 72px 46px 38px 76px; gap: 5px; font-size: 10px; padding: 8px 9px; }
+main { padding: 20px 14px; }
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo"><span class="soliday">soliday</span><span class="arr">→</span><span class="sevdesk">sevdesk</span></div>
+    <div class="subtitle">Angebot Import Tool</div>
+  </div>
+  <button class="header-reset" id="btnResetKeys" onclick="resetKeys()" style="display:none">⚙ API-Keys ändern</button>
+</header>
+
+<main>
+  <!-- Setup: API Keys -->
+  <div id="viewSetup">
+    <div class="setup-wrap">
+      <div class="setup-title">API-Keys einrichten</div>
+      <div class="setup-sub">Die Keys werden nur für diese Browser-Session gespeichert und nie in den Code geschrieben.</div>
+
+```
+  <div class="field">
+    <label>Anthropic API-Key</label>
+    <input type="password" id="inputAnthropicKey" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
+  </div>
+  <div class="field">
+    <label>sevdesk API-Key</label>
+    <input type="password" id="inputSevdeskKey" placeholder="32-stelliger Hex-Key" autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="setup-note">
+    <strong>Sicherheit:</strong> Die Keys verlassen diesen Tab nicht. Sie werden im <code>sessionStorage</code> des Browsers gehalten und beim Schließen des Tabs automatisch gelöscht.
+  </div>
+
+  <div class="btn-row" style="margin-top: 24px; justify-content: flex-start;">
+    <button class="btn btn-p" onclick="saveKeys()">Weiter →</button>
+  </div>
+</div>
+```
+
+  </div>
+
+  <!-- Steps (nur sichtbar nach Setup) -->
+
+  <div class="steps hidden" id="stepsBar">
+    <div class="step active" id="step1"><div class="step-num">1</div><span>PDF laden</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step2"><div class="step-num">2</div><span>Vorschau</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="step3"><div class="step-num">3</div><span>Übertragen</span></div>
+  </div>
+
+  <!-- Upload -->
+
+  <div id="viewUpload" class="hidden">
+    <div class="upload-zone" id="dropZone">
+      <div class="upload-icon">📄</div>
+      <div class="upload-title">Soliday PDF hier ablegen</div>
+      <div class="upload-sub">oder tippen zum Auswählen</div>
+      <input type="file" id="fileInput" accept=".pdf" style="display:none">
+    </div>
+  </div>
+
+  <!-- Loading -->
+
+  <div id="viewLoading" class="hidden">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-title">PDF wird analysiert...</div>
+      <div class="loading-sub" id="loadingSub">Claude liest Positionen aus</div>
+      <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:10%"></div></div>
+    </div>
+  </div>
+
+  <!-- Preview -->
+
+  <div id="viewPreview" class="hidden">
+    <div class="preview-header">
+      <div>
+        <div class="preview-title" id="previewTitle">–</div>
+        <div class="preview-meta" id="previewMeta">–</div>
+      </div>
+      <div style="text-align:right">
+        <div class="total-amount" id="previewTotal">–</div>
+        <div class="total-label">inkl. 19% MwSt.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="table-head">
+        <div>Pos.</div><div>Bezeichnung</div>
+        <div style="text-align:right">Preis/E.</div>
+        <div style="text-align:right">Menge</div>
+        <div>Einh.</div>
+        <div style="text-align:right">Gesamt</div>
+      </div>
+      <div id="positionsList"></div>
+      <div class="table-footer">
+        <div class="f-muted">Netto: <strong id="footNetto">–</strong></div>
+        <div class="f-muted">MwSt.: <strong id="footMwst">–</strong></div>
+        <div class="f-total" id="footBrutto">–</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="resetToUpload()">← Zurück</button>
+      <button class="btn btn-p" onclick="startTransfer()">→ Nach sevdesk übertragen</button>
+    </div>
+  </div>
+
+  <!-- Sending -->
+
+  <div id="viewSending" class="hidden">
+    <div class="loading-wrap">
+      <div class="spinner"></div>
+      <div class="loading-title">Wird übertragen...</div>
+      <div class="loading-sub" id="sendingSub">Angebot wird angelegt</div>
+      <div class="progress-wrap"><div class="progress-bar" id="sendBar" style="width:5%"></div></div>
+    </div>
+  </div>
+
+  <!-- Done -->
+
+  <div id="viewDone" class="hidden">
+    <div class="center-wrap">
+      <div class="big-icon">✅</div>
+      <div class="big-title">Fertig!</div>
+      <div class="big-sub">Das Angebot wurde erfolgreich in sevdesk angelegt.</div>
+      <a class="done-link" id="doneLink" href="#" target="_blank">In sevdesk öffnen →</a>
+      <button class="btn btn-s" onclick="resetToUpload()">Neues Angebot</button>
+    </div>
+  </div>
+
+  <!-- Error -->
+
+  <div id="viewError" class="hidden">
+    <div class="center-wrap">
+      <div class="big-icon">⚠️</div>
+      <div class="big-title">Fehler</div>
+      <div class="error-box" id="errorMsg">–</div>
+      <button class="btn btn-s" onclick="resetToUpload()">Nochmal versuchen</button>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SEVDESK_BASE = "https://my.sevdesk.de/api/v1";
+let extractedData = null;
+
+// Keys live only in sessionStorage – cleared when tab closes, never in source
+function getKeys() {
+  return {
+    anthropic: sessionStorage.getItem("sd_ant_key") || "",
+    sevdesk:   sessionStorage.getItem("sd_sev_key") || ""
+  };
+}
+
+function saveKeys() {
+  const ant = document.getElementById("inputAnthropicKey").value.trim();
+  const sev = document.getElementById("inputSevdeskKey").value.trim();
+  if (!ant || !sev) { alert("Bitte beide Keys eingeben."); return; }
+  sessionStorage.setItem("sd_ant_key", ant);
+  sessionStorage.setItem("sd_sev_key", sev);
+  document.getElementById("btnResetKeys").style.display = "";
+  document.getElementById("stepsBar").classList.remove("hidden");
+  showView("viewUpload");
+  setStep("upload");
+}
+
+function resetKeys() {
+  sessionStorage.removeItem("sd_ant_key");
+  sessionStorage.removeItem("sd_sev_key");
+  document.getElementById("btnResetKeys").style.display = "none";
+  document.getElementById("stepsBar").classList.add("hidden");
+  document.getElementById("inputAnthropicKey").value = "";
+  document.getElementById("inputSevdeskKey").value = "";
+  showView("viewSetup");
+}
+
+// On load: skip setup if keys already present in session
+window.addEventListener("DOMContentLoaded", () => {
+  const { anthropic, sevdesk } = getKeys();
+  if (anthropic && sevdesk) {
+    document.getElementById("btnResetKeys").style.display = "";
+    document.getElementById("stepsBar").classList.remove("hidden");
+    showView("viewUpload");
+    setStep("upload");
+  } else {
+    showView("viewSetup");
+  }
+});
+
+// Helpers
+const fmt  = n => Number(n).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fmtE = n => fmt(n) + " €";
+
+const ALL_VIEWS = ["viewSetup","viewUpload","viewLoading","viewPreview","viewSending","viewDone","viewError"];
+function showView(id) {
+  ALL_VIEWS.forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+}
+
+function setStep(active) {
+  const cur = { upload:1, preview:2, sending:3, done:3, error:1 }[active] || 1;
+  [1,2,3].forEach(i => {
+    const el = document.getElementById("step" + i);
+    el.className = "step" + (i === cur ? " active" : i < cur ? " done" : "");
+    el.querySelector(".step-num").textContent = i < cur ? "✓" : i;
+  });
+}
+
+function showError(msg) {
+  document.getElementById("errorMsg").textContent = msg;
+  showView("viewError");
+  setStep("error");
+}
+
+function resetToUpload() {
+  extractedData = null;
+  document.getElementById("fileInput").value = "";
+  showView("viewUpload");
+  setStep("upload");
+}
+
+// Drag & Drop
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("fileInput");
+dropZone.addEventListener("click", () => fileInput.click());
+dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
+dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
+dropZone.addEventListener("drop", e => {
+  e.preventDefault(); dropZone.classList.remove("drag-over");
+  const f = e.dataTransfer.files[0];
+  if (f?.type === "application/pdf") processFile(f);
+});
+fileInput.addEventListener("change", e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+
+const SYSTEM_PROMPT = `Du bist Experte fuer das Extrahieren von Angebotsdaten aus Soliday Sonnensegel PDFs.
+Extrahiere alle Positionen und gib NUR ein JSON-Objekt zurueck - kein Markdown, keine Backticks, kein Text davor oder danach.
+Wichtig fuer "kommission": Extrahiere den exakten Wert aus dem Feld "Kommission:" im Angebot (z.B. "Eurasburg Schule (Variante)"). Lasse Klammern und Zusaetze wie "(Variante)" weg, behalte aber den Hauptnamen (z.B. "Eurasburg Schule").
+
+Wichtig:
+- Nutze immer den VK Netto Preis (nicht EK)
+- Alle Zahlen als Dezimalpunkt (nicht Komma)
+- Artikelnummer aus der Positionszeile extrahieren
+- Fuer das Feld "system": Erkenne das Hauptsystem aus dem Angebot. Moegliche Werte:
+  "SOLIDAY-C", "SOLIDAY-CS", "SOLIDAY-X", "SOLIDAY-XS", "SOLIDAY-M", "SOLIDAY-MA",
+  "SOLIDAY-ONE", "SOLIDAY-FLEX", "SOLIDAY-SANDY", "SONNENSEGEL-MAß", "RAFF-M-DRAHTSEIL",
+  "RAFF-M-FÜHRUNGSSCHIENE"
+  Hinweise: Im PDF steht meist "SOLIDAY-C", "SOLIDAY-M" etc. als Abschnittstitel.
+  Wenn "Sandy" oder "Sandkasten" vorkommt → "SOLIDAY-SANDY".
+  Wenn kein Rollsystem und Maßsegel → "SONNENSEGEL-MAß".
+  Wenn zusaetzlich SNAP-System Teile vorkommen → haenge "-SNAP" an (z.B. "SONNENSEGEL-MAß-SNAP").
+  Wenn nichts erkannt → leerer String "".
+
+Format:
+{
+  "kommission": "string",
+  "datum": "string",
+  "system": "string",
+  "snap": true/false,
+  "positionen": [
+    {
+      "pos": number,
+      "artikelnummer": "string",
+      "name": "string",
+      "beschreibung": "string",
+      "preis_einheit": number,
+      "menge": number,
+      "einheit": "string",
+      "gesamt": number
+    }
+  ],
+  "teuerungszuschlag_netto": number or null,
+  "netto_gesamt": number,
+  "mwst": number,
+  "brutto_gesamt": number
+}
+
+Hinweis: Wenn im Angebot ein "Teuerungszuschlag" vorkommt, extrahiere den Netto-Betrag in "teuerungszuschlag_netto".
+Beispiel: Steht dort "Teuerungszuschlag 141,23 EUR" dann ist teuerungszuschlag_netto = 141.23
+Wenn kein Teuerungszuschlag vorhanden → null.
+`;
+
+// PDF -> Claude (mit Haiku → Sonnet Fallback für große Angebote)
+async function callClaude(base64, model) {
+  const { anthropic } = getKeys();
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": anthropic,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true"
+    },
+    body: JSON.stringify({
+      model: model,
+      max_tokens: 8192,
+      system: SYSTEM_PROMPT,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
+          { type: "text", text: "Extrahiere alle Positionen aus diesem Soliday-Angebot." }
+        ]
+      }]
+    })
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    const errMsg = err.error?.message || JSON.stringify(err);
+    // Context-Fehler als speziellen Typ markieren für Fallback-Erkennung
+    if (resp.status === 400 && /context|length|too long|too large/i.test(errMsg)) {
+      const e = new Error(errMsg);
+      e.isContextError = true;
+      throw e;
+    }
+    throw new Error(`Anthropic API Fehler ${resp.status}: ${errMsg}`);
+  }
+
+  return resp.json();
+}
+
+async function processFile(file) {
+  showView("viewLoading");
+  setStep("upload");
+  document.getElementById("progressBar").style.width = "15%";
+  document.getElementById("loadingSub").textContent = "PDF wird gelesen...";
+
+  try {
+    const base64 = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result.split(",")[1]);
+      r.onerror = () => rej(new Error("Datei konnte nicht gelesen werden"));
+      r.readAsDataURL(file);
+    });
+
+    document.getElementById("progressBar").style.width = "35%";
+    document.getElementById("loadingSub").textContent = "Claude Haiku analysiert Positionen...";
+
+    let data;
+    try {
+      data = await callClaude(base64, "claude-haiku-4-5-20251001");
+    } catch(e) {
+      if (e.isContextError) {
+        // Angebot zu groß für Haiku → Fallback auf Sonnet
+        document.getElementById("progressBar").style.width = "45%";
+        document.getElementById("loadingSub").textContent = "Großes Angebot – wechsle zu Claude Sonnet...";
+        data = await callClaude(base64, "claude-sonnet-4-6");
+      } else {
+        throw e;
+      }
+    }
+
+    document.getElementById("progressBar").style.width = "75%";
+
+    const text = (data.content || []).find(b => b.type === "text")?.text || "";
+    if (!text) throw new Error("Leere Antwort von Claude");
+
+    const clean = text.replace(/```json\n?|```\n?/g, "").trim();
+    if (!clean.endsWith("}")) {
+      throw new Error("Claude-Antwort wurde abgeschnitten (Angebot zu groß). Bitte erneut versuchen – Sonnet wird automatisch verwendet.");
+    }
+    extractedData = JSON.parse(clean);
+
+    document.getElementById("progressBar").style.width = "100%";
+    setTimeout(renderPreview, 300);
+  } catch(e) {
+    showError(e.message);
+  }
+}
+
+// Preview
+function renderPreview() {
+  const d = extractedData;
+  document.getElementById("previewTitle").textContent = d.kommission || "Angebot";
+  document.getElementById("previewMeta").textContent = `System: ${d.system || "?"} · ${d.positionen.length} Positionen · ${d.datum}`;
+  document.getElementById("previewTotal").textContent = fmtE(d.brutto_gesamt);
+
+  // Netto ohne Teuerung berechnen
+  const teuerung = d.teuerungszuschlag_netto ? Number(d.teuerungszuschlag_netto) : 0;
+  const nettoOhne = Number(d.netto_gesamt) - teuerung;
+  const footerHtml = teuerung
+    ? `<div class="f-muted">Pos. Netto: <strong>${fmtE(nettoOhne)}</strong></div>
+       <div class="f-muted" style="color:var(--accent2)">+ Teuerungszuschlag: <strong>${fmtE(teuerung)}</strong></div>
+       <div class="f-muted">Netto gesamt: <strong>${fmtE(d.netto_gesamt)}</strong></div>
+       <div class="f-muted">MwSt.: <strong>${fmtE(d.mwst)}</strong></div>
+       <div class="f-total">${fmtE(d.brutto_gesamt)}</div>`
+    : `<div class="f-muted">Netto: <strong id="footNetto">${fmtE(d.netto_gesamt)}</strong></div>
+       <div class="f-muted">MwSt.: <strong id="footMwst">${fmtE(d.mwst)}</strong></div>
+       <div class="f-total" id="footBrutto">${fmtE(d.brutto_gesamt)}</div>`;
+  document.querySelector(".table-footer").innerHTML = footerHtml;
+
+  document.getElementById("positionsList").innerHTML = d.positionen.map(p => `
+    <div class="table-row">
+      <div class="pos-num">${p.pos}</div>
+      <div>
+        <div style="line-height:1.4">${p.name}</div>
+        <span class="pos-art">${p.artikelnummer}</span>
+      </div>
+      <div class="num-r">${fmt(p.preis_einheit)} €</div>
+      <div class="num-r">${Number(p.menge).toLocaleString("de-DE")}</div>
+      <div style="color:var(--muted)">${p.einheit}</div>
+      <div class="ges">${fmt(p.gesamt)} €</div>
+    </div>
+  `).join("");
+
+  showView("viewPreview");
+  setStep("preview");
+}
+
+// sevDesk API
+async function sevGet(path) {
+  const { sevdesk } = getKeys();
+  const r = await fetch(`${SEVDESK_BASE}${path}`, { headers: { Authorization: sevdesk } });
+  if (!r.ok) throw new Error(`sevDesk GET ${path} HTTP ${r.status}`);
+  return r.json();
+}
+
+async function sevPost(path, body) {
+  const { sevdesk } = getKeys();
+  const r = await fetch(`${SEVDESK_BASE}${path}`, {
+    method: "POST",
+    headers: { Authorization: sevdesk, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  const responseText = await r.text();
+  let responseJson;
+  try { responseJson = JSON.parse(responseText); } catch { responseJson = responseText; }
+
+  if (!r.ok) {
+    const pretty = obj => JSON.stringify(obj, null, 2).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    document.getElementById("errorMsg").innerHTML =
+      `<strong style="color:#ff8888">HTTP ${r.status} – ${responseJson?.error?.message || "Bad Request"} (errorCode ${responseJson?.error?.errorCode || "?"})</strong>\n\n` +
+      `<span style="color:#888">POST ${path}</span>\n\n` +
+      `<strong style="color:#ccc">REQUEST BODY:</strong>\n${pretty(body)}\n\n` +
+      `<strong style="color:#ccc">RESPONSE:</strong>\n${pretty(responseJson)}`;
+    showView("viewError");
+    setStep("error");
+    throw new Error("__debug__");
+  }
+  return responseJson;
+}
+
+// Transfer
+
+// Betreff und headText aus erkanntem System ableiten
+function getBetreff(system, snap, kommission) {
+  const s = (system || "").toUpperCase();
+  let base;
+  if (s === "SOLIDAY-C")   base = "Angebot - SOLIDAY C";
+  else if (s === "SOLIDAY-CS")  base = "Angebot - SOLIDAY CS";
+  else if (s === "SOLIDAY-X")   base = "Angebot - SOLIDAY X";
+  else if (s === "SOLIDAY-XS")  base = "Angebot - SOLIDAY XS";
+  else if (s === "SOLIDAY-M")   base = "Angebot - SOLIDAY M";
+  else if (s === "SOLIDAY-MA")  base = "Angebot - SOLIDAY MA";
+  else if (s === "SOLIDAY-ONE") base = "Angebot - SOLIDAY ONE";
+  else if (s === "SOLIDAY-FLEX") base = "Angebot - SOLIDAY FLEX";
+  else if (s === "SOLIDAY-SANDY") base = "Angebot - SOLIDAY SANDY";
+  else if (s === "SONNENSEGEL-MAß" || s === "SONNENSEGEL-MAß-SNAP") {
+    base = snap ? "Angebot - SOLIDAY Fix Segel mit SNAP System" : "Angebot - SOLIDAY Fix Segel";
+  }
+  else if (s === "RAFF-M-DRAHTSEIL")       base = "Angebot - RAFF M Drahtseil";
+  else if (s === "RAFF-M-FÜHRUNGSSCHIENE") base = "Angebot - RAFF M Führungsschiene";
+  else base = "Angebot";
+  const kom = (kommission || "").trim();
+  return kom ? `${base} - ${kom}` : base;
+}
+
+function getHeadText(system, snap) {
+  const s = (system || "").toUpperCase();
+  if (s === "SOLIDAY-SANDY")  return "Sonnensegel & Sandkastenabdeckung";
+  if (s === "SONNENSEGEL-MAß" || s === "SONNENSEGEL-MAß-SNAP") {
+    return snap ? "Festes Sonnensegel nach Maß mit komfortabler SNAP System Bedienung"
+                : "Festes Sonnensegel nach Maß";
+  }
+  if (s === "SOLIDAY-FLEX")   return "Robustes aufrollbares Sonnensegel mit SNAP System";
+  if (s === "SOLIDAY-M" || s === "SOLIDAY-MA") return "Manuell aufrollbares Sonnensegel";
+  if (s === "SOLIDAY-ONE")    return "Manuell aufrollbares Premium Sonnensegel mit Ein-Punkt Bedienung";
+  if (s === "SOLIDAY-X")      return "Semi-automatisch aufrollbares Sonnensegel";
+  if (s === "SOLIDAY-XS")     return "Semi-automatisch aufrollbares Markisensegel";
+  if (s === "SOLIDAY-C")      return "Elektrisch aufrollbares Sonnensegel";
+  if (s === "SOLIDAY-CS")     return "Elektrisch aufrollbares Markisensegel";
+  if (s === "RAFF-M-DRAHTSEIL")       return "Manuell raffbares Sonnensegel mit Drahtseil Aufhängung";
+  if (s === "RAFF-M-FÜHRUNGSSCHIENE") return "Manuell raffbares Sonnensegel mit Führungsschiene";
+  return "";
+}
+
+const FOOT_TEXT = `<p style="font-size:8pt">Das Angebot ist gültig innerhalb 30 Tage ab Angebotslegung, bzw. bis zum Erscheinen einer neuen Preisliste oder deren Aktualisierungen.<br><br>*Schraubfundamente sind nur bei gesetztem Boden bis Bodenklasse III möglich.<br>Bei der Verwendung von Schraubfundamenten müssen alle Pläne von evtl. Leitungen im Boden vorliegen.<br>Ein Schraubfundament wird ausnahmslos nur mit der ausdrücklichen Einwilligung des Grundstück bzw. Hausbesitzers gesetzt.<br>Für evtl. Folgeschäden trifft Sonnensegel Kugelmann keine Schuld und Haftung.<br><br>Soliday Sonnensegel sind nicht für außergewöhnliche Umwelteinflüsse konstruiert und sollten bei Unwettern & im Winter abgebaut werden bzw. aufrollbare Systeme eingerollt werden. Beschädigungen aufgrund von Überlast durch Umwelteinflüsse liegen außerhalb der Garantie.</p>`;
+
+async function startTransfer() {
+  showView("viewSending");
+  setStep("sending");
+  const bar = document.getElementById("sendBar");
+  const sub = document.getElementById("sendingSub");
+
+  try {
+    sub.textContent = "Benutzer wird geladen...";
+    bar.style.width = "15%";
+    const sevUserData = await sevGet("/SevUser?limit=1");
+    const sevUser = (sevUserData.objects || [])[0];
+    if (!sevUser) throw new Error("SevUser nicht gefunden – bitte API-Key pruefen.");
+
+    sub.textContent = "Import-Kunde wird gesucht...";
+    bar.style.width = "30%";
+    const contacts = await sevGet("/Contact?limit=200&depth=0");
+    const allContacts = contacts.objects || [];
+    const customer = allContacts.find(c =>
+      (c.name||"").toLowerCase().includes("import") ||
+      (c.customerNumber||"").toLowerCase().includes("import")
+    );
+    if (!customer) {
+      const sample = allContacts.slice(0,8).map(c => `"${c.name}" (${c.customerNumber})`).join(", ");
+      throw new Error(`Import-Kunde nicht gefunden.\nVorhandene (erste 8): ${sample}`);
+    }
+
+    sub.textContent = "Einheiten werden geladen...";
+    bar.style.width = "45%";
+    const unitiesData = await sevGet("/Unity?limit=50");
+    const unities = unitiesData.objects || [];
+    const defaultUnity = unities.find(u => /stk|stueck|stück|pc|pcs/i.test(u.name))
+                      || unities.find(u => String(u.id) === "1")
+                      || unities[0];
+    if (!defaultUnity) throw new Error("Keine Einheiten gefunden.");
+
+    function findUnity(einheit) {
+      const n = (einheit||"").toLowerCase().replace(/\./g,"").trim();
+      if (["m2","m\u00b2","qm"].includes(n))
+        return unities.find(u => /m.?2|qm/i.test(u.name)) || defaultUnity;
+      if (["m","lm","lfm"].includes(n))
+        return unities.find(u => /^(lm|lfm|m)$/i.test((u.name||"").trim())) || defaultUnity;
+      if (["h","std"].includes(n))
+        return unities.find(u => /std|stunde|hour/i.test(u.name)) || defaultUnity;
+      return defaultUnity;
+    }
+
+    sub.textContent = "Positionen werden aufgebaut...";
+    bar.style.width = "60%";
+
+    const orderPosSave = extractedData.positionen.map((pos, i) => ({
+      objectName: "OrderPos",
+      mapAll: "true",
+      part: null,
+      quantity: Number(pos.menge),
+      price: String(Number(pos.preis_einheit).toFixed(2)),
+      name: String(pos.name),
+      unity: { id: String(findUnity(pos.einheit).id), objectName: "Unity" },
+      positionNumber: i,
+      text: null,
+      discount: 0,
+      optional: false,
+      taxRate: 19
+    }));
+
+    // Teuerungszuschlag: als Festbetrag-Aufschlag im discounts-Array
+    // sevdesk API: discount=false → Aufschlag; percentage=false → Festbetrag (Netto)
+    const teuerung = extractedData.teuerungszuschlag_netto;
+    const hasTeuerung = teuerung && Number(teuerung) !== 0;
+
+    sub.textContent = "Angebotsnummer wird von sevdesk geholt...";
+    bar.style.width = "65%";
+    const nextNumData = await sevGet("/Order/Factory/getNextOrderNumber?orderType=AN&useNextNumber=true");
+    const orderNumber = nextNumData.objects || nextNumData.number || `AN-${Date.now()}`;
+
+    const today = new Date();
+    const pad = n => String(n).padStart(2, "0");
+    const offerDate = `${pad(today.getDate())}.${pad(today.getMonth()+1)}.${today.getFullYear()}`;
+
+    const addrParts = [
+      customer.name,
+      customer.street || null,
+      (customer.zipCode || customer.zip) && customer.city
+        ? `${customer.zipCode || customer.zip} ${customer.city}`
+        : customer.city || null
+    ].filter(Boolean);
+    const address = addrParts.join("\n") || customer.name || "Import";
+
+    sub.textContent = "Angebot wird in sevdesk angelegt...";
+    bar.style.width = "80%";
+
+    const payload = {
+      order: {
+        id: null,
+        objectName: "Order",
+        mapAll: true,
+        orderNumber: orderNumber,
+        contact: { id: String(customer.id), objectName: "Contact" },
+        orderDate: offerDate,
+        status: 100,
+        header: getBetreff(extractedData.system, extractedData.snap, extractedData.kommission),
+        headText: getHeadText(extractedData.system, extractedData.snap),
+        footText: FOOT_TEXT,
+        address: address,
+        addressCountry: { id: "1", objectName: "StaticCountry" },
+        version: 0,
+        smallSettlement: 0,
+        contactPerson: { id: String(sevUser.id), objectName: "SevUser" },
+        taxRate: 19,
+        discount: hasTeuerung ? 0 : 0,
+        discountTime: hasTeuerung ? 1 : 0,
+        taxSet: null,
+        taxText: "Umsatzsteuer 19%",
+        taxRule: { id: "1", objectName: "TaxRule" },
+        orderType: "AN",
+        currency: "EUR",
+        showNet: 1,
+        sendType: "VPR"
+      },
+      orderPosSave: orderPosSave,
+      orderPosDelete: null,
+      discountSave: hasTeuerung ? [{
+        objectName: "Discounts",
+        mapAll: true,
+        discount: false,
+        text: "Temporäre Anpassung aufgrund von Rohstoff- & Energiekosten",
+        percentage: false,
+        value: Number(Number(teuerung).toFixed(2))
+      }] : null,
+      discountDelete: null
+    };
+
+    const offerResp = await sevPost("/Order/Factory/saveOrder", payload);
+    const offer = offerResp?.objects?.order || offerResp?.objects || offerResp;
+
+    if (!offer?.id) {
+      throw new Error("Keine Angebots-ID.\nAntwort: " + JSON.stringify(offerResp).substring(0,400));
+    }
+
+    bar.style.width = "100%";
+    document.getElementById("doneLink").href = `https://my.sevdesk.de/#/ar/order/detail/id/${offer.id}`;
+    setTimeout(() => { showView("viewDone"); setStep("done"); }, 300);
+
+  } catch(e) {
+    if (e.message !== "__debug__") showError(e.message);
+  }
+}
+</script>
+
+</body>
+</html>
