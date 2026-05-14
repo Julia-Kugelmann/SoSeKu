@@ -774,11 +774,33 @@ async function initStep5(){
   setTimeout(()=>{renderStep5();showView('viewStep5');setStep(5);},300);
 }
 
+// Parse German number format: "63,71 €" or "1.234,56" → float
+function parseDE(s){
+  if(!s)return 0;
+  const c=(s+'').trim().replace(/[€\s]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.');
+  return parseFloat(c)||0;
+}
+// System shortcode for Stoffe matrix columns
+const SYS2COL={'SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-ONE':'One','SOLIDAY-FLEX':'Flex','SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS','SOLIDAY-CS-TWIN':'CS'};
+function parseStoffeMatrix(rows,sys){
+  if(!rows||rows.length<2)return[];
+  const hdr=rows[0];
+  const key=SYS2COL[sys]||'';
+  const ci=key?hdr.findIndex(h=>h.trim()===key):-1;
+  if(ci<0)return[];
+  return rows.slice(1)
+    .filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm')
+    .map(r=>({name:r[0].trim(),preis:parseDE(r[ci])}))
+    .filter(s=>s.preis>0);
+}
 async function loadPrices5(){
+  const sys=(soSeKuJSON?.system||'').toUpperCase();
   const[sR,mR,aR]=await Promise.all([fetchSheetTabAll('Stoffe'),fetchSheetTabAll('Montage'),fetchSheetTabAll('Ankerpunkte')]);
-  if(sR.length>1)prices5.stoffe=sR.slice(1).filter(r=>r[0]).map(r=>({name:r[0],preis:parseFloat(r[1])||0}));
-  if(mR.length>1)mR.slice(1).forEach(r=>{if(r[0])prices5.montage[r[0]]=r.slice(1,7).map(v=>parseFloat(v)||0);});
-  if(aR.length>1)aR.slice(1).forEach(r=>{if(r[0])prices5.apPreis[r[0]]=parseFloat(r[1])||0;});
+  if(sR.length>1){
+    prices5.stoffe=sR[0].length>3?parseStoffeMatrix(sR,sys):sR.slice(1).filter(r=>r[0]).map(r=>({name:r[0],preis:parseDE(r[1])||0}));
+  }
+  if(mR.length>1)mR.slice(1).forEach(r=>{if(r[0])prices5.montage[r[0]]=r.slice(1,7).map(v=>parseDE(v)||0);});
+  if(aR.length>1)aR.slice(1).forEach(r=>{if(r[0])prices5.apPreis[r[0]]=parseDE(r[1])||0;});
 }
 
 function gsMonPreis(key){
@@ -1068,7 +1090,7 @@ function buildSevdeskPayload(contactId,cpId){
         quantity:String(+(p.menge||1).toFixed(4)),
         price:String(+(p.preis_einheit||0).toFixed(4)),
         unity:mapUnity(p.einheit),
-        taxRate:'19',
+        taxRate:'20',
         text:p.beschreibung||'',
         partNumber:p.artikelnummer||''
       });
