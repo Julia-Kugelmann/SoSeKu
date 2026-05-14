@@ -3,690 +3,699 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Soliday → sevdesk</title>
+<title>SoSeKu · Soliday → sevdesk</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0d0d18;
-    --surface: rgba(255,255,255,0.03);
-    --border: rgba(255,255,255,0.07);
-    --accent: #5b8dee;
-    --accent2: #38d9a9;
-    --text: #e2e2f0;
-    --muted: #8888aa;
-    --error: #ff6b6b;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    min-height: 100vh;
-    background: var(--bg);
-    background-image: radial-gradient(ellipse at 20% 20%, rgba(91,141,238,0.08) 0%, transparent 60%),
-                      radial-gradient(ellipse at 80% 80%, rgba(56,217,169,0.06) 0%, transparent 60%);
-    font-family: 'DM Mono', monospace;
-    color: var(--text);
-  }
-  header {
-    padding: 22px 28px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .logo { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; }
-  .logo .soliday { color: #f5a623; }
-  .logo .sevdesk { color: #E5253C; }
-  .logo .arr { color: var(--muted); margin: 0 8px; }
-  .subtitle { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .header-reset { font-size: 11px; color: var(--muted); cursor: pointer; border: 1px solid var(--border); border-radius: 6px; padding: 5px 10px; background: none; transition: all 0.2s; }
-  .header-reset:hover { border-color: var(--accent); color: var(--text); }
-
-main { max-width: 800px; margin: 0 auto; padding: 32px 20px; }
-
-.steps { display: flex; align-items: center; margin-bottom: 32px; }
-.step { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
-.step.active { color: var(--accent); }
-.step.done { color: var(--accent2); }
-.step-num { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; border: 1px solid currentColor; flex-shrink: 0; }
-.step.active .step-num { background: var(--accent); color: #fff; border-color: var(--accent); }
-.step.done .step-num { background: var(--accent2); color: #0d0d18; border-color: var(--accent2); }
-.step-line { flex: 1; height: 1px; background: var(--border); margin: 0 8px; }
-
-.setup-wrap { max-width: 480px; margin: 0 auto; }
-.setup-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 6px; }
-.setup-sub { font-size: 12px; color: var(--muted); margin-bottom: 28px; line-height: 1.6; }
-.field { margin-bottom: 18px; }
-.field label { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 7px; }
-.field input {
-  width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 14px; font-family: 'DM Mono', monospace;
-  font-size: 12px; color: var(--text); outline: none; transition: border-color 0.2s;
-  letter-spacing: 0.02em;
+:root{
+  --bg:#0d0d18;--surface:rgba(255,255,255,0.03);--surface2:rgba(255,255,255,0.06);
+  --border:rgba(255,255,255,0.07);--accent:#5b8dee;--accent2:#38d9a9;
+  --warn:#f5a623;--error:#ff6b6b;--text:#e2e2f0;--muted:#8888aa;
 }
-.field input:focus { border-color: var(--accent); }
-.field input::placeholder { color: var(--muted); opacity: 0.5; }
-.setup-note { font-size: 10px; color: var(--muted); margin-top: 10px; line-height: 1.7; padding: 10px 14px; background: rgba(91,141,238,0.05); border-radius: 8px; border: 1px solid rgba(91,141,238,0.1); }
-.setup-note strong { color: var(--accent2); }
-
-.upload-zone {
-  border: 2px dashed rgba(91,141,238,0.3); border-radius: 18px;
-  padding: 56px 32px; text-align: center; cursor: pointer;
-  transition: all 0.3s; background: rgba(91,141,238,0.02);
-}
-.upload-zone:hover, .upload-zone.drag-over { border-color: var(--accent); background: rgba(91,141,238,0.06); }
-.upload-icon { font-size: 48px; margin-bottom: 14px; }
-.upload-title { font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 700; margin-bottom: 6px; }
-.upload-sub { font-size: 12px; color: var(--muted); }
-
-.loading-wrap { text-align: center; padding: 72px 0; }
-.spinner { width: 40px; height: 40px; border: 3px solid rgba(91,141,238,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.9s linear infinite; margin: 0 auto 18px; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-title { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 700; margin-bottom: 5px; }
-.loading-sub { font-size: 12px; color: var(--accent); animation: pulse 1.6s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.progress-wrap { background: rgba(255,255,255,0.05); border-radius: 4px; height: 3px; margin: 16px auto 0; width: 180px; overflow: hidden; }
-.progress-bar { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 4px; transition: width 0.4s ease; }
-
-.preview-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
-.preview-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; margin-bottom: 3px; }
-.preview-meta { font-size: 11px; color: var(--muted); }
-.total-amount { font-size: 22px; font-weight: 700; color: var(--accent2); }
-.total-label { font-size: 10px; color: var(--muted); }
-
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 14px; }
-.table-head { display: grid; grid-template-columns: 32px 1fr 86px 58px 48px 90px; gap: 7px; padding: 11px 12px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
-.table-row { display: grid; grid-template-columns: 32px 1fr 86px 58px 48px 90px; gap: 7px; padding: 10px 12px; font-size: 11px; border-bottom: 1px solid rgba(255,255,255,0.025); transition: background 0.15s; align-items: start; }
-.table-row:last-child { border-bottom: none; }
-.table-row:hover { background: rgba(255,255,255,0.02); }
-.pos-num { color: var(--muted); }
-.pos-art { display: inline-block; background: rgba(91,141,238,0.12); color: var(--accent); padding: 1px 5px; border-radius: 3px; font-size: 9px; margin-top: 2px; }
-.num-r { text-align: right; color: #9999bb; }
-.ges { text-align: right; font-weight: 500; }
-.table-footer { display: flex; justify-content: flex-end; gap: 24px; padding: 12px; border-top: 1px solid var(--border); font-size: 11px; }
-.f-muted { color: var(--muted); }
-.f-total { font-size: 14px; font-weight: 700; color: var(--accent2); }
-
-.btn-row { display: flex; justify-content: flex-end; gap: 10px; }
-.btn { padding: 12px 24px; border-radius: 10px; font-family: 'DM Mono', monospace; font-size: 13px; cursor: pointer; border: none; transition: all 0.2s; letter-spacing: 0.03em; font-weight: 500; }
-.btn-p { background: rgba(255,255,255,0.13); color: #d8d8e8; border: 1px solid rgba(255,255,255,0.28); }
-.btn-p:hover { background: rgba(255,255,255,0.2); border-color: rgba(255,255,255,0.5); color: #ffffff; transform: translateY(-1px); }
-.btn-s { background: rgba(255,255,255,0.18); color: #e2e2f0; border: 1px solid rgba(255,255,255,0.4); }
-.btn-s:hover { background: rgba(255,255,255,0.26); border-color: rgba(255,255,255,0.6); color: #ffffff; }
-
-.center-wrap { text-align: center; padding: 56px 0; }
-.big-icon { font-size: 52px; margin-bottom: 16px; }
-.big-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 10px; }
-.big-sub { font-size: 13px; color: var(--muted); margin-bottom: 28px; }
-.done-link { display: inline-block; padding: 13px 28px; background: rgba(255,255,255,0.14); color: #e2e2f0; border: 1px solid rgba(255,255,255,0.35); border-radius: 10px; font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700; text-decoration: none; transition: all 0.2s; margin-right: 8px; }
-.done-link:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.55); color: #ffffff; }
-.error-box { background: rgba(255,107,107,0.06); border: 1px solid rgba(255,107,107,0.2); border-radius: 10px; padding: 14px 18px; margin: 14px auto 26px; max-width: 680px; font-size: 11px; color: #ffaaaa; line-height: 1.7; text-align: left; word-break: break-word; white-space: pre-wrap; max-height: 55vh; overflow-y: auto; }
-
-.hidden { display: none !important; }
-
-@media (max-width: 580px) {
-  .table-head, .table-row { grid-template-columns: 26px 1fr 72px 46px 38px 76px; gap: 5px; font-size: 10px; padding: 8px 9px; }
-  main { padding: 20px 14px; }
-}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(91,141,238,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(56,217,169,.06) 0%,transparent 60%);font-family:'DM Mono',monospace;color:var(--text)}
+header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.logo .s1{color:#f5a623}.logo .s2{color:#E5253C}.logo .arr{color:var(--muted);margin:0 6px}
+.subtitle{font-size:11px;color:var(--muted);margin-top:2px}
+.btn-reset-hdr{font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border);border-radius:6px;padding:5px 10px;background:none}
+.btn-reset-hdr:hover{border-color:var(--accent);color:var(--text)}
+.steps-wrap{padding:14px 28px;border-bottom:1px solid var(--border);overflow-x:auto}
+.steps{display:flex;align-items:center;min-width:640px}
+.step{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.step.active{color:var(--accent)}.step.done{color:var(--accent2)}
+.step-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;border:1px solid currentColor;flex-shrink:0}
+.step.active .step-num{background:var(--accent);color:#fff;border-color:var(--accent)}
+.step.done .step-num{background:var(--accent2);color:#0d0d18;border-color:var(--accent2)}
+.step-line{width:20px;height:1px;background:var(--border);flex-shrink:0}
+main{max-width:1100px;margin:0 auto;padding:28px 20px}
+.setup-wrap{max-width:460px;margin:0 auto}
+.setup-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px}
+.setup-sub{font-size:12px;color:var(--muted);margin-bottom:24px;line-height:1.6}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.field input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;transition:border-color .2s}
+.field input:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--muted);opacity:.5}
+.setup-note{font-size:10px;color:var(--muted);line-height:1.7;padding:10px 14px;background:rgba(91,141,238,.05);border-radius:8px;border:1px solid rgba(91,141,238,.1);margin-top:10px}
+.setup-note strong{color:var(--accent2)}
+.upload-zone{border:2px dashed rgba(91,141,238,.3);border-radius:18px;padding:56px 32px;text-align:center;cursor:pointer;transition:all .3s;background:rgba(91,141,238,.02)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(91,141,238,.06)}
+.upload-icon{font-size:48px;margin-bottom:14px}
+.upload-title{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;margin-bottom:6px}
+.upload-sub{font-size:12px;color:var(--muted)}
+.loading-wrap{text-align:center;padding:72px 0}
+.spinner{width:40px;height:40px;border:3px solid rgba(91,141,238,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 18px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;margin-bottom:5px}
+.loading-sub{font-size:12px;color:var(--accent);animation:pulse 1.6s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.progress-wrap{background:rgba(255,255,255,.05);border-radius:4px;height:3px;margin:16px auto 0;width:200px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .4s ease}
+.btn{padding:10px 20px;border-radius:10px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;border:none;transition:all .2s;letter-spacing:.03em;font-weight:500}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:#4a7de0;transform:translateY(-1px)}
+.btn-s{background:rgba(255,255,255,.1);color:var(--text);border:1px solid rgba(255,255,255,.2)}
+.btn-s:hover{background:rgba(255,255,255,.16)}
+.btn-row{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:16px}
+.card-hdr{padding:11px 16px;border-bottom:1px solid var(--border);font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.card-hdr strong{color:var(--text);font-size:13px}
+.val-ok{display:inline-flex;align-items:center;gap:6px;background:rgba(56,217,169,.1);border:1px solid rgba(56,217,169,.3);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--accent2);margin-bottom:16px}
+.val-err{display:inline-flex;align-items:center;gap:6px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--error);margin-bottom:16px}
+.step2-layout{display:grid;grid-template-columns:1fr 360px;gap:20px}
+@media(max-width:900px){.step2-layout{grid-template-columns:1fr}}
+.jtable{width:100%;border-collapse:collapse;font-size:11px}
+.jtable th{padding:8px 10px;text-align:left;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em;font-size:10px}
+.jtable td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:top}
+.jtable tr:last-child td{border-bottom:none}
+.jtable tr:hover td{background:rgba(255,255,255,.02)}
+.tag{display:inline-block;background:rgba(91,141,238,.12);color:var(--accent);padding:1px 5px;border-radius:3px;font-size:9px;white-space:nowrap}
+.tag-s{background:rgba(245,166,35,.12);color:var(--warn)}
+.num-r{text-align:right}
+.pdf-frame{width:100%;height:580px;border:1px solid var(--border);border-radius:0 0 12px 12px;background:#fff}
+.chat-wrap{margin-top:14px}
+.chat-lbl{font-size:11px;color:var(--muted);margin-bottom:7px}
+.chat-row{display:flex;gap:10px;align-items:flex-start}
+.chat-row textarea{flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;resize:vertical;min-height:56px;transition:border-color .2s}
+.chat-row textarea:focus{border-color:var(--accent)}
+.sektion-block{margin-bottom:18px}
+.sektion-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:9px 14px;background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.15);border-radius:10px 10px 0 0;color:var(--accent)}
+.sektion-body{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto}
+.sum-compare{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.sum-box{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
+.sum-box .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.sum-box .val{font-size:17px;font-weight:600}
+.sum-box.ok .val{color:var(--accent2)}.sum-box.err .val{color:var(--error)}
+.info-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:11px}
+.info-chips span{background:var(--surface2);border-radius:6px;padding:3px 9px}
+.fragebogen{max-width:580px}
+.fg-sec{margin-bottom:26px}
+.fg-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:13px}
+.radio-grp{display:flex;flex-direction:column;gap:10px}
+.radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
+.radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.zone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:11px;text-align:center;cursor:pointer;transition:all .2s}
+.zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
+.zone-num{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent)}
+.zone-time{font-size:10px;color:var(--muted);margin-top:2px}
+.check-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
+.check-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.fg-free{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;resize:vertical;min-height:80px}
+.fg-free:focus{border-color:var(--accent)}
+.ph-wrap{text-align:center;padding:56px 0}
+.ph-icon{font-size:48px;margin-bottom:14px}
+.ph-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:8px}
+.ph-sub{font-size:12px;color:var(--muted)}
+.center-wrap{text-align:center;padding:56px 0}
+.big-icon{font-size:52px;margin-bottom:16px}
+.big-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:10px}
+.big-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.done-link{display:inline-block;padding:12px 26px;background:rgba(255,255,255,.14);color:var(--text);border:1px solid rgba(255,255,255,.35);border-radius:10px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;text-decoration:none;margin-right:8px}
+.error-box{background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.2);border-radius:10px;padding:14px 18px;margin:14px auto 26px;max-width:680px;font-size:11px;color:#ffaaaa;line-height:1.7;text-align:left;word-break:break-word;white-space:pre-wrap;max-height:55vh;overflow-y:auto}
+.hidden{display:none!important}
 </style>
 </head>
 <body>
-
 <header>
   <div>
-    <div class="logo"><span class="soliday">soliday</span><span class="arr">→</span><span class="sevdesk">sevdesk</span></div>
+    <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#38d9a9">sevdesk</span></div>
     <div class="subtitle">Angebot Import Tool &middot; 2026-05-14</div>
   </div>
-  <button class="header-reset" id="btnResetKeys" onclick="resetKeys()" style="display:none">⚙ API-Keys ändern</button>
+  <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">⚙ Keys ändern</button>
 </header>
 
+<div class="steps-wrap hidden" id="stepsBar">
+  <div class="steps">
+    <div class="step" id="st1"><div class="step-num">1</div><span>Extraktion</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="st2"><div class="step-num">2</div><span>Prüfung</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="st3"><div class="step-num">3</div><span>Transformation</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="st4"><div class="step-num">4</div><span>Fragebogen</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="st5"><div class="step-num">5</div><span>Preise</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="st6"><div class="step-num">6</div><span>sevdesk</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="st7"><div class="step-num">7</div><span>Fertig</span></div>
+  </div>
+</div>
+
 <main>
-  <div id="viewSetup">
-    <div class="setup-wrap">
-      <div class="setup-title">API-Keys einrichten</div>
-      <div class="setup-sub">Die Keys werden nur für diese Browser-Session gespeichert und nie in den Code geschrieben.</div>
-      <div class="field">
-        <label>Anthropic API-Key</label>
-        <input type="password" id="inputAnthropicKey" placeholder="sk-ant-api03-..." autocomplete="off" spellcheck="false">
-      </div>
-      <div class="field">
-        <label>sevdesk API-Key</label>
-        <input type="password" id="inputSevdeskKey" placeholder="32-stelliger Hex-Key" autocomplete="off" spellcheck="false">
-      </div>
-      <div class="setup-note">
-        <strong>Sicherheit:</strong> Die Keys verlassen diesen Tab nicht. Sie werden im <code>sessionStorage</code> des Browsers gehalten und beim Schließen des Tabs automatisch gelöscht.
-      </div>
-      <div class="btn-row" style="margin-top: 24px; justify-content: flex-start;">
-        <button class="btn btn-p" onclick="saveKeys()">Weiter →</button>
-      </div>
-    </div>
+<!-- SETUP -->
+<div id="viewSetup">
+  <div class="setup-wrap">
+    <div class="setup-title">Konfiguration</div>
+    <div class="setup-sub">Keys werden nur in dieser Browser-Session gespeichert und beim Schließen des Tabs gelöscht.</div>
+    <div class="field"><label>Anthropic API-Key *</label><input type="password" id="iAnt" placeholder="sk-ant-api03-..." autocomplete="off"></div>
+    <div class="field"><label>sevdesk API-Key</label><input type="password" id="iSev" placeholder="32-stelliger Hex-Key (optional)" autocomplete="off"></div>
+    <div class="field"><label>Google Sheet ID</label><input type="text" id="iSheet" placeholder="Sheet-ID aus der URL (optional)" autocomplete="off"></div>
+    <div class="setup-note"><strong>Sicherheit:</strong> Keys werden im <code>sessionStorage</code> gehalten und nie in den Code geschrieben.</div>
+    <div class="btn-row" style="justify-content:flex-start;margin-top:20px"><button class="btn btn-p" onclick="saveSetup()">Weiter →</button></div>
   </div>
+</div>
 
-  <div class="steps hidden" id="stepsBar">
-    <div class="step active" id="step1"><div class="step-num">1</div><span>PDF laden</span></div>
-    <div class="step-line"></div>
-    <div class="step" id="step2"><div class="step-num">2</div><span>Vorschau</span></div>
-    <div class="step-line"></div>
-    <div class="step" id="step3"><div class="step-num">3</div><span>Übertragen</span></div>
+<!-- UPLOAD -->
+<div id="viewUpload" class="hidden">
+  <div class="upload-zone" id="dropZone">
+    <div class="upload-icon">📄</div>
+    <div class="upload-title">Soliday PDF ablegen</div>
+    <div class="upload-sub">oder hier klicken zum Auswählen</div>
+    <input type="file" id="fileInput" accept=".pdf" style="display:none">
   </div>
+</div>
 
-  <div id="viewUpload" class="hidden">
-    <div class="upload-zone" id="dropZone">
-      <div class="upload-icon">📄</div>
-      <div class="upload-title">Soliday PDF hier ablegen</div>
-      <div class="upload-sub">oder tippen zum Auswählen</div>
-      <input type="file" id="fileInput" accept=".pdf" style="display:none">
-    </div>
+<!-- LOADING -->
+<div id="viewLoading" class="hidden">
+  <div class="loading-wrap">
+    <div class="spinner"></div>
+    <div class="loading-title" id="loadTitle">PDF wird analysiert...</div>
+    <div class="loading-sub" id="loadSub">Claude liest Positionen aus</div>
+    <div class="progress-wrap"><div class="progress-bar" id="progBar" style="width:10%"></div></div>
   </div>
+</div>
 
-  <div id="viewLoading" class="hidden">
-    <div class="loading-wrap">
-      <div class="spinner"></div>
-      <div class="loading-title">PDF wird analysiert...</div>
-      <div class="loading-sub" id="loadingSub">Claude liest Positionen aus</div>
-      <div class="progress-wrap"><div class="progress-bar" id="progressBar" style="width:10%"></div></div>
-    </div>
-  </div>
-
-  <div id="viewPreview" class="hidden">
-    <div class="preview-header">
-      <div>
-        <div class="preview-title" id="previewTitle">–</div>
-        <div class="preview-meta" id="previewMeta">–</div>
+<!-- STEP 2: Validierung -->
+<div id="viewStep2" class="hidden">
+  <div id="valBadge"></div>
+  <div class="step2-layout">
+    <div>
+      <div class="card">
+        <div class="card-hdr"><strong>SoSeKu-JSON</strong><span id="s2meta" style="font-size:11px;color:var(--muted)"></span></div>
+        <div style="padding:14px 16px">
+          <div class="info-chips" id="s2info"></div>
+          <div style="overflow-x:auto">
+            <table class="jtable">
+              <thead><tr><th>Pos.</th><th>Art.-Nr.</th><th>Sektion</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
+              <tbody id="s2rows"></tbody>
+            </table>
+          </div>
+          <div id="s2footer" style="margin-top:12px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;font-size:12px"></div>
+        </div>
       </div>
-      <div style="text-align:right">
-        <div class="total-amount" id="previewTotal">–</div>
-        <div class="total-label">inkl. 19% MwSt.</div>
+      <div class="chat-wrap">
+        <div class="chat-lbl">Korrektur-Hinweis an Claude (optional):</div>
+        <div class="chat-row">
+          <textarea id="chatStep2" placeholder="z.B. „Position 7 hat falsche Menge, bitte nochmal genau lesen“"></textarea>
+          <button class="btn btn-s" onclick="reextract()">↺ Nochmal extrahieren</button>
+        </div>
       </div>
     </div>
-    <div class="card">
-      <div class="table-head">
-        <div>Pos.</div><div>Bezeichnung</div>
-        <div style="text-align:right">Preis/E.</div>
-        <div style="text-align:right">Menge</div>
-        <div>Einh.</div>
-        <div style="text-align:right">Gesamt</div>
+    <div>
+      <div class="card-hdr" style="border-radius:12px 12px 0 0;border:1px solid var(--border)"><strong>Soliday PDF</strong><span style="font-size:10px;color:var(--muted)">zur Endsumme scrollen</span></div>
+      <iframe id="pdfFrame" class="pdf-frame"></iframe>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="resetToUpload()">← Zurück</button>
+    <button class="btn btn-p" onclick="goToStep3()">Weiter → Transformation</button>
+  </div>
+</div>
+
+<!-- STEP 3: Transformation -->
+<div id="viewStep3" class="hidden">
+  <div class="sum-compare" id="s3sum"></div>
+  <div id="s3sektionen"></div>
+  <div class="chat-wrap">
+    <div class="chat-lbl">Korrektur-Hinweis (optional — löst Neuextraktion aus):</div>
+    <div class="chat-row">
+      <textarea id="chatStep3" placeholder="z.B. „die Wandplatte gehört zur Sektion Wandbefestigungen“"></textarea>
+      <button class="btn btn-s" onclick="retransform()">↺ Nochmal</button>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="showView('viewStep2');setStep(2)">← Zurück</button>
+    <button class="btn btn-p" onclick="goToStep4()">Weiter → Fragebogen</button>
+  </div>
+</div>
+
+<!-- STEP 4: Fragebogen -->
+<div id="viewStep4" class="hidden">
+  <div class="fragebogen">
+    <div class="fg-sec">
+      <div class="fg-title">Wandaufbau</div>
+      <div class="radio-grp">
+        <label class="radio-item"><input type="radio" name="wand" value="ziegel-10" checked> <span>Ziegel / Beton bis 10 cm Dämmung</span></label>
+        <label class="radio-item"><input type="radio" name="wand" value="ziegel-18"> <span>Ziegel / Beton bis 18 cm Dämmung</span></label>
+        <label class="radio-item"><input type="radio" name="wand" value="holz-10"> <span>Holzbauweise bis 10 cm Dämmung</span></label>
+        <label class="radio-item"><input type="radio" name="wand" value="holz-18"> <span>Holzbauweise bis 18 cm Dämmung</span></label>
       </div>
-      <div id="positionsList"></div>
-      <div class="table-footer"></div>
     </div>
-    <div class="btn-row">
-      <button class="btn btn-s" onclick="resetToUpload()">← Zurück</button>
-      <button class="btn btn-p" onclick="startTransfer()">→ Nach sevdesk übertragen</button>
+    <div class="fg-sec">
+      <div class="fg-title">Anfahrtszone</div>
+      <div class="zone-grid" id="zoneGrid">
+        <div class="zone-item" onclick="selZone(1)"><div class="zone-num">Zone 1</div><div class="zone-time">bis 15 min</div></div>
+        <div class="zone-item sel" onclick="selZone(2)"><div class="zone-num">Zone 2</div><div class="zone-time">bis 30 min</div></div>
+        <div class="zone-item" onclick="selZone(3)"><div class="zone-num">Zone 3</div><div class="zone-time">bis 45 min</div></div>
+        <div class="zone-item" onclick="selZone(4)"><div class="zone-num">Zone 4</div><div class="zone-time">bis 60 min</div></div>
+        <div class="zone-item" onclick="selZone(5)"><div class="zone-num">Zone 5</div><div class="zone-time">bis 75 min</div></div>
+        <div class="zone-item" onclick="selZone(6)"><div class="zone-num">Zone 6</div><div class="zone-time">bis 90 min</div></div>
+      </div>
+    </div>
+    <div class="fg-sec">
+      <div class="fg-title">Extras</div>
+      <label class="check-item"><input type="checkbox" id="cbDach"> <span>Dachterrasse</span></label>
+    </div>
+    <div class="fg-sec">
+      <div class="fg-title">Freitext / Zusatzangaben</div>
+      <textarea class="fg-free" id="fgFrei" placeholder="Weitere Hinweise zur Montage..."></textarea>
     </div>
   </div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="showView('viewStep3');setStep(3)">← Zurück</button>
+    <button class="btn btn-p" onclick="goToStep5()">Weiter → Preisberechnung</button>
+  </div>
+</div>
 
-  <div id="viewSending" class="hidden">
-    <div class="loading-wrap">
-      <div class="spinner"></div>
-      <div class="loading-title">Wird übertragen...</div>
-      <div class="loading-sub" id="sendingSub">Angebot wird angelegt</div>
-      <div class="progress-wrap"><div class="progress-bar" id="sendBar" style="width:5%"></div></div>
-    </div>
+<!-- STEP 5 placeholder -->
+<div id="viewStep5" class="hidden">
+  <div class="ph-wrap">
+    <div class="ph-icon">🔧</div>
+    <div class="ph-title">Preisberechnung</div>
+    <div class="ph-sub">Schritte 5A–5D werden in der nächsten Iteration implementiert.</div>
   </div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="showView('viewStep4');setStep(4)">← Zurück</button>
+  </div>
+</div>
 
-  <div id="viewDone" class="hidden">
-    <div class="center-wrap">
-      <div class="big-icon">✅</div>
-      <div class="big-title">Fertig!</div>
-      <div class="big-sub">Das Angebot wurde erfolgreich in sevdesk angelegt.</div>
-      <a class="done-link" id="doneLink" href="#" target="_blank">In sevdesk öffnen →</a>
-      <button class="btn btn-s" onclick="resetToUpload()">Neues Angebot</button>
-    </div>
+<!-- DONE -->
+<div id="viewDone" class="hidden">
+  <div class="center-wrap">
+    <div class="big-icon">✅</div>
+    <div class="big-title">Fertig!</div>
+    <div class="big-sub">Das Angebot wurde erfolgreich in sevdesk angelegt.</div>
+    <a class="done-link" id="doneLink" href="#" target="_blank">In sevdesk öffnen →</a>
+    <button class="btn btn-s" onclick="resetToUpload()">Neues Angebot</button>
   </div>
+</div>
 
-  <div id="viewError" class="hidden">
-    <div class="center-wrap">
-      <div class="big-icon">⚠️</div>
-      <div class="big-title">Fehler</div>
-      <div class="error-box" id="errorMsg">–</div>
-      <button class="btn btn-s" onclick="resetToUpload()">Nochmal versuchen</button>
-    </div>
+<!-- ERROR -->
+<div id="viewError" class="hidden">
+  <div class="center-wrap">
+    <div class="big-icon">⚠️</div>
+    <div class="big-title">Fehler</div>
+    <div class="error-box" id="errMsg">–</div>
+    <button class="btn btn-s" onclick="resetToUpload()">Nochmal versuchen</button>
   </div>
+</div>
 </main>
 
 <script>
-const SEVDESK_BASE = "https://my.sevdesk.de/api/v1";
-let extractedData = null;
+// === STATE ===
+let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null,fragebogen={},selZoneNr=2,extractAttempts=0;
 
-function getKeys() {
-  return {
-    anthropic: sessionStorage.getItem("sd_ant_key") || "",
-    sevdesk:   sessionStorage.getItem("sd_sev_key") || ""
-  };
-}
-
-function saveKeys() {
-  const ant = document.getElementById("inputAnthropicKey").value.trim();
-  const sev = document.getElementById("inputSevdeskKey").value.trim();
-  if (!ant || !sev) { alert("Bitte beide Keys eingeben."); return; }
-  sessionStorage.setItem("sd_ant_key", ant);
-  sessionStorage.setItem("sd_sev_key", sev);
-  document.getElementById("btnResetKeys").style.display = "";
-  document.getElementById("stepsBar").classList.remove("hidden");
-  showView("viewUpload");
-  setStep("upload");
-}
-
-function resetKeys() {
-  sessionStorage.removeItem("sd_ant_key");
-  sessionStorage.removeItem("sd_sev_key");
-  document.getElementById("btnResetKeys").style.display = "none";
-  document.getElementById("stepsBar").classList.add("hidden");
-  document.getElementById("inputAnthropicKey").value = "";
-  document.getElementById("inputSevdeskKey").value = "";
-  showView("viewSetup");
-}
-
-window.addEventListener("DOMContentLoaded", () => {
-  const { anthropic, sevdesk } = getKeys();
-  if (anthropic && sevdesk) {
-    document.getElementById("btnResetKeys").style.display = "";
-    document.getElementById("stepsBar").classList.remove("hidden");
-    showView("viewUpload");
-    setStep("upload");
-  } else {
-    showView("viewSetup");
+// === UTILS ===
+const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtE=n=>fmt(n)+' €';
+const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewDone','viewError'];
+function showView(id){VIEWS.forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));}
+function setStep(n){
+  document.getElementById('stepsBar').classList.remove('hidden');
+  for(let i=1;i<=7;i++){
+    const el=document.getElementById('st'+i);
+    el.className='step'+(i===n?' active':i<n?' done':'');
+    el.querySelector('.step-num').textContent=i<n?'✓':i;
   }
+}
+function showError(msg){document.getElementById('errMsg').textContent=msg;showView('viewError');}
+function resetToUpload(){
+  pdfFile=null;pdfBase64=null;soSeKuJSON=null;transformedData=null;extractAttempts=0;
+  document.getElementById('fileInput').value='';
+  showView('viewUpload');setStep(1);
+}
+
+// === KEYS ===
+function getKeys(){return{anthropic:sessionStorage.getItem('ant')||'',sevdesk:sessionStorage.getItem('sev')||'',sheetId:sessionStorage.getItem('sid')||''};}
+function saveSetup(){
+  const ant=document.getElementById('iAnt').value.trim();
+  if(!ant){alert('Anthropic API-Key fehlt');return;}
+  sessionStorage.setItem('ant',ant);
+  sessionStorage.setItem('sev',document.getElementById('iSev').value.trim());
+  sessionStorage.setItem('sid',document.getElementById('iSheet').value.trim());
+  document.getElementById('btnReset').style.display='';
+  showView('viewUpload');setStep(1);
+}
+function resetKeys(){
+  ['ant','sev','sid'].forEach(k=>sessionStorage.removeItem(k));
+  document.getElementById('btnReset').style.display='none';
+  ['iAnt','iSev','iSheet'].forEach(id=>document.getElementById(id).value='');
+  showView('viewSetup');
+}
+window.addEventListener('DOMContentLoaded',()=>{
+  if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
 });
 
-const fmt  = n => Number(n).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtE = n => fmt(n) + " €";
-
-const ALL_VIEWS = ["viewSetup","viewUpload","viewLoading","viewPreview","viewSending","viewDone","viewError"];
-function showView(id) {
-  ALL_VIEWS.forEach(v => document.getElementById(v).classList.toggle("hidden", v !== id));
+// === GOOGLE SHEET ===
+async function fetchSheetTab(tab){
+  const {sheetId}=getKeys();
+  if(!sheetId)return null;
+  try{
+    const r=await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`);
+    if(!r.ok)return null;
+    const t=await r.text();
+    return t.split('\n')[0].replace(/^"|"$/g,'').replace(/""/g,'"').trim();
+  }catch{return null;}
 }
 
-function setStep(active) {
-  const cur = { upload:1, preview:2, sending:3, done:3, error:1 }[active] || 1;
-  [1,2,3].forEach(i => {
-    const el = document.getElementById("step" + i);
-    el.className = "step" + (i === cur ? " active" : i < cur ? " done" : "");
-    el.querySelector(".step-num").textContent = i < cur ? "✓" : i;
-  });
-}
-
-function showError(msg) {
-  document.getElementById("errorMsg").textContent = msg;
-  showView("viewError");
-  setStep("error");
-}
-
-function resetToUpload() {
-  extractedData = null;
-  document.getElementById("fileInput").value = "";
-  showView("viewUpload");
-  setStep("upload");
-}
-
-const dropZone = document.getElementById("dropZone");
-const fileInput = document.getElementById("fileInput");
-dropZone.addEventListener("click", () => fileInput.click());
-dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("drag-over"); });
-dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag-over"));
-dropZone.addEventListener("drop", e => {
-  e.preventDefault(); dropZone.classList.remove("drag-over");
-  const f = e.dataTransfer.files[0];
-  if (f?.type === "application/pdf") processFile(f);
-});
-fileInput.addEventListener("change", e => { if (e.target.files[0]) processFile(e.target.files[0]); });
-
-const SYSTEM_PROMPT = `Du bist Experte fuer das Extrahieren von Angebotsdaten aus Soliday Sonnensegel PDFs.
-Extrahiere alle Positionen und gib NUR ein JSON-Objekt zurueck - kein Markdown, keine Backticks, kein Text davor oder danach.
-Wichtig fuer "kommission": Extrahiere den exakten Wert aus dem Feld "Kommission:" im Angebot. Lasse Klammern und Zusaetze wie "(Variante)" weg, behalte den Hauptnamen.
+// === EXTRACTION PROMPT ===
+const DEFAULT_PROMPT=`Du bist Experte fuer das Extrahieren von Angebotsdaten aus Soliday Sonnensegel PDFs.
+Gib NUR ein JSON-Objekt zurueck - kein Markdown, keine Backticks, kein Text davor oder danach.
 
 Wichtig:
 - Nutze immer den VK Netto Preis (nicht EK)
 - Alle Zahlen als Dezimalpunkt (nicht Komma)
-- Artikelnummer aus der Positionszeile extrahieren
-- Fuer das Feld "system": Erkenne das Hauptsystem. Moegliche Werte:
-  "SOLIDAY-C", "SOLIDAY-CS", "SOLIDAY-X", "SOLIDAY-XS", "SOLIDAY-M", "SOLIDAY-MA",
-  "SOLIDAY-ONE", "SOLIDAY-FLEX", "SOLIDAY-SANDY", "SONNENSEGEL-MAß", "RAFF-M-DRAHTSEIL",
-  "RAFF-M-FÜHRUNGSSCHIENE"
-  Wenn "Sandy"/"Sandkasten" → "SOLIDAY-SANDY". Wenn SNAP-Teile vorkommen → "-SNAP" anhaengen.
-- Fuer "soliday_sektion": Trage den Soliday-Abschnittstitel ein, unter dem die Position steht
-  (z.B. "Segel", "Segelzubehoer", "Hardware", "Punkt A", "Punkt B" etc.)
-- Fuer "wellenlaenge_aufrollsystem_mm": Wellenlaenge in Millimetern, falls angegeben, sonst null
+- Artikelnummer exakt aus der Positionszeile extrahieren
+- "soliday_sektion": Abschnittstitel unter dem die Position steht (z.B. "Segel", "Segelzubehoer", "Hardware", "Punkt A" etc.)
+- "qm_segel": Segelflaeche in qm wenn Segeltuch, sonst null. Mehrere Segel einzeln erfassen.
+- "wellenlaenge_aufrollsystem_mm": Wellenlaenge in mm, null wenn nicht angegeben
+- "system": "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-X","SOLIDAY-XS","SOLIDAY-M","SOLIDAY-MA","SOLIDAY-ONE","SOLIDAY-FLEX","SOLIDAY-SANDY","SONNENSEGEL-MASS","RAFF-M-DRAHTSEIL","RAFF-M-FUEHRUNGSSCHIENE" oder ""
+- "kommission": Wert aus Feld "Kommission:" ohne Klammerzusaetze
 
 Format:
-{
-  "kommission": "string",
-  "datum": "string",
-  "system": "string",
-  "snap": true/false,
-  "wellenlaenge_aufrollsystem_mm": number or null,
-  "positionen": [
-    {
-      "pos": number,
-      "artikelnummer": "string",
-      "name": "string",
-      "beschreibung": "string",
-      "preis_einheit": number,
-      "menge": number,
-      "einheit": "string",
-      "gesamt": number,
-      "soliday_sektion": "string"
-    }
-  ],
-  "teuerungszuschlag_netto": number or null,
-  "netto_gesamt": number,
-  "mwst": number,
-  "brutto_gesamt": number
-}`;
+{"kommission":"string","datum":"string","system":"string","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,
+"positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null}],
+"teuerungszuschlag_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
 
-async function callClaude(base64, model) {
-  const { anthropic } = getKeys();
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": anthropic,
-      "anthropic-version": "2023-06-01",
-      "anthropic-dangerous-direct-browser-access": "true"
-    },
-    body: JSON.stringify({
-      model: model,
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [{
-        role: "user",
-        content: [
-          { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 } },
-          { type: "text", text: "Extrahiere alle Positionen aus diesem Soliday-Angebot." }
-        ]
-      }]
-    })
+// === CLAUDE API ===
+async function callClaude(base64,model,sysPrompt,userPrompt){
+  const {anthropic}=getKeys();
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':anthropic,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model,max_tokens:8192,system:sysPrompt,messages:[{role:'user',content:[
+      {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+      {type:'text',text:userPrompt||'Extrahiere alle Positionen aus diesem Soliday-Angebot.'}
+    ]}]})
   });
-
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    const errMsg = err.error?.message || JSON.stringify(err);
-    if (resp.status === 400 && /context|length|too long|too large/i.test(errMsg)) {
-      const e = new Error(errMsg);
-      e.isContextError = true;
-      throw e;
-    }
-    throw new Error(`Anthropic API Fehler ${resp.status}: ${errMsg}`);
+  if(!r.ok){
+    const e=await r.json().catch(()=>({}));
+    const msg=e.error?.message||JSON.stringify(e);
+    if(r.status===400&&/context|length|too long|too large/i.test(msg)){const ex=new Error(msg);ex.isContextError=true;throw ex;}
+    throw new Error(`Anthropic API ${r.status}: ${msg}`);
   }
-  return resp.json();
-}
-
-async function processFile(file) {
-  showView("viewLoading");
-  setStep("upload");
-  document.getElementById("progressBar").style.width = "15%";
-  document.getElementById("loadingSub").textContent = "PDF wird gelesen...";
-
-  try {
-    const base64 = await new Promise((res, rej) => {
-      const r = new FileReader();
-      r.onload = () => res(r.result.split(",")[1]);
-      r.onerror = () => rej(new Error("Datei konnte nicht gelesen werden"));
-      r.readAsDataURL(file);
-    });
-
-    document.getElementById("progressBar").style.width = "35%";
-    document.getElementById("loadingSub").textContent = "Claude Haiku analysiert Positionen...";
-
-    let data;
-    try {
-      data = await callClaude(base64, "claude-haiku-4-5-20251001");
-    } catch(e) {
-      if (e.isContextError) {
-        document.getElementById("progressBar").style.width = "45%";
-        document.getElementById("loadingSub").textContent = "Großes Angebot – wechsle zu Claude Sonnet...";
-        data = await callClaude(base64, "claude-sonnet-4-6");
-      } else {
-        throw e;
-      }
-    }
-
-    document.getElementById("progressBar").style.width = "75%";
-    const text = (data.content || []).find(b => b.type === "text")?.text || "";
-    if (!text) throw new Error("Leere Antwort von Claude");
-    const clean = text.replace(/```json\n?|```\n?/g, "").trim();
-    if (!clean.endsWith("}")) throw new Error("Claude-Antwort wurde abgeschnitten. Bitte erneut versuchen.");
-    extractedData = JSON.parse(clean);
-    document.getElementById("progressBar").style.width = "100%";
-    setTimeout(renderPreview, 300);
-  } catch(e) {
-    showError(e.message);
-  }
-}
-
-function renderPreview() {
-  const d = extractedData;
-  document.getElementById("previewTitle").textContent = d.kommission || "Angebot";
-  document.getElementById("previewMeta").textContent = `System: ${d.system || "?"} · ${d.positionen.length} Positionen · ${d.datum}`;
-  document.getElementById("previewTotal").textContent = fmtE(d.brutto_gesamt);
-
-  const teuerung = d.teuerungszuschlag_netto ? Number(d.teuerungszuschlag_netto) : 0;
-  const nettoOhne = Number(d.netto_gesamt) - teuerung;
-  document.querySelector(".table-footer").innerHTML = teuerung
-    ? `<div class="f-muted">Pos. Netto: <strong>${fmtE(nettoOhne)}</strong></div>
-       <div class="f-muted" style="color:var(--accent2)">+ Teuerungszuschlag: <strong>${fmtE(teuerung)}</strong></div>
-       <div class="f-muted">Netto gesamt: <strong>${fmtE(d.netto_gesamt)}</strong></div>
-       <div class="f-muted">MwSt.: <strong>${fmtE(d.mwst)}</strong></div>
-       <div class="f-total">${fmtE(d.brutto_gesamt)}</div>`
-    : `<div class="f-muted">Netto: <strong>${fmtE(d.netto_gesamt)}</strong></div>
-       <div class="f-muted">MwSt.: <strong>${fmtE(d.mwst)}</strong></div>
-       <div class="f-total">${fmtE(d.brutto_gesamt)}</div>`;
-
-  document.getElementById("positionsList").innerHTML = d.positionen.map(p => `
-    <div class="table-row">
-      <div class="pos-num">${p.pos}</div>
-      <div>
-        <div style="line-height:1.4">${p.name}</div>
-        <span class="pos-art">${p.artikelnummer}</span>
-      </div>
-      <div class="num-r">${fmt(p.preis_einheit)} €</div>
-      <div class="num-r">${Number(p.menge).toLocaleString("de-DE")}</div>
-      <div style="color:var(--muted)">${p.einheit}</div>
-      <div class="ges">${fmt(p.gesamt)} €</div>
-    </div>
-  `).join("");
-
-  showView("viewPreview");
-  setStep("preview");
-}
-
-async function sevGet(path) {
-  const { sevdesk } = getKeys();
-  const r = await fetch(`${SEVDESK_BASE}${path}`, { headers: { Authorization: sevdesk } });
-  if (!r.ok) throw new Error(`sevDesk GET ${path} HTTP ${r.status}`);
   return r.json();
 }
 
-async function sevPost(path, body) {
-  const { sevdesk } = getKeys();
-  const r = await fetch(`${SEVDESK_BASE}${path}`, {
-    method: "POST",
-    headers: { Authorization: sevdesk, "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+// === DRAG & DROP ===
+const dz=document.getElementById('dropZone'),fi=document.getElementById('fileInput');
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');const f=e.dataTransfer.files[0];if(f?.type==='application/pdf')processFile(f);});
+fi.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0]);});
+
+// === STEP 1 ===
+async function processFile(file,correctionHint){
+  if(file)pdfFile=file;
+  showView('viewLoading');setStep(1);
+  const prog=document.getElementById('progBar');
+  const sub=document.getElementById('loadSub');
+  try{
+    if(!pdfBase64||file){
+      sub.textContent='PDF wird gelesen...';
+      prog.style.width='15%';
+      pdfBase64=await new Promise((res,rej)=>{
+        const r=new FileReader();
+        r.onload=()=>res(r.result.split(',')[1]);
+        r.onerror=()=>rej(new Error('Datei konnte nicht gelesen werden'));
+        r.readAsDataURL(pdfFile);
+      });
+    }
+    prog.style.width='25%';
+    sub.textContent='Extraktions-Prompt wird geladen...';
+    let prompt=await fetchSheetTab('Extraktion-Prompt')||DEFAULT_PROMPT;
+    if(correctionHint)prompt+=`\n\nKorrekturhinweis: ${correctionHint}`;
+    prog.style.width='35%';
+    sub.textContent='Claude Haiku analysiert Positionen...';
+    let data;
+    try{data=await callClaude(pdfBase64,'claude-haiku-4-5-20251001',prompt);}
+    catch(e){
+      if(e.isContextError){
+        prog.style.width='45%';sub.textContent='Großes Angebot – wechsle zu Claude Sonnet...';
+        data=await callClaude(pdfBase64,'claude-sonnet-4-6',prompt);
+      }else throw e;
+    }
+    prog.style.width='75%';
+    const text=(data.content||[]).find(b=>b.type==='text')?.text||'';
+    if(!text)throw new Error('Leere Antwort von Claude');
+    const clean=text.replace(/```json\n?|```\n?/g,'').trim();
+    if(!clean.endsWith('}'))throw new Error('Claude-Antwort abgeschnitten. Bitte erneut versuchen.');
+    soSeKuJSON=JSON.parse(clean);
+    prog.style.width='100%';
+    setTimeout(renderStep2,300);
+  }catch(e){showError(e.message);}
+}
+
+// === STEP 2 ===
+function validateSum(d){
+  const sumPos=d.positionen.reduce((s,p)=>s+(p.preis_einheit*p.menge),0);
+  const teu=Number(d.teuerungszuschlag_netto||0);
+  const total=sumPos+teu;
+  const diff=Math.abs(total-Number(d.netto_gesamt));
+  return{sumPos,teu,total,diff,ok:diff<0.02};
+}
+function renderStep2(){
+  const d=soSeKuJSON;
+  const v=validateSum(d);
+  const badge=document.getElementById('valBadge');
+  if(!v.ok){
+    if(extractAttempts<1){
+      extractAttempts++;
+      badge.innerHTML=`<div class="val-err">✕ Abweichung ${fmtE(v.diff)} – automatische Neuextraktion...</div>`;
+      setTimeout(()=>processFile(null,'Bitte alle Positionen und Preise nochmals sehr genau pruefen. Die berechnete Summe der Positionen muss exakt mit dem Netto-Gesamt uebereinstimmen.'),800);
+      return;
+    }
+    badge.innerHTML=`<div class="val-err">✕ Abweichung ${fmtE(v.diff)} – bitte manuell prüfen</div>`;
+  }else{
+    extractAttempts=0;
+    badge.innerHTML=`<div class="val-ok">✓ Summenprüfung OK — ${fmtE(v.total)} stimmt mit Netto überein</div>`;
+  }
+  document.getElementById('s2meta').textContent=`${d.positionen.length} Positionen`;
+  document.getElementById('s2info').innerHTML=[
+    `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`,
+    `<span>Datum: <strong>${d.datum||'–'}</strong></span>`,
+    `<span>System: <strong>${d.system||'–'}</strong></span>`,
+    d.wellenlaenge_aufrollsystem_mm?`<span>Welle: <strong>${d.wellenlaenge_aufrollsystem_mm} mm</strong></span>`:'',
+    d.snap?`<span style="color:var(--warn)">SNAP</span>`:''
+  ].filter(Boolean).join('');
+  document.getElementById('s2rows').innerHTML=d.positionen.map(p=>`
+    <tr>
+      <td>${p.pos}</td>
+      <td><span class="tag">${p.artikelnummer||'–'}</span></td>
+      <td><span class="tag tag-s">${p.soliday_sektion||'–'}</span></td>
+      <td><div>${p.name}</div>${p.qm_segel?`<div style="font-size:10px;color:var(--muted)">${p.qm_segel} m²</div>`:''}</td>
+      <td class="num-r">${Number(p.menge).toLocaleString('de-DE')}</td>
+      <td style="color:var(--muted)">${p.einheit}</td>
+      <td class="num-r">${fmt(p.preis_einheit)}</td>
+      <td class="num-r"><strong>${fmt(p.gesamt)}</strong></td>
+    </tr>`).join('');
+  const teu=Number(d.teuerungszuschlag_netto||0);
+  document.getElementById('s2footer').innerHTML=
+    `<span style="color:var(--muted)">Netto Positionen: <strong>${fmtE(v.sumPos)}</strong></span>`+
+    (teu?`<span style="color:var(--accent2)">+ Teuerungszuschlag: <strong>${fmtE(teu)}</strong></span>`:'')+
+    `<span style="color:var(--muted)">Netto gesamt: <strong>${fmtE(d.netto_gesamt)}</strong></span>`+
+    `<span style="color:var(--muted)">MwSt.: <strong>${fmtE(d.mwst)}</strong></span>`+
+    `<span style="font-size:16px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt)}</strong></span>`;
+  if(pdfFile){const url=URL.createObjectURL(pdfFile);document.getElementById('pdfFrame').src=url;}
+  showView('viewStep2');setStep(2);
+}
+async function reextract(){
+  const hint=document.getElementById('chatStep2').value.trim();
+  extractAttempts=0;
+  await processFile(null,hint);
+}
+
+// === STEP 3 TRANSFORMATION ===
+const WEGLASS=['00E13000735','00E13000648','00E13000649','00E13002106'];
+const NAMEN={
+  '00E13002183':'Aufpreis für Rohrmotor mit Funkempfänger',
+  '00E13000850':'Anschlussleitung Becker Motor 2m weiß',
+  '00E13001921':'Funk-Handsender 1-Kanal - SWC541+',
+  '00E13001922':'Funk-Handsender 8-Kanal - SWC548+',
+  '71003A045':'Sonnen- Windsensor mit Solarzelle - Funk - SC861+',
+  '71003A032':'Sonnen- Windsensor mit Stromanschluss - SC81',
+  '00E13001919':'Sonnen- Windsensor mit Stromanschluss - SC811+',
+  '00E13002076':'SOLIDAY-ONE Bedienset für Aluminium-Mast',
+  '00E13002077':'SOLIDAY-ONE Bedienset für Wandmontage',
+  '00E13002063':'Bedienseil 8mm schwarz/orange',
+  'VPVSTEILEONE':'Teile für Verspannungsset SOLIDAY-ONE',
+  'VPVSTEILE':'Teile für Verspannungsset SOLIDAY-M',
+  'VPVS008':'Drahtseil Ø4mm mit Gabelterminal L=8m',
+  'VPVS009':'Drahtseil Ø4mm mit Gabelterminal L=9m',
+  'VPVS011':'Drahtseil Ø4mm mit Gabelterminal L=11m',
+  'VPVS013':'Drahtseil Ø4mm mit Gabelterminal L=13m',
+  '00E13000059':'Seilstopp-Winsch mit Kurbel',
+  '00E13000591':'Snap-Design Winsch inkl. 25cm Kurbel & Adapterplatte',
+  '00E13000743':'Snap-Grundplatte mit Fallstoppklemme',
+  '00E13000335':'Droppole Mast l=3m - silber eloxiert','00E13000338':'Droppole Mast l=3m - schwarz eloxiert',
+  '00E13000347':'Droppole Mast l=4m - schwarz eloxiert','00E13000348':'Droppole Mast l=5m - schwarz eloxiert',
+  '00E13000336':'Droppole Mast l=4m - silber eloxiert','00E13000337':'Droppole Mast l=5m - silber eloxiert',
+  '00E13000235':'Aluminium Rund-Mast l=bis 3m - silber eloxiert','00E13000238':'Aluminium Rund-Mast l=bis 6m - silber eloxiert',
+  '00E13001650':'Aluminium Rund-Mast l=bis 3m - anthrazit','00E13001652':'Aluminium Rund-Mast l=bis 6m - anthrazit',
+  '00E13000135':'Edelstahl Rund-Mast l=3m - geschliffen','00E13001766':'Edelstahl Rund-Mast l=bis 6m - V4A geschliffen',
+  '00E13000131':'Versteifungsrohr für Aluminium Rund-Mast','00E13000096':'Versteifungsrohr für Edelstahl Rund-Mast',
+  '00E13001135':'Zuschnitt auf Maß - Droppole Mast','00E13000133':'Biegung Aluminium-Mast ohne Versteifungsrohr',
+  '00E13000217':'Abdeckkappe Design für Aluminium Rund-Mast','00E13000216':'Abdeckkappe Design für Edelstahl Rund-Mast',
+  '00E13001689':'Abdeckkappe Design für Aluminium Rund-Mast - anthrazit',
+  '00E13000052':'Höhenverstellung - Gleitschiene 1,5m','00E13000027':'Höhenverstellung - Gleitschiene 1,5m',
+  '00E13000204':'Höhenverstellung - Gleitschiene 1,5m - mit Seilbremse','00E13000764':'Höhenverstellung - Gleitschiene 1,5m - Droppole',
+  '00E13000603':'Gleitschiene 1,5m',
+  '00E13000227':'Schwerlast-Schraubfundament','00E13000324':'Droppole Dorn für Schraubfundament',
+  '00E13001870':'Bodenplatte 10° Droppole','00E13001872':'Bodenplatte 2° Droppole',
+  '00E13001782':'Bodenplatte für Edelstahl Rund-Mast',
+  '00E13001604':'Bodenplatte 10° für Aluminium Rund-Mast','00E13001606':'Bodenplatte 0° für Aluminium Rund-Mast',
+  '00E13000244':'Bodenhülse Aluminium Rund-Mast',
+  '00E13000302':'Base Cube Grundgestell f. Mast Droppole 10° Neigung',
+  '00E13000304':'Base Cube Abdeckungen 5tlg. Holz "Esche"',
+  '00E13001600':'BaseCube Beton L-Form für DP, mit Bodenhülse und Dorn, H=450',
+  '00E13001412':'Abdeckblende für Droppole-Mast 2-teilig',
+  '00E13000709':'Edelstahl Wandbefestigung 150/150/6','00E13000711':'Edelstahl Wandbefestigung 50/270/8 - senkrecht',
+  '00E13000046':'Edelstahl Wandbefestigung CS 150/156/6','00E13002080':'Edelstahl Wandbefestigung 150/280/6 mit 2 Laschen',
+  '00E13001855':'Edelstahl Wandbefestigung 150/150/6 - edelstahl poliert',
+  '00E13001857':'Edelstahl Wandbefestigung 50/270/8 - senkrecht - edelstahl poliert',
+  '00E13001856':'Edelstahl Wandbefestigung 270/50/8 - waagrecht - edelstahl poliert',
+  '00E13001910':'Edelstahl Wandplatte rund ø180mm h=149mm',
+  '00E13000243':'Wandschelle für Aluminium Rund-Mast','00E13000110':'Gegenplatte für Wandschelle Aluminium Rund-Mast',
+  '00E13001940':'Design Wandhalterung für Aluminium Rund-Mast - 5cm',
+  '00E13000248':'Design Wandhalterung für Edelstahl Rund-Mast - 5cm',
+  '00E13000320':'Design Wandhalterung für Droppole - 5cm',
+  '00E13000321':'Design Wandhalterung für Droppole - 10cm',
+  '00E13000322':'Design Wandhalterung für Droppole - 20cm',
+  '00E13000112':'Befestigungsplatte für Gleitschiene',
+  '00E13001787':'Design-Adapter mit Lasche Droppole','00E13001742':'Design-Kreuzadapter mit Bügel',
+  '00E13001741':'Design-Kreuzadapter','00E13000206':'Droppole Ring-Adapterplatte komplett',
+  '00E13001937':'Droppole Ring-Adapterplatte komplett für Wellenbefestigung',
+  '00E13001735':'Design-Mastschelle für Aluminium Rund-Mast','00E13001734':'Design-Mastschelle für Edelstahl Rund-Mast',
+  '00E13000843':'Seilsicherung komplett zum Verstauen des Seils',
+  '00E13002149':'Schwerlastrolle PULLEY-X10','00E13001965':'Schwerlastrolle für Seile bis 8mm',
+  '00E13000042':'Professionelle Seilrolle 8 für Seile bis 8mm',
+  '00E13000417':'Schnappschäkel Edelstahl','00E13000026':'Schäkel mit Schnellverschluss Edelstahl',
+  '00E13000066':'Ringbolzenset M8x80','00E13000127':'Ringbolzen M8x100mm',
+  '00E13001325':'Reinigungs- und Pflegeset C/CS','00E13001321':'Reinigungs- und Pflegeset',
+  '00E13001416':'Segelplatten*',
+  '99FRACHT5':'Transportzuschlag bis 5m Länge','99FRACHT6':'Transportzuschlag ab 5m Länge'
+};
+const NR2SEK={};
+['00E13002183','00E13000850','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002076','00E13002077','00E13002063','VPVSTEILEONE','VPVSTEILE','VPVS008','VPVS009','VPVS011','VPVS013','00E13000059','00E13000591','00E13000743'].forEach(n=>NR2SEK[n]='segelsystem');
+['00E13000335','00E13000338','00E13000347','00E13000348','00E13000336','00E13000337','00E13000235','00E13000238','00E13001650','00E13001652','00E13000135','00E13001766','00E13000131','00E13000096','00E13001135','00E13000133','00E13000217','00E13000216','00E13001689','00E13000052','00E13000027','00E13000204','00E13000764'].forEach(n=>NR2SEK[n]='masten');
+['00E13000227','00E13000324','00E13001870','00E13001872','00E13001782','00E13001604','00E13001606','00E13000244','00E13000302','00E13000304','00E13001600','00E13001412'].forEach(n=>NR2SEK[n]='fundamente');
+['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13001940','00E13000248','00E13000320','00E13000321','00E13000322','00E13000112','00E13001025','00E13000603'].forEach(n=>NR2SEK[n]='wandbefestigungen');
+['00E13001787','00E13001742','00E13001741','00E13000206','00E13001937','00E13001735','00E13001734','00E13000843','00E13002149','00E13001965','00E13000042','00E13000026','00E13000066','00E13000127'].forEach(n=>NR2SEK[n]='zubehoer');
+['00E13001416','00E13001325','00E13001321'].forEach(n=>NR2SEK[n]='segeltuch');
+['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
+
+function assignSek(p){
+  const nr=p.artikelnummer;
+  if(NR2SEK[nr])return NR2SEK[nr];
+  // Schnappschäkel: nur unter Hardware → Zubehör, sonst Segeltuch
+  if(nr==='00E13000417'){return(p.soliday_sektion||'').toLowerCase().includes('hardware')?'zubehoer':'segeltuch';}
+  // Dyneema Seil → immer Zubehör
+  if(nr==='00E13000107')return'zubehoer';
+  const s=(p.soliday_sektion||'').toLowerCase();
+  if(s.includes('hardware'))return'zubehoer';
+  if(s.includes('punkt')||s.includes('point'))return'segelsystem';
+  if(s.includes('montage')||s.includes('fracht'))return'montage';
+  if(s.includes('zubeh'))return'segeltuch'; // Segelzubehör mostly Segeltuch
+  if(s.includes('segel'))return'segeltuch';
+  return'zubehoer';
+}
+
+function transformiere(json){
+  const sys=(json.system||'').toUpperCase();
+  const removed=[];
+  let pos=json.positionen.filter(p=>{if(WEGLASS.includes(p.artikelnummer)){removed.push({...p});return false;}return true;});
+  // Apply names
+  pos=pos.map(p=>{const p2={...p};if(NAMEN[p2.artikelnummer])p2.name=NAMEN[p2.artikelnummer];else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}return p2;});
+  // Merge identical Art.-Nr.
+  const merged=[];
+  pos.forEach(p=>{
+    if(!p.artikelnummer){merged.push({...p});return;}
+    const ex=merged.find(m=>m.artikelnummer===p.artikelnummer);
+    if(ex){ex.menge=+(ex.menge+p.menge).toFixed(4);ex.gesamt=+(ex.gesamt+p.gesamt).toFixed(2);ex.preis_einheit=ex.menge?ex.gesamt/ex.menge:ex.preis_einheit;}
+    else merged.push({...p});
   });
-  const responseText = await r.text();
-  let responseJson;
-  try { responseJson = JSON.parse(responseText); } catch { responseJson = responseText; }
-  if (!r.ok) {
-    const pretty = obj => JSON.stringify(obj, null, 2).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    document.getElementById("errorMsg").innerHTML =
-      `<strong style="color:#ff8888">HTTP ${r.status} – ${responseJson?.error?.message || "Bad Request"} (errorCode ${responseJson?.error?.errorCode || "?"})</strong>\n\n` +
-      `<span style="color:#888">POST ${path}</span>\n\n` +
-      `<strong style="color:#ccc">REQUEST BODY:</strong>\n${pretty(body)}\n\n` +
-      `<strong style="color:#ccc">RESPONSE:</strong>\n${pretty(responseJson)}`;
-    showView("viewError");
-    setStep("error");
-    throw new Error("__debug__");
+  // Assign sections
+  const map={segeltuch:[],segelsystem:[],masten:[],fundamente:[],wandbefestigungen:[],zubehoer:[],montage:[]};
+  merged.forEach(p=>map[assignSek(p)].push(p));
+  // Segeltuch placeholder
+  const stName=['SOLIDAY-M','SOLIDAY-MA'].includes(sys)?'Segeltuch - Austronet 960':'Segeltuch - Austrosail Nano';
+  map.segeltuch.unshift({artikelnummer:'',name:stName,beschreibung:'Alternativ:\n[Preis] € Stoff 1\n[Preis] € Stoff 2\nFarbe nach Wahl aus Farbfächer des Herstellers',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true});
+  // Montage placeholders
+  const instNr={'SOLIDAY-C':'INST-C','SOLIDAY-CS':'INST-CS','SOLIDAY-ONE':'INST-ONE','SOLIDAY-M':'INST-M'}[sys]||'INST-X';
+  const sysLabel=sys.replace('SOLIDAY-','Soliday ');
+  map.montage.unshift(
+    {artikelnummer:instNr,name:`System Installation - ${sysLabel}`,beschreibung:'Professionelle Ausführung der kompletten Systemmontage durch 2 Soliday Fachmonteure',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true},
+    {artikelnummer:'SVC-LOG',name:'Service & Logistik (Zone 2)',beschreibung:'2 Termine (Grund- & Endmontage) inkl. Rüstzeiten & Maschinenpauschale',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true}
+  );
+  const hasMasten=map.masten.length>0;
+  map.montage.push({artikelnummer:hasMasten?'VORFRACHT':'VERSAND',name:hasMasten?'Vorfrachtpauschale':'Versandkosten',beschreibung:hasMasten?'Baustromgestellung bauseits: 230V - 16A':'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true});
+  // Base Cube rule
+  if(map.fundamente.some(p=>p.artikelnummer==='00E13000302')){
+    const idx=map.fundamente.findIndex(p=>p.artikelnummer==='00E13000304');
+    map.fundamente.splice(idx>=0?idx+1:map.fundamente.length,0,{artikelnummer:'',name:'Beschwerung Base Cube',beschreibung:'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0});
   }
-  return responseJson;
+  const ORDER=[{id:'segeltuch',name:'Segeltuch'},{id:'segelsystem',name:'Segelsystem'},{id:'masten',name:'Masten'},{id:'fundamente',name:'Fundamente'},{id:'wandbefestigungen',name:'Wandbefestigungen'},{id:'zubehoer',name:'Zubehör'},{id:'montage',name:'Montage und Fracht'}];
+  return{sektionen:ORDER.map(s=>({...s,positionen:map[s.id]})).filter(s=>s.positionen.length),removedPositionen:removed};
 }
 
-function getBetreff(system, snap, kommission) {
-  const s = (system || "").toUpperCase();
-  let base;
-  if (s === "SOLIDAY-C")         base = "Angebot - SOLIDAY C";
-  else if (s === "SOLIDAY-CS")   base = "Angebot - SOLIDAY CS";
-  else if (s === "SOLIDAY-X")    base = "Angebot - SOLIDAY X";
-  else if (s === "SOLIDAY-XS")   base = "Angebot - SOLIDAY XS";
-  else if (s === "SOLIDAY-M")    base = "Angebot - SOLIDAY M";
-  else if (s === "SOLIDAY-MA")   base = "Angebot - SOLIDAY MA";
-  else if (s === "SOLIDAY-ONE")  base = "Angebot - SOLIDAY ONE";
-  else if (s === "SOLIDAY-FLEX") base = "Angebot - SOLIDAY FLEX";
-  else if (s === "SOLIDAY-SANDY") base = "Angebot - SOLIDAY SANDY";
-  else if (s === "SONNENSEGEL-MAß" || s === "SONNENSEGEL-MAß-SNAP")
-    base = snap ? "Angebot - SOLIDAY Fix Segel mit SNAP System" : "Angebot - SOLIDAY Fix Segel";
-  else if (s === "RAFF-M-DRAHTSEIL")       base = "Angebot - RAFF M Drahtseil";
-  else if (s === "RAFF-M-FÜHRUNGSSCHIENE") base = "Angebot - RAFF M Führungsschiene";
-  else base = "Angebot";
-  const kom = (kommission || "").trim();
-  return kom ? `${base} - ${kom}` : base;
+function goToStep3(){transformedData=transformiere(soSeKuJSON);renderStep3();}
+async function retransform(){
+  const hint=document.getElementById('chatStep3').value.trim();
+  if(hint){extractAttempts=0;await processFile(null,hint);}
+  else{transformedData=transformiere(soSeKuJSON);renderStep3();}
 }
 
-function getHeadText(system, snap) {
-  const s = (system || "").toUpperCase();
-  if (s === "SOLIDAY-SANDY") return "Sonnensegel & Sandkastenabdeckung";
-  if (s === "SONNENSEGEL-MAß" || s === "SONNENSEGEL-MAß-SNAP")
-    return snap ? "Festes Sonnensegel nach Maß mit komfortabler SNAP System Bedienung" : "Festes Sonnensegel nach Maß";
-  if (s === "SOLIDAY-FLEX")  return "Robustes aufrollbares Sonnensegel mit SNAP System";
-  if (s === "SOLIDAY-M" || s === "SOLIDAY-MA") return "Manuell aufrollbares Sonnensegel";
-  if (s === "SOLIDAY-ONE")   return "Manuell aufrollbares Premium Sonnensegel mit Ein-Punkt Bedienung";
-  if (s === "SOLIDAY-X")     return "Semi-automatisch aufrollbares Sonnensegel";
-  if (s === "SOLIDAY-XS")    return "Semi-automatisch aufrollbares Markisensegel";
-  if (s === "SOLIDAY-C")     return "Elektrisch aufrollbares Sonnensegel";
-  if (s === "SOLIDAY-CS")    return "Elektrisch aufrollbares Markisensegel";
-  if (s === "RAFF-M-DRAHTSEIL")       return "Manuell raffbares Sonnensegel mit Drahtseil Aufhängung";
-  if (s === "RAFF-M-FÜHRUNGSSCHIENE") return "Manuell raffbares Sonnensegel mit Führungsschiene";
-  return "";
+function renderStep3(){
+  const{sektionen,removedPositionen}=transformedData;
+  const solidayTotal=Number(soSeKuJSON.netto_gesamt);
+  const skSum=sektionen.reduce((s,sek)=>s+sek.positionen.reduce((ss,p)=>ss+(p.gesamt||0),0),0);
+  const remSum=removedPositionen.reduce((s,p)=>s+(p.gesamt||0),0);
+  const check=skSum+remSum;
+  const ok=Math.abs(check-solidayTotal)<0.02;
+  document.getElementById('s3sum').innerHTML=
+    `<div class="sum-box"><div class="lbl">Soliday Netto</div><div class="val">${fmtE(solidayTotal)}</div></div>`+
+    `<div class="sum-box"><div class="lbl">SoSeKu Summe</div><div class="val">${fmtE(skSum)}</div></div>`+
+    `<div class="sum-box"><div class="lbl">Entfernte Pos.</div><div class="val">${fmtE(remSum)}</div></div>`+
+    `<div class="sum-box ${ok?'ok':'err'}"><div class="lbl">Prüfung</div><div class="val">${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
+  document.getElementById('s3sektionen').innerHTML=sektionen.map(sek=>`
+    <div class="sektion-block">
+      <div class="sektion-title">${sek.name}</div>
+      <div class="sektion-body">
+        <table class="jtable">
+          <thead><tr><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
+          <tbody>${sek.positionen.map(p=>`
+            <tr style="${p._gs?'opacity:.55':''}">
+              <td><span class="tag">${p.artikelnummer||'–'}</span></td>
+              <td><div>${p.name}</div>${p._gs?'<div style="font-size:9px;color:var(--warn)">&Oslash; Preis aus Google Sheet (Schritt 5)</div>':''}</td>
+              <td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td>
+              <td style="color:var(--muted)">${p.einheit||'–'}</td>
+              <td class="num-r">${p._gs?'–':fmt(p.preis_einheit)}</td>
+              <td class="num-r"><strong>${p._gs?'–':fmt(p.gesamt)}</strong></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`).join('');
+  showView('viewStep3');setStep(3);
 }
 
-const FOOT_TEXT = `<p style="font-size:8pt">Das Angebot ist gültig innerhalb 30 Tage ab Angebotslegung, bzw. bis zum Erscheinen einer neuen Preisliste oder deren Aktualisierungen.<br><br>*Schraubfundamente sind nur bei gesetztem Boden bis Bodenklasse III möglich.<br>Bei der Verwendung von Schraubfundamenten müssen alle Pläne von evtl. Leitungen im Boden vorliegen.<br>Ein Schraubfundament wird ausnahmslos nur mit der ausdrücklichen Einwilligung des Grundstück bzw. Hausbesitzers gesetzt.<br>Für evtl. Folgeschäden trifft Sonnensegel Kugelmann keine Schuld und Haftung.<br><br>Soliday Sonnensegel sind nicht für außergewöhnliche Umwelteinflüsse konstruiert und sollten bei Unwettern & im Winter abgebaut werden bzw. aufrollbare Systeme eingerollt werden. Beschädigungen aufgrund von Überlast durch Umwelteinflüsse liegen außerhalb der Garantie.</p>`;
-
-async function startTransfer() {
-  showView("viewSending");
-  setStep("sending");
-  const bar = document.getElementById("sendBar");
-  const sub = document.getElementById("sendingSub");
-
-  try {
-    sub.textContent = "Benutzer wird geladen...";
-    bar.style.width = "15%";
-    const sevUserData = await sevGet("/SevUser?limit=1");
-    const sevUser = (sevUserData.objects || [])[0];
-    if (!sevUser) throw new Error("SevUser nicht gefunden – bitte API-Key prüfen.");
-
-    sub.textContent = "Import-Kunde wird gesucht...";
-    bar.style.width = "30%";
-    const contacts = await sevGet("/Contact?limit=200&depth=0");
-    const allContacts = contacts.objects || [];
-    const customer = allContacts.find(c =>
-      (c.name||"").toLowerCase().includes("import") ||
-      (c.customerNumber||"").toLowerCase().includes("import")
-    );
-    if (!customer) {
-      const sample = allContacts.slice(0,8).map(c => `"${c.name}" (${c.customerNumber})`).join(", ");
-      throw new Error(`Import-Kunde nicht gefunden.\nVorhandene (erste 8): ${sample}`);
-    }
-
-    sub.textContent = "Einheiten werden geladen...";
-    bar.style.width = "45%";
-    const unitiesData = await sevGet("/Unity?limit=50");
-    const unities = unitiesData.objects || [];
-    const defaultUnity = unities.find(u => /stk|stueck|stück|pc|pcs/i.test(u.name))
-                      || unities.find(u => String(u.id) === "1")
-                      || unities[0];
-    if (!defaultUnity) throw new Error("Keine Einheiten gefunden.");
-
-    function findUnity(einheit) {
-      const n = (einheit||"").toLowerCase().replace(/\./g,"").trim();
-      if (["m2","m²","qm"].includes(n)) return unities.find(u => /m.?2|qm/i.test(u.name)) || defaultUnity;
-      if (["m","lm","lfm"].includes(n)) return unities.find(u => /^(lm|lfm|m)$/i.test((u.name||"").trim())) || defaultUnity;
-      if (["h","std"].includes(n)) return unities.find(u => /std|stunde|hour/i.test(u.name)) || defaultUnity;
-      return defaultUnity;
-    }
-
-    sub.textContent = "Positionen werden aufgebaut...";
-    bar.style.width = "60%";
-
-    const orderPosSave = extractedData.positionen.map((pos, i) => ({
-      objectName: "OrderPos",
-      mapAll: "true",
-      part: null,
-      quantity: Number(pos.menge),
-      price: String(Number(pos.preis_einheit).toFixed(2)),
-      name: String(pos.name),
-      unity: { id: String(findUnity(pos.einheit).id), objectName: "Unity" },
-      positionNumber: i,
-      text: null,
-      discount: 0,
-      optional: false,
-      taxRate: 19
-    }));
-
-    const teuerung = extractedData.teuerungszuschlag_netto;
-    const hasTeuerung = teuerung && Number(teuerung) !== 0;
-
-    sub.textContent = "Angebotsnummer wird geholt...";
-    bar.style.width = "65%";
-    const nextNumData = await sevGet("/Order/Factory/getNextOrderNumber?orderType=AN&useNextNumber=true");
-    const orderNumber = nextNumData.objects || nextNumData.number || `AN-${Date.now()}`;
-
-    const today = new Date();
-    const pad = n => String(n).padStart(2, "0");
-    const offerDate = `${pad(today.getDate())}.${pad(today.getMonth()+1)}.${today.getFullYear()}`;
-
-    const addrParts = [
-      customer.name,
-      customer.street || null,
-      (customer.zipCode || customer.zip) && customer.city
-        ? `${customer.zipCode || customer.zip} ${customer.city}`
-        : customer.city || null
-    ].filter(Boolean);
-    const address = addrParts.join("\n") || customer.name || "Import";
-
-    sub.textContent = "Angebot wird in sevdesk angelegt...";
-    bar.style.width = "80%";
-
-    const payload = {
-      order: {
-        id: null, objectName: "Order", mapAll: true,
-        orderNumber, orderDate: offerDate, status: 100,
-        contact: { id: String(customer.id), objectName: "Contact" },
-        header: getBetreff(extractedData.system, extractedData.snap, extractedData.kommission),
-        headText: getHeadText(extractedData.system, extractedData.snap),
-        footText: FOOT_TEXT,
-        address,
-        addressCountry: { id: "1", objectName: "StaticCountry" },
-        version: 0, smallSettlement: 0,
-        contactPerson: { id: String(sevUser.id), objectName: "SevUser" },
-        taxRate: 19, discount: 0, discountTime: hasTeuerung ? 1 : 0,
-        taxSet: null, taxText: "Umsatzsteuer 19%",
-        taxRule: { id: "1", objectName: "TaxRule" },
-        orderType: "AN", currency: "EUR", showNet: 1, sendType: "VPR"
-      },
-      orderPosSave,
-      orderPosDelete: null,
-      discountSave: hasTeuerung ? [{
-        objectName: "Discounts", mapAll: true,
-        discount: false,
-        text: "Temporäre Anpassung aufgrund von Rohstoff- & Energiekosten",
-        percentage: false,
-        value: Number(Number(teuerung).toFixed(2))
-      }] : null,
-      discountDelete: null
-    };
-
-    const offerResp = await sevPost("/Order/Factory/saveOrder", payload);
-    const offer = offerResp?.objects?.order || offerResp?.objects || offerResp;
-    if (!offer?.id) throw new Error("Keine Angebots-ID.\nAntwort: " + JSON.stringify(offerResp).substring(0,400));
-
-    bar.style.width = "100%";
-    document.getElementById("doneLink").href = `https://my.sevdesk.de/#/ar/order/detail/id/${offer.id}`;
-    setTimeout(() => { showView("viewDone"); setStep("done"); }, 300);
-
-  } catch(e) {
-    if (e.message !== "__debug__") showError(e.message);
-  }
+// === STEP 4 ===
+function selZone(n){
+  selZoneNr=n;
+  document.querySelectorAll('.zone-item').forEach((el,i)=>el.classList.toggle('sel',i+1===n));
+}
+function goToStep4(){showView('viewStep4');setStep(4);}
+function goToStep5(){
+  fragebogen={
+    wandart:document.querySelector('input[name="wand"]:checked')?.value||'ziegel-10',
+    zone:selZoneNr,
+    dachterrasse:document.getElementById('cbDach').checked,
+    freitext:document.getElementById('fgFrei').value
+  };
+  showView('viewStep5');setStep(5);
 }
 </script>
-
 </body>
 </html>
