@@ -6,14 +6,14 @@ A web-based tool that converts Soliday solar sail offer PDFs into structured sev
 
 **Flow:** Soliday PDF → Claude API (extraction) → Kugelmann transformation rules → Preview → sevdesk API (import)
 
-**Current deliverable:** `soliday-kugelmann-sevdesk.html` — a single-file HTML/JS tool that runs entirely in the browser. No backend. No build step.
+**Current deliverable:** `index.html` — a single-file HTML/JS tool that runs entirely in the browser. No backend. No build step. Served via GitHub Pages.
 
 ---
 
 ## Architecture
 
 ```
-soliday-kugelmann-sevdesk.html
+index.html
 ├── CSS (embedded)
 ├── HTML views (setup | upload | loading | preview | sending | done | error)
 └── JS (embedded)
@@ -388,11 +388,11 @@ Wave length from Art.-Nr. suffix (e.g. `78V1ONE09` → 9m, `70001B011` → 11m).
 
 ## File Reference
 
-| File                             | Description                                                         |
-|----------------------------------|---------------------------------------------------------------------|
-| `soliday-kugelmann-sevdesk.html` | Main tool — single HTML file, no dependencies                       |
-| `soliday-sevdesk05-12-02.txt`    | Original tool (direct Soliday→sevdesk, no Kugelmann transformation) |
-| `Anpassungsregeln_v03.txt`       | Transformation rules document (partial, session continues)          |
+| File                          | Description                                                         |
+|-------------------------------|---------------------------------------------------------------------|
+| `index.html`                  | Current tool — single HTML file, served via GitHub Pages            |
+| `soliday-sevdesk05-12-02.txt` | Original tool (direct Soliday→sevdesk, no Kugelmann transformation) |
+| `Anpassungsregeln_v03.txt`    | Transformation rules document (partial, session continues)          |
 
 ---
 
@@ -401,7 +401,7 @@ Wave length from Art.-Nr. suffix (e.g. `78V1ONE09` → 9m, `70001B011` → 11m).
 - **No build system** — pure HTML/CSS/JS, open directly in browser or upload to server
 - **API key storage** — `sessionStorage` only, cleared on tab close
 - **Error handling** — all API errors show full HTTP status + response body in error view
-- **Timestamp** — visible in header subtitle for version identification
+- **Timestamp** — visible in header subtitle (`YYYY-MM-DD` format); always update before every commit and push
 - **Haiku → Sonnet fallback** — large PDFs that exceed Haiku context automatically retry with Sonnet
 
 ---
