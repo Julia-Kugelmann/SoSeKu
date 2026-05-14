@@ -407,7 +407,7 @@ function parseCSV(text){
     const row=[];let cell='',q=false;
     for(let i=0;i<line.length;i++){
       const c=line[i];
-      if(c==='"'){if(q&&line[i+1]==='"'){cell+='"';i++;}else q=!q;}
+      if(c=='"'){if(q&&line[i+1]=='"'){cell+='"';i++;}else q=!q;}
       else if(c===','&&!q){row.push(cell.trim());cell='';}
       else cell+=c;
     }
@@ -931,7 +931,7 @@ function applyPrices5(){
       const si=parseInt(document.getElementById('sailStoffSel')?.value||'0');
       const p=parseFloat(document.getElementById('sailManPreis')?.value||'0')||0;
       const sn=stoffe[si]?.name||stoffe[0]?.name||'Austrosail Nano';
-      newSail=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:`Alternativ:\n${fmtE(p)} ${sn}\nFarbe nach Wahl aus Farbänfacher des Herstellers`,preis_einheit:p,menge:1,einheit:'pauschal',gesamt:p}];
+      newSail=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:`Alternativ:\n${fmtE(p)} ${sn}\nFarbe nach Wahl aus Farbfächer des Herstellers`,preis_einheit:p,menge:1,einheit:'pauschal',gesamt:p}];
     } else {
       newSail=_sailPos.map((sail,si)=>{
         const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
@@ -943,7 +943,7 @@ function applyPrices5(){
         const desc='Alternativ:\n'+stoffe.map((s,fi)=>{
           const tot=+((qm+2)*(allP[fi]||0)).toFixed(2);
           return `${fmtE(tot)} ${s.name}`;
-        }).join('\n')+'\nFarbe nach Wahl aus Farbänfacher des Herstellers';
+        }).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
         return{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:p,menge:+(qm+2).toFixed(2),einheit:'m²',gesamt:t};
       });
     }
@@ -993,7 +993,7 @@ function renderStep6(){
   const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
   const netto=transformedData.sektionen.reduce((s,sek)=>s+sek.positionen.reduce((ss,p)=>ss+(p.gesamt||0),0),0);
   const nettoT=netto+teu;
-  const mwst=nettoT*0.20;
+  const mwst=nettoT*0.19;
   const brutto=nettoT+mwst;
   const d=soSeKuJSON;
   let h=`<div class="info-chips" style="margin-bottom:16px">`+
@@ -1023,7 +1023,7 @@ function renderStep6(){
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Summe Netto Positionen</span><span>${fmtE(netto)}</span></div>`;
   if(teu>0)h+=`<div class="s6-tr"><span style="color:var(--muted)">Teuerungszuschlag</span><span>${fmtE(teu)}</span></div>`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto gesamt</span><span>${fmtE(nettoT)}</span></div>`;
-  h+=`<div class="s6-tr"><span style="color:var(--muted)">MwSt. 20 %</span><span>${fmtE(mwst)}</span></div>`;
+  h+=`<div class="s6-tr"><span style="color:var(--muted)">MwSt. 19 %</span><span>${fmtE(mwst)}</span></div>`;
   h+=`<div class="s6-tr"><span>Brutto gesamt</span><span>${fmtE(brutto)}</span></div>`;
   h+=`</div>`;
   document.getElementById('s6content').innerHTML=h;
@@ -1036,7 +1036,7 @@ function goToStep7(){
   const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
   const netto=transformedData.sektionen.reduce((s,sek)=>s+sek.positionen.reduce((ss,p)=>ss+(p.gesamt||0),0),0);
   const nettoT=netto+teu;
-  const brutto=nettoT*1.20;
+  const brutto=nettoT*1.19;
   const posCount=transformedData.sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
   document.getElementById('s7summary').innerHTML=
     `<div class="import-sum-row"><span style="color:var(--muted)">Kommission</span><span>${soSeKuJSON.kommission||'–'}</span></div>`+
@@ -1068,7 +1068,7 @@ function buildSevdeskPayload(contactId,cpId){
         quantity:String(+(p.menge||1).toFixed(4)),
         price:String(+(p.preis_einheit||0).toFixed(4)),
         unity:mapUnity(p.einheit),
-        taxRate:'20',
+        taxRate:'19',
         text:p.beschreibung||'',
         partNumber:p.artikelnummer||''
       });
