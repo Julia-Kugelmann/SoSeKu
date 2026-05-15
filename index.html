@@ -91,6 +91,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .jtable col.col-nr{width:110px}.jtable col.col-qty{width:62px}.jtable col.col-unit{width:48px}.jtable col.col-pe{width:84px}.jtable col.col-tot{width:84px}
 .sum-compare{margin-bottom:18px}
 #viewStep3{display:flex;flex-direction:column;height:calc(100vh - 150px)}
+.s3-header{max-width:860px;margin:0 auto;width:100%;flex-shrink:0}
 .s3-content{max-width:860px;margin:0 auto;width:100%;flex:1;overflow-y:auto;min-height:0;padding-bottom:14px}
 .s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
 .s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
@@ -178,7 +179,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 23:41</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 00:08</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -276,8 +277,10 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 
 <!-- STEP 3 -->
 <div id="viewStep3" class="hidden">
-  <div class="s3-content">
+  <div class="s3-header">
     <div class="sum-compare" id="s3sum"></div>
+  </div>
+  <div class="s3-content">
     <div id="s3sektionen"></div>
     <div class="chat-wrap">
       <div class="chat-lbl">Korrektur-Hinweis (l&ouml;st Neuextraktion aus):</div>
@@ -741,8 +744,8 @@ const NAMEN={
   '00E13001929':'Segeltuch Befestigungsset',
   '00E13000263':'SO-WI-Sensor Befestigungsplatte für Droppole',
   '00E13001959':'Adapterplatte für SoWi-Sensor inkl. Design-Mastschelle',
-  '00E13000208':'Höhenverstellung Droppole Mast mit Kurbel - silber eloxiert',
-  '00E13000988':'Höhenverstellung Droppole Mast mit Kurbel - schwarz eloxiert',
+  '00E13000208':'Höhenverstellung Droppole Mast mit Kurbel - silber',
+  '00E13000988':'Höhenverstellung Droppole Mast mit Kurbel - schwarz',
   '00E13001874':'Höhenverstellung für Rund-Masten - Seilzug',
   '00E13001875':'Höhenverstellung für Rund-Masten - Seilzug'
 };
@@ -1195,7 +1198,8 @@ function applyPrices5(){
       const si=parseInt(document.getElementById('sailStoffSel')?.value||'0');
       const p=parseFloat(document.getElementById('sailManPreis')?.value||'0')||0;
       const sn=stoffe0[si]?.name||stoffe0[0]?.name||'Austrosail Nano';
-      newSail=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:`Alternativ:\n${fmtE(p)} ${sn}\nFarbe nach Wahl aus Farbfächer des Herstellers`,preis_einheit:p,menge:1,einheit:'Stk.',gesamt:p}];
+      const altDesc='Alternativ:\n'+stoffe0.map((s,fi)=>{if(fi===si)return null;const t=+(2*s.preis).toFixed(2);return `${fmtE(t)} ${s.name}`;}).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
+      newSail=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:altDesc,preis_einheit:p,menge:1,einheit:'Stk.',gesamt:p}];
     } else {
       newSail=_sailPos.map((sail,si)=>{
         const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
@@ -1207,9 +1211,10 @@ function applyPrices5(){
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
         const desc='Alternativ:\n'+stoffe.map((s,fi)=>{
+          if(fi===sel)return null;
           const tot=+(bQm*(allP[fi]||0)).toFixed(2);
           return `${fmtE(tot)} ${s.name}`;
-        }).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
+        }).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
         return{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:t,menge:1,einheit:'Stk.',gesamt:t};
       });
     }
@@ -1460,7 +1465,7 @@ async function importToSevdesk(){
       ?{objectName:'OrderPos',mapAll:'true',part:null,
           name:r.name,quantity:0,price:'0',
           unity:{id:String(defaultUnity.id),objectName:'Unity'},
-          positionNumber:i,text:null,discount:0,optional:false,taxRate:0}
+          positionNumber:i,text:null,discount:0,optional:false,taxRate:19}
       :{objectName:'OrderPos',mapAll:'true',part:null,
           name:String(r.name),
           quantity:r.menge,
