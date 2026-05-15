@@ -27,7 +27,7 @@ header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;just
 .step.active .step-num{background:var(--accent);color:#fff;border-color:var(--accent)}
 .step.done .step-num{background:var(--accent2);color:#0d0d18;border-color:var(--accent2)}
 .step-line{width:20px;height:1px;background:var(--border);flex-shrink:0}
-main{max-width:1100px;margin:0 auto;padding:28px 20px}
+main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .setup-wrap{max-width:460px;margin:0 auto}
 .setup-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px}
 .setup-sub{font-size:12px;color:var(--muted);margin-bottom:24px;line-height:1.6}
@@ -62,7 +62,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
 .card-hdr strong{color:var(--text);font-size:13px}
 .val-ok{display:inline-flex;align-items:center;gap:6px;background:rgba(56,217,169,.1);border:1px solid rgba(56,217,169,.3);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--accent2);margin-bottom:16px}
 .val-err{display:inline-flex;align-items:center;gap:6px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--error);margin-bottom:16px}
-.step2-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;height:calc(100vh - 260px);margin-bottom:16px}
+.step2-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;height:calc(100vh - 330px);margin-bottom:12px}
 @media(max-width:900px){.step2-layout{grid-template-columns:1fr;height:auto}}
 .step2-col-l{overflow-y:auto;min-height:0}
 .step2-col-r{display:flex;flex-direction:column;min-height:0}
@@ -74,7 +74,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
 .tag{display:inline-block;background:rgba(91,141,238,.12);color:var(--accent);padding:1px 5px;border-radius:3px;font-size:9px;white-space:nowrap}
 .tag-s{background:rgba(245,166,35,.12);color:var(--warn)}
 .num-r{text-align:right}
-.pdf-frame{flex:1;width:100%;min-height:0;border:1px solid var(--border);border-radius:0 0 12px 12px;background:#fff}
+.pdf-container{flex:1;overflow-y:auto;min-height:0;padding:8px;background:rgba(255,255,255,.01);border:1px solid var(--border);border-radius:0 0 12px 12px}
 .chat-wrap{margin-top:14px}
 .chat-lbl{font-size:11px;color:var(--muted);margin-bottom:7px}
 .chat-row{display:flex;gap:10px;align-items:flex-start}
@@ -144,12 +144,13 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
 .error-box{background:rgba(255,107,107,.06);border:1px solid rgba(255,107,107,.2);border-radius:10px;padding:14px 18px;margin:14px auto 26px;max-width:680px;font-size:11px;color:#ffaaaa;line-height:1.7;text-align:left;word-break:break-word;white-space:pre-wrap;max-height:55vh;overflow-y:auto}
 .hidden{display:none!important}
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#38d9a9">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 10:42</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:01</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -234,7 +235,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
     </div>
     <div class="step2-col-r">
       <div class="card-hdr" style="border-radius:12px 12px 0 0;border:1px solid var(--border)"><strong>Soliday PDF</strong><span style="font-size:10px;color:var(--muted)">zur Endsumme scrollen</span></div>
-      <iframe id="pdfFrame" class="pdf-frame"></iframe>
+      <div id="pdfContainer" class="pdf-container"><div class="spinner" style="margin:40px auto"></div></div>
     </div>
   </div>
   <div class="btn-row">
@@ -402,6 +403,8 @@ function resetKeys(){
   showView('viewSetup');
 }
 window.addEventListener('DOMContentLoaded',()=>{
+  window.pdfjsLib=window['pdfjs-dist/build/pdf'];
+  if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
 });
 
@@ -576,7 +579,7 @@ function renderStep2(){
     `<span style="color:var(--muted)">Netto gesamt: <strong>${fmtE(d.netto_gesamt)}</strong></span>`+
     `<span style="color:var(--muted)">MwSt.: <strong>${fmtE(d.mwst)}</strong></span>`+
     `<span style="font-size:16px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt)}</strong></span>`;
-  if(pdfFile){const url=URL.createObjectURL(pdfFile);document.getElementById('pdfFrame').src=url;}
+  if(pdfBase64){renderPDFPages(pdfBase64);}
   showView('viewStep2');setStep(2);
 }
 async function reextract(){
@@ -1103,6 +1106,29 @@ async function sdPost(path,body){
   const r=await fetch(`https://my.sevdesk.de/api/v1${path}`,{method:'POST',headers:{Authorization:sevdesk,'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(`sevdesk POST ${path} → ${r.status}: ${JSON.stringify(e)}`);}
   return r.json();
+}
+async function renderPDFPages(b64){
+  const con=document.getElementById('pdfContainer');
+  if(!con)return;
+  con.innerHTML='<div class="spinner" style="margin:40px auto"></div>';
+  try{
+    const bin=atob(b64);
+    const arr=new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+    const pdf=await pdfjsLib.getDocument({data:arr}).promise;
+    con.innerHTML=`<div style="font-size:10px;color:var(--muted);padding:4px 8px;text-align:right">${pdf.numPages} Seiten</div>`;
+    for(let i=1;i<=pdf.numPages;i++){
+      const page=await pdf.getPage(i);
+      const vp=page.getViewport({scale:1.5});
+      const canvas=document.createElement('canvas');
+      canvas.width=vp.width;canvas.height=vp.height;
+      canvas.style.cssText='width:100%;height:auto;display:block;margin-bottom:6px;border-radius:4px';
+      await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+      con.appendChild(canvas);
+    }
+  }catch(e){
+    con.innerHTML=`<div style="padding:16px;color:var(--error);font-size:11px">PDF konnte nicht angezeigt werden: ${e.message}</div>`;
+  }
 }
 async function importToSevdesk(){
   document.getElementById('btnImport').disabled=true;
