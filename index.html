@@ -178,7 +178,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 23:14</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 23:41</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -987,7 +987,7 @@ function getStoffeForSys(sys,bQm,qmOrig){
 }
 async function loadPrices5(){
   const sys=(soSeKuJSON?.system||'').toUpperCase();
-  prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0};
+  prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0,dachterrasse:0};
   const[sAR,sFR,sSnR,pR,aR]=await Promise.all([
     fetchSheetTabAll('Stoffe - Aufrollbare Segel'),
     fetchSheetTabAll('Stoffe - Feste Segel'),
@@ -1005,6 +1005,7 @@ async function loadPrices5(){
     else if(key==='VORFRACHT'||key==='VERSAND') prices5.fracht[key]=preis;
     else if(desc.includes('Std')||desc.includes('Stundensatz')) prices5.stundensatz=preis;
     else if(desc==='Schraubfundament') prices5.schraubfundament=preis;
+    else if(key==='DACH'||desc==='Dachterrasse'||desc==='Dachterrassen-Aufschlag') prices5.dachterrasse=preis;
   });
   if(aR.length>1) aR.slice(1).forEach(r=>{
     const nr=(r[1]||'').trim(),cnt=parseInt(r[2])||0;
@@ -1015,6 +1016,7 @@ async function loadPrices5(){
 function gsMonPreis(key){
   if(key==='SERV-LOG') return prices5.zonePreis['zone'+(fragebogen.zone||2)]||0;
   if(key==='VORFRACHT'||key==='VERSAND') return prices5.fracht[key]||0;
+  if(key==='DACH') return prices5.dachterrasse||0;
   return 0;
 }
 
@@ -1098,7 +1100,7 @@ function renderStep5(){
             <span class="s5-unit">&euro;/AP</span>
           </div>
           <div class="s5-calc">
-            <span style="color:var(--muted)">Soliday: ${fmtE(pl.gesamt)} + <span id="wAuf${wi}">&ndash;</span> AP =</span>
+            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)} + <span id="wAuf${wi}">&ndash;</span> AP/Stk. =</span>
             <strong id="wT${wi}">&ndash;</strong>
           </div>
         </div>
@@ -1173,10 +1175,12 @@ function updWand(wi){
   const ap=parseInt(document.getElementById(`wAP${wi}`)?.value||'0')||0;
   const ap2=parseFloat(document.getElementById(`wAPP${wi}`)?.value||'0')||0;
   const auf=ap*ap2;
-  const t=pl.gesamt+auf;
+  const menge=pl.menge>0?pl.menge:1;
+  const aufPerUnit=auf/menge;
+  const unitPrice=pl.preis_einheit+aufPerUnit;
   const ea=document.getElementById(`wAuf${wi}`),et=document.getElementById(`wT${wi}`);
-  if(ea)ea.textContent=fmtE(auf);
-  if(et)et.textContent=fmtE(t);
+  if(ea)ea.textContent=fmtE(aufPerUnit);
+  if(et)et.textContent=fmtE(unitPrice);
 }
 
 function applyPrices5(){
@@ -1313,7 +1317,7 @@ function renderStep6(){
   h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line;line-height:1.5">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
   h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto Positionen</span><span>${fmtE(netto)}</span></div>`;
-  if(teu>0)h+=`<div class="s6-tr"><span style="color:var(--muted)">Teuerungszuschlag</span><span>${fmtE(teu)}</span></div>`;
+  if(teu>0)h+=`<div class="s6-tr"><span style="color:var(--muted)">Temporäre Anpassung</span><span>${fmtE(teu)}</span></div>`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto gesamt</span><span>${fmtE(nettoT)}</span></div>`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">MwSt. 19 %</span><span>${fmtE(mwst)}</span></div>`;
   h+=`<div class="s6-tr" style="font-size:15px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Brutto gesamt</span><span style="color:var(--accent)">${fmtE(brutto)}</span></div>`;
@@ -1470,6 +1474,18 @@ async function importToSevdesk(){
 
     const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
     const hasTeuerung=teu!==0;
+    const _sys=(soSeKuJSON.system||'').toUpperCase();
+    const _kom=soSeKuJSON.kommission||'';
+    const _betreffMap={
+      'SOLIDAY-C':'Angebot SOLIDAY C','SOLIDAY-CS':'Angebot SOLIDAY CS',
+      'SOLIDAY-CS-DREIECK':'Angebot SOLIDAY CS','SOLIDAY-CS-TWIN':'Angebot SOLIDAY CS-Twin',
+      'SOLIDAY-ONE':'Angebot SOLIDAY ONE','SOLIDAY-M':'Angebot SOLIDAY M',
+      'SOLIDAY-MA':'Angebot SOLIDAY MA','SOLIDAY-FLEX':'Angebot SOLIDAY FLEX',
+      'SOLIDAY-SANDY':'Angebot SOLIDAY SANDY','SONNENSEGEL-MAß':'Angebot SOLIDAY Fix Segel',
+    };
+    const _betreff=(_betreffMap[_sys]||('Angebot '+_sys))+(_kom?' - '+_kom:'');
+    const _kopfMap={'SOLIDAY-C':'Elektrisch aufrollbares Sonnensegel'};
+    const _kopf=_kopfMap[_sys]||'';
 
     const payload={
       order:{
@@ -1478,8 +1494,8 @@ async function importToSevdesk(){
         contact:{id:String(customer.id),objectName:'Contact'},
         orderDate:offerDate,
         status:100,
-        header:('Angebot '+(soSeKuJSON.kommission||'')).trim(),
-        headText:'',footText:'',
+        header:_betreff,
+        headText:_kopf,footText:'',
         address:address,
         addressCountry:{id:'1',objectName:'StaticCountry'},
         version:0,smallSettlement:0,
@@ -1496,7 +1512,7 @@ async function importToSevdesk(){
         objectName:'Discounts',mapAll:true,
         discount:false,percentage:false,
         value:Number(teu.toFixed(2)),
-        text:'Teuerungszuschlag'
+        text:'Temporäre Anpassung aufgrund von Rohstoff- & Energiekosten'
       }]:null,
       discountDelete:null
     };
