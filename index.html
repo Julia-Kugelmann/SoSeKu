@@ -15,7 +15,7 @@
 body{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(91,141,238,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(56,217,169,.06) 0%,transparent 60%);font-family:'DM Mono',monospace;color:var(--text)}
 header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
-.logo .s1{color:#f5a623}.logo .s2{color:#E5253C}.logo .arr{color:var(--muted);margin:0 6px}
+.logo .s1{color:#f5a623}.logo .s2{color:#5b8dee}.logo .arr{color:var(--muted);margin:0 6px}
 .subtitle{font-size:11px;color:var(--muted);margin-top:2px}
 .btn-reset-hdr{font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border);border-radius:6px;padding:5px 10px;background:none}
 .btn-reset-hdr:hover{border-color:var(--accent);color:var(--text)}
@@ -75,7 +75,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .tag{display:inline-block;background:rgba(91,141,238,.12);color:var(--accent);padding:1px 5px;border-radius:3px;font-size:9px;white-space:nowrap}
 .tag-s{background:rgba(245,166,35,.12);color:var(--warn)}
 .num-r{text-align:right}
-.pdf-container{flex:1;overflow-y:auto;min-height:0;padding:8px;background:rgba(255,255,255,.01);border:1px solid var(--border);border-radius:0 0 12px 12px}
+.pdf-container{flex:1;overflow-y:auto;min-height:0;padding:8px;background:rgba(255,255,255,.01);border:1px solid var(--border);border-radius:0 0 12px 12px;position:relative}
 .chat-wrap{margin-top:14px}
 .chat-lbl{font-size:11px;color:var(--muted);margin-bottom:7px}
 .chat-row{display:flex;gap:10px;align-items:flex-start}
@@ -150,8 +150,8 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <body>
 <header>
   <div>
-    <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#38d9a9">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:09</div>
+    <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:20</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -406,6 +406,7 @@ function resetKeys(){
 window.addEventListener('DOMContentLoaded',()=>{
   window.pdfjsLib=window['pdfjs-dist/build/pdf'];
   if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const _ta=document.getElementById('chatStep2');if(_ta)_ta.value='Es sind nicht alle Positionen richtig erfasst, gehe das PDF nochmal sorgfältig durch';
   if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
 });
 
@@ -1119,16 +1120,40 @@ async function renderPDFPages(b64){
     for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
     const pdf=await pdfjsLib.getDocument({data:arr}).promise;
     con.innerHTML=`<div style="font-size:10px;color:var(--muted);padding:4px 8px;text-align:right">${pdf.numPages} Seiten</div>`;
+    const canvases=[];
+    let scrollTarget=null;
     for(let i=1;i<=pdf.numPages;i++){
       const page=await pdf.getPage(i);
       const vp=page.getViewport({scale:1.5});
+      // Suche nach Gesamtsumme/Total-Text auf dieser Seite
+      const tc=await page.getTextContent();
+      for(const item of tc.items){
+        if(/Gesamtsumme|Nettobetrag|Bruttobetrag/i.test(item.str)){
+          const yRatio=(page.view[3]-item.transform[5])/page.view[3];
+          scrollTarget={idx:canvases.length,yRatio}; // überschreibt → letzte Fundstelle
+          break;
+        }
+      }
       const canvas=document.createElement('canvas');
       canvas.width=vp.width;canvas.height=vp.height;
       canvas.style.cssText='width:100%;height:auto;display:block;margin-bottom:6px;border-radius:4px';
       await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
       con.appendChild(canvas);
+      canvases.push(canvas);
     }
-    setTimeout(()=>{con.scrollTop=con.scrollHeight;},80);
+    setTimeout(()=>{
+      if(scrollTarget&&canvases[scrollTarget.idx]){
+        const c=canvases[scrollTarget.idx];
+        const conRect=con.getBoundingClientRect();
+        const cRect=c.getBoundingClientRect();
+        const cTopRel=cRect.top-conRect.top+con.scrollTop;
+        const textPx=cRect.height*scrollTarget.yRatio;
+        // Text unten im Container zeigen (wie JSON-Seite)
+        con.scrollTop=Math.max(0,cTopRel+textPx-con.clientHeight+60);
+      } else {
+        con.scrollTop=con.scrollHeight;
+      }
+    },150);
   }catch(e){
     con.innerHTML=`<div style="padding:16px;color:var(--error);font-size:11px">PDF konnte nicht angezeigt werden: ${e.message}</div>`;
   }
