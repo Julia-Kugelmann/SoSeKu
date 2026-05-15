@@ -122,7 +122,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .zone-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
 .wand-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .dach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s}
+.zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;min-height:72px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
 .zone-num{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent)}
 .zone-time{font-size:13px;color:var(--text);margin-top:5px;font-weight:500}
@@ -132,9 +132,10 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .fg-free:focus{border-color:var(--accent)}
 /* Step 5 */
 .s5-wrap{max-width:1100px;margin:0 auto;width:100%}
-.s5-section{margin-bottom:28px}
-.s5-sec-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:14px}
-.s5-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-bottom:0}
+.s5-section{margin-bottom:24px}
+.s5-sec-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em}
+.s5-ab{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.s5-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .s5-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .s5-card-hdr{padding:11px 15px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .s5-card-hdr strong{font-size:13px;color:var(--text)}
@@ -177,7 +178,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 21:27</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 21:45</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -392,7 +393,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,extractAttempts=0,maxStep=0;
 let sevdeskPositions=null;
-let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0};
+let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0};
 let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[];
 
 // === UTILS ===
@@ -796,7 +797,7 @@ function transformiere(json){
   const sys=(json.system||'').toUpperCase();
   const welleM=json.wellenlaenge_aufrollsystem_mm?Math.ceil(json.wellenlaenge_aufrollsystem_mm/1000):null;
   const BESCHREIBUNG={
-    '00E13000227':'maschinell eingedreht · inkl. Erdschraube & Justier-Granulat · sofort belastbar - ohne Flurschäden',
+    '00E13000227':'maschinell eingedreht\ninkl. Erdschraube & Justier-Granulat\nsofort belastbar - ohne Flurschäden',
     '00E13000244':'für Betonfundament',
   };
   const removed=[];
@@ -817,6 +818,13 @@ function transformiere(json){
   });
   const map={segeltuch:[],segelsystem:[],masten:[],fundamente:[],wandbefestigungen:[],zubehoer:[],montage:[]};
   merged.forEach(p=>map[assignSek(p)].push(p));
+  // Segelsystem-Reihenfolge: Aufrollsystem → Kabel → Funkmotor → Handsender → Windsensor → Rest
+  const _SEGSYS_ORDER=['00E13000850','00E13002183','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002063'];
+  map.segelsystem.sort((a,b)=>{
+    const ai=isAufrollsystem(a.artikelnummer)?-1:_SEGSYS_ORDER.indexOf(a.artikelnummer)<0?999:_SEGSYS_ORDER.indexOf(a.artikelnummer);
+    const bi=isAufrollsystem(b.artikelnummer)?-1:_SEGSYS_ORDER.indexOf(b.artikelnummer)<0?999:_SEGSYS_ORDER.indexOf(b.artikelnummer);
+    return ai-bi;
+  });
   // Original Soliday-Segeltuch entfernen, Preis auf SoSeKu-Placeholder übertragen
   const sailOriginals=map.segeltuch.filter(p=>p.qm_segel>0);
   const sailTotal=sailOriginals.reduce((s,p)=>s+(p.gesamt||0),0);
@@ -828,7 +836,7 @@ function transformiere(json){
   const sysLabel=sys.replace('SOLIDAY-','Soliday ');
   map.montage.unshift(
     {artikelnummer:instNr,name:`System Installation - ${sysLabel}`,beschreibung:'Professionelle Ausführung der kompletten Systemmontage durch 2 Soliday Fachmonteure',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true},
-    {artikelnummer:'SERV-LOG',name:`Service & Logistik (Zone ${fragebogen.zone||2})`,beschreibung:'2 Termine (Grund- & Endmontage) inkl. Rüstzeiten & Maschinenpauschale',preis_einheit:0,menge:1,einheit:'Stk.',gesamt:0,_gs:true}
+    {artikelnummer:'SERV-LOG',name:`Service & Logistik (Zone ${fragebogen.zone||2})`,beschreibung:'2 Termine (Grund- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale',preis_einheit:0,menge:1,einheit:'Stk.',gesamt:0,_gs:true}
   );
   const hasMasten=map.masten.length>0;
   map.montage.push({artikelnummer:hasMasten?'VORFRACHT':'VERSAND',name:hasMasten?'Vorfrachtpauschale':'Versandkosten',beschreibung:hasMasten?'Baustromgestellung bauseits: 230V - 16A':'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true});
@@ -965,7 +973,7 @@ function getStoffeForSys(sys,bQm,qmOrig){
 }
 async function loadPrices5(){
   const sys=(soSeKuJSON?.system||'').toUpperCase();
-  prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0};
+  prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0};
   const[sAR,sFR,sSnR,pR,aR]=await Promise.all([
     fetchSheetTabAll('Stoffe - Aufrollbare Segel'),
     fetchSheetTabAll('Stoffe - Feste Segel'),
@@ -982,6 +990,7 @@ async function loadPrices5(){
     else if(key.startsWith('zone')) prices5.zonePreis[key]=preis;
     else if(key==='VORFRACHT'||key==='VERSAND') prices5.fracht[key]=preis;
     else if(desc.includes('Std')||desc.includes('Stundensatz')) prices5.stundensatz=preis;
+    else if(desc==='Schraubfundament') prices5.schraubfundament=preis;
   });
   if(aR.length>1) aR.slice(1).forEach(r=>{
     const nr=(r[1]||'').trim(),cnt=parseInt(r[2])||0;
@@ -1013,8 +1022,10 @@ function renderStep5(){
     <span style="color:var(--muted)">${sheetOk?`${prices5.stoffe.length} Stoffe · ${Object.keys(prices5.zonePreis).length} Zonen · AP: ${Object.keys(prices5.apAnzahl).length} Art.-Nr.`:'Preisdaten nicht geladen — Sheet ID prüfen'}</span>
   </div>`;
 
-  // 5A Segeltuch
-  h+=`<div class="s5-section"><div class="s5-sec-title">5A &middot; Segeltuch</div><div class="s5-grid">`;
+  // 5A + 5B nebeneinander
+  h+=`<div class="s5-ab">`;
+  // — Segeltuch —
+  h+=`<div class="s5-section"><div class="s5-sec-title">Segeltuch</div>`;
   if(_sailPos.length===0){
     const stoffe0=getStoffeForSys(sys,2);
     h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Segeltuch (Gesamtpreis)</strong><span>kein qm_segel aus Extraktion</span></div>
@@ -1053,10 +1064,10 @@ function renderStep5(){
       </div>`;
     });
   }
-  h+=`</div></div>`; // close s5-grid + s5-section
+  h+=`</div>`; // close s5-section Segeltuch
 
-  // 5B Wandbefestigungen + Bodenplatten
-  h+=`<div class="s5-section"><div class="s5-sec-title">5B &middot; Wandbefestigungen &amp; Bodenplatten</div><div class="s5-grid">`;
+  // — Wandbefestigungen + Bodenplatten —
+  h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
   if(_wandpl.length===0&&_bodenpl.length===0){
     h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
   } else {
@@ -1097,10 +1108,11 @@ function renderStep5(){
       </div>`;
     });
   }
-  h+=`</div></div>`;
+  h+=`</div>`; // close s5-section Wandbefestigungen
+  h+=`</div>`; // close s5-ab
 
-  // 5C Montage
-  h+=`<div class="s5-section"><div class="s5-sec-title">5C &middot; Montage und Fracht</div><div class="s5-grid">`;
+  // — Montage und Fracht —
+  h+=`<div class="s5-section"><div class="s5-sec-title">Montage und Fracht</div><div class="s5-grid">`;
   _gsMonPos.forEach((pos,mi)=>{
     const gp=gsMonPreis(pos.artikelnummer);
     h+=`<div class="s5-card">
@@ -1220,6 +1232,15 @@ function applyPrices5(){
         pos.beschreibung='inkl. 4 Klebeanker';
       }
     });
+  }
+  // Schraubfundament: SoSeKu-Preis aus Sheet
+  if(prices5.schraubfundament>0&&fSek2){
+    const sfPos=fSek2.positionen.find(p=>p.artikelnummer==='00E13000227');
+    if(sfPos){
+      const sfG=+(sfPos.menge*(prices5.schraubfundament)).toFixed(2);
+      sfPos.preis_einheit=prices5.schraubfundament;
+      sfPos.gesamt=sfG;
+    }
   }
 
   // 5C: Montage
