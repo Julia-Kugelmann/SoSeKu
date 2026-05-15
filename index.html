@@ -175,7 +175,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 14:28</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 15:02</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -389,6 +389,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 // === STATE ===
 let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,extractAttempts=0,maxStep=0;
+let sevdeskPositions=null;
 let prices5={stoffe:[],montage:{},apPreis:{}};
 let _sailPos=[],_wandpl=[],_gsMonPos=[];
 
@@ -1098,14 +1099,34 @@ function applyPrices5(){
 }
 
 // === STEP 6 ===
+function buildSevdeskPositions(){
+  const rows=[];
+  for(const sek of transformedData.sektionen){
+    rows.push({type:'section',name:sek.name});
+    for(const p of sek.positionen){
+      rows.push({
+        type:'pos',
+        name:p.name,
+        beschreibung:p.beschreibung||'',
+        menge:Number((p.menge||1).toFixed(4)),
+        einheit:p.einheit||'Stk.',
+        preis_einheit:Number(p.preis_einheit||0),
+        gesamt:Number(p.gesamt||0),
+        artikelnummer:p.artikelnummer||''
+      });
+    }
+  }
+  return rows;
+}
 function goToStep6(){
   transformedData=transformiere(soSeKuJSON);
   applyPrices5();
+  sevdeskPositions=buildSevdeskPositions();
   renderStep6();
 }
 function renderStep6(){
   const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
-  const netto=transformedData.sektionen.reduce((s,sek)=>s+sek.positionen.reduce((ss,p)=>ss+(p.gesamt||0),0),0);
+  const netto=sevdeskPositions.filter(r=>r.type==='pos').reduce((s,r)=>s+(r.gesamt||0),0);
   const nettoT=netto+teu;
   const mwst=nettoT*0.19;
   const brutto=nettoT+mwst;
@@ -1114,7 +1135,7 @@ function renderStep6(){
     `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`+
     `<span>System: <strong>${d.system||'–'}</strong></span>`+
     `<span>Datum: <strong>${d.datum||'–'}</strong></span></div>`;
-  h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${transformedData.sektionen.map(sek=>`<tr class="sek-hdr-row"><td colspan="5">${sek.name}</td></tr>${sek.positionen.map(p=>`<tr><td><div>${p.name}</div>${p.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line;line-height:1.5">${p.beschreibung}</div>`:''}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit||0)}</td><td class="num-r"><strong>${fmt(p.gesamt||0)}</strong></td></tr>`).join('')}`).join('')}</tbody></table></div>`;
+  h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line;line-height:1.5">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
   h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto Positionen</span><span>${fmtE(netto)}</span></div>`;
   if(teu>0)h+=`<div class="s6-tr"><span style="color:var(--muted)">Teuerungszuschlag</span><span>${fmtE(teu)}</span></div>`;
@@ -1130,10 +1151,10 @@ function renderStep6(){
 function goToStep7(){
   const{sevdesk}=getKeys();
   const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
-  const netto=transformedData.sektionen.reduce((s,sek)=>s+sek.positionen.reduce((ss,p)=>ss+(p.gesamt||0),0),0);
+  const netto=sevdeskPositions.filter(r=>r.type==='pos').reduce((s,r)=>s+(r.gesamt||0),0);
   const nettoT=netto+teu;
   const brutto=nettoT*1.19;
-  const posCount=transformedData.sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
+  const posCount=sevdeskPositions.filter(r=>r.type==='pos').length;
   document.getElementById('s7summary').innerHTML=
     `<div class="import-sum-row"><span style="color:var(--muted)">Kommission</span><span>${soSeKuJSON.kommission||'–'}</span></div>`+
     `<div class="import-sum-row"><span style="color:var(--muted)">System</span><span>${soSeKuJSON.system||'–'}</span></div>`+
@@ -1256,26 +1277,21 @@ async function importToSevdesk(){
     ].filter(Boolean);
     const address=addrParts.join('\n')||customer.name||'Import';
 
-    const ops=[];let posIdx=0;
-    for(const sek of transformedData.sektionen){
-      ops.push({objectName:'OrderPos',mapAll:'true',part:null,
-        name:sek.name,quantity:0,price:'0',
-        unity:{id:String(defaultUnity.id),objectName:'Unity'},
-        positionNumber:posIdx++,text:null,discount:0,optional:false,taxRate:0
-      });
-      for(const p of sek.positionen){
-        ops.push({objectName:'OrderPos',mapAll:'true',part:null,
-          name:String(p.name),
-          quantity:Number((p.menge||1).toFixed(4)),
-          price:String(Number(p.preis_einheit||0).toFixed(2)),
-          unity:mapUnity(p.einheit,unities,defaultUnity),
-          positionNumber:posIdx++,
-          text:p.beschreibung||null,
+    const ops=sevdeskPositions.map((r,i)=>r.type==='section'
+      ?{objectName:'OrderPos',mapAll:'true',part:null,
+          name:r.name,quantity:0,price:'0',
+          unity:{id:String(defaultUnity.id),objectName:'Unity'},
+          positionNumber:i,text:null,discount:0,optional:false,taxRate:0}
+      :{objectName:'OrderPos',mapAll:'true',part:null,
+          name:String(r.name),
+          quantity:r.menge,
+          price:String(r.preis_einheit.toFixed(2)),
+          unity:mapUnity(r.einheit,unities,defaultUnity),
+          positionNumber:i,
+          text:r.beschreibung||null,
           discount:0,optional:false,taxRate:19,
-          partNumber:p.artikelnummer||''
-        });
-      }
-    }
+          partNumber:r.artikelnummer||''
+      });
 
     const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
     const hasTeuerung=teu!==0;
