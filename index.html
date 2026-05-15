@@ -86,7 +86,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sektion-body{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto}
 .sum-compare{margin-bottom:18px}
 #viewStep3{display:flex;flex-direction:column;height:calc(100vh - 150px)}
-#s3sektionen{max-width:640px}
+.s3-content{max-width:860px;margin:0 auto;width:100%}
 .s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
 .s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
 .s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:flex-start}
@@ -168,7 +168,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 12:39</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 12:54</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -266,8 +266,10 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 
 <!-- STEP 3 -->
 <div id="viewStep3" class="hidden">
-  <div class="sum-compare" id="s3sum"></div>
-  <div id="s3sektionen"></div>
+  <div class="s3-content">
+    <div class="sum-compare" id="s3sum"></div>
+    <div id="s3sektionen"></div>
+  </div>
   <div class="chat-wrap">
     <div class="chat-lbl">Korrektur-Hinweis (l&ouml;st Neuextraktion aus):</div>
     <div class="chat-row">
@@ -699,17 +701,28 @@ const NR2SEK={};
 ['00E13000208','00E13000988','00E13001874','00E13001875'].forEach(n=>NR2SEK[n]='masten');
 ['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
 
+function isAufrollsystem(nr){
+  return/^(78V|70001B|78E|70E)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
+}
+function aufrollName(nr,sys){
+  const wm=nr.match(/(\d{2,3})$/);
+  if(!wm)return null;
+  const welle=parseInt(wm[1]);
+  const sysMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA'};
+  const label=sysMap[sys]||(sys||'').replace('SOLIDAY-','');
+  return`Soliday ${label} Sonnensegelsystem - bis ${welle}m Welle`;
+}
 function assignSek(p){
   const nr=p.artikelnummer;
   if(p.qm_segel>0)return'segeltuch';
   if(NR2SEK[nr])return NR2SEK[nr];
   if(nr&&/^PYL/.test(nr))return'masten';
-  if(nr&&/^78V/.test(nr))return'segelsystem';
+  if(nr&&isAufrollsystem(nr))return'segelsystem';
   if(nr==='00E13000417')return(p.soliday_sektion||'').toLowerCase().includes('hardware')?'zubehoer':'segeltuch';
   if(nr==='00E13000107')return'zubehoer';
   const s=(p.soliday_sektion||'').toLowerCase();
   if(s.includes('hardware'))return'zubehoer';
-  if(s.includes('punkt')||s.includes('point')||s.includes('aufroll'))return'segelsystem';
+  if(s.includes('punkt')||s.includes('point')||s.includes('aufroll')||s.includes('welle'))return'segelsystem';
   if(s.includes('montage')||s.includes('fracht'))return'montage';
   if(s.includes('zubeh'))return'segeltuch';
   if(s.includes('segel'))return'segeltuch';
@@ -732,7 +745,7 @@ function transformiere(json){
   pos=pos.map(p=>{const p2={...p};
     if(WINTER_NR.includes(p2.artikelnummer)){const mm=Number(json.wellenlaenge_aufrollsystem_mm||0);const m=mm>0?Math.ceil(mm/1000):'?';const prem=['71004A011','70004A007'].includes(p2.artikelnummer);p2.name=`Winter-Schutzhülle${prem?' Premium':''} - ${m}m / Austrosail - stone`;p2.einheit='Stk.';}
     else if(NAMEN[p2.artikelnummer]){p2.name=NAMEN[p2.artikelnummer];}
-    else{const pn=pylonName(p2.artikelnummer);if(pn){p2.name=pn;}else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}}
+    else{const an=isAufrollsystem(p2.artikelnummer)?aufrollName(p2.artikelnummer,sys):null;if(an){p2.name=an;}else{const pn=pylonName(p2.artikelnummer);if(pn){p2.name=pn;}else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}}}
     return p2;});
   const merged=[];
   pos.forEach(p=>{
