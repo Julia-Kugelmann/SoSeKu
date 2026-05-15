@@ -1106,7 +1106,7 @@ function buildSevdeskPayload(contactId,cpId){
       header:('Angebot '+(soSeKuJSON.kommission||'')).trim()
     },
     orderPosSave:ops,
-    discountSave:teu>0?{objectName:'Discount',mapAll:'true',discount:false,percentage:false,value:String(teu),text:'Teuerungszuschlag'}:null
+    discountSave:teu>0?[{objectName:'Discount',id:null,mapAll:'true',discount:false,percentage:false,value:String(teu),text:'Teuerungszuschlag'}]:[]
   };
 }
 async function sdGet(path){
