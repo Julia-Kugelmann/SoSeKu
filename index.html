@@ -111,13 +111,15 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sum-box.ok .val{color:var(--accent2)}.sum-box.err .val{color:var(--error)}
 .info-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:11px}
 .info-chips span{background:var(--surface2);border-radius:6px;padding:3px 9px}
-.fragebogen{max-width:580px}
+.fragebogen{max-width:680px;margin:0 auto}
 .fg-sec{margin-bottom:26px}
 .fg-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:13px}
 .radio-grp{display:flex;flex-direction:column;gap:10px}
 .radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
-.zone-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.zone-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.wand-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.dach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:11px;text-align:center;cursor:pointer;transition:all .2s}
 .zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
 .zone-num{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent)}
@@ -171,7 +173,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 12:45</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 13:18</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -291,11 +293,11 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
   <div class="fragebogen">
     <div class="fg-sec">
       <div class="fg-title">Wandaufbau</div>
-      <div class="radio-grp">
-        <label class="radio-item"><input type="radio" name="wand" value="ziegel-10" checked> <span>Ziegel / Beton bis 10 cm D&auml;mmung</span></label>
-        <label class="radio-item"><input type="radio" name="wand" value="ziegel-18"> <span>Ziegel / Beton bis 18 cm D&auml;mmung</span></label>
-        <label class="radio-item"><input type="radio" name="wand" value="holz-10"> <span>Holzbauweise bis 10 cm D&auml;mmung</span></label>
-        <label class="radio-item"><input type="radio" name="wand" value="holz-18"> <span>Holzbauweise bis 18 cm D&auml;mmung</span></label>
+      <div class="wand-grid" id="wandGrid">
+        <div class="zone-item sel" data-v="ziegel-10" onclick="selWand('ziegel-10')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
+        <div class="zone-item" data-v="ziegel-18" onclick="selWand('ziegel-18')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
+        <div class="zone-item" data-v="holz-10" onclick="selWand('holz-10')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
+        <div class="zone-item" data-v="holz-18" onclick="selWand('holz-18')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
       </div>
     </div>
     <div class="fg-sec">
@@ -311,7 +313,9 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
     </div>
     <div class="fg-sec">
       <div class="fg-title">Extras</div>
-      <label class="check-item"><input type="checkbox" id="cbDach"> <span>Dachterrasse</span></label>
+      <div class="dach-grid">
+        <div class="zone-item" id="dachCard" onclick="toggleDach()"><div class="zone-num">Dachterrasse</div><div class="zone-time">Aufschlag wird hinzugef&uuml;gt</div></div>
+      </div>
     </div>
     <div class="fg-sec">
       <div class="fg-title">Freitext / Zusatzangaben</div>
@@ -382,7 +386,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <script>
 // === STATE ===
 let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
-let fragebogen={},selZoneNr=2,extractAttempts=0;
+let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,extractAttempts=0;
 let prices5={stoffe:[],montage:{},apPreis:{}};
 let _sailPos=[],_wandpl=[],_gsMonPos=[];
 
@@ -809,7 +813,15 @@ function renderStep3(){
 // === STEP 4 ===
 function selZone(n){
   selZoneNr=n;
-  document.querySelectorAll('.zone-item').forEach((el,i)=>el.classList.toggle('sel',i+1===n));
+  document.querySelectorAll('#zoneGrid .zone-item').forEach((el,i)=>el.classList.toggle('sel',i+1===n));
+}
+function selWand(v){
+  selWandart=v;
+  document.querySelectorAll('#wandGrid .zone-item').forEach(el=>el.classList.toggle('sel',el.dataset.v===v));
+}
+function toggleDach(){
+  selDach=!selDach;
+  document.getElementById('dachCard').classList.toggle('sel',selDach);
 }
 function goToStep4(){showView('viewStep4');setStep(4);}
 
@@ -821,9 +833,9 @@ const DEF_STOFFE_M=[{name:'Austronet 960',preis:0},{name:'Austronet 960 Sonderfa
 
 async function initStep5(){
   fragebogen={
-    wandart:document.querySelector('input[name="wand"]:checked')?.value||'ziegel-10',
+    wandart:selWandart,
     zone:selZoneNr,
-    dachterrasse:document.getElementById('cbDach').checked,
+    dachterrasse:selDach,
     freitext:document.getElementById('fgFrei').value
   };
   showView('viewLoading');setStep(5);
