@@ -167,7 +167,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:51</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 12:15</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -773,9 +773,9 @@ function renderStep3(){
   const remSum=removedPositionen.reduce((s,p)=>s+(p.gesamt||0),0);
   const check=skSum+remSum+teu;
   const ok=Math.abs(check-solidayTotal)<0.02;
-  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+`<span class='op'>=</span><span class='tot'>${fmtE(check)}</span>`;
+  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'');
   document.getElementById('s3sum').innerHTML=
-    `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
+    `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div><div class='s3-big' style='color:${ok?"var(--accent2)":"var(--error)"}'>${fmtE(check)}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
   document.getElementById('s3sektionen').innerHTML=sektionen.map(sek=>`
     <div class="sektion-block">
       <div class="sektion-title">${sek.name}</div>
