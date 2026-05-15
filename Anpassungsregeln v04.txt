@@ -1,0 +1,523 @@
+# Soliday → Sonnensegel Kugelmann
+
+## Transformationsregeln — Stand 15.05.2026
+
+-----
+
+## 1. SEKTIONEN
+
+Reihenfolge fix. Leere Sektionen werden komplett weggelassen.
+
+1. **Segeltuch**
+1. **Segelsystem**
+1. **Masten**
+1. **Fundamente**
+1. **Wandbefestigungen**
+1. **Zubehör**
+1. **Montage und Fracht**
+
+Zwischenüberschriften in sevdesk: Artikelnummer = 0, Menge = 0, Preis = 0
+
+-----
+
+## 2. WEGLASSPOSITIONEN
+
+Folgende Artikel werden **immer** weggelassen, egal welches System:
+
+- Alle Artikel die **“Exzentersatz”** im Namen haben: `00E13000735`, `00E13000648`, `00E13000649`
+- **Drahtseilspannhilfe** (`00E13002106`) — Einmalkauf, nicht pro Projekt
+
+-----
+
+## 3. ZUSAMMENFASSUNG GLEICHER ARTIKEL
+
+- Gleiche Artikelnummer → Mengen addieren, Gesamtpreise addieren, als **eine** Position
+- Gilt auch für Masten: gleiche Art.-Nr. → zusammenfassen
+- Nur bei **exakt gleicher** Artikelnummer zusammenfassen — unterschiedliche Art.-Nr. = immer zwei separate Positionen
+- Pylonseil / Dyneema Seil (00E13000107): alle Längen zusammenfassen, Gesamtpreis = Summe aller Soliday-Gesamtpreise
+- Schnappschäkel: Position in Sektion folgt Soliday-Original (Segelzubehör → Segeltuch, Hardware → Zubehör)
+
+-----
+
+## 4. PREISREGEL
+
+- Immer **VK Netto** Preise aus Soliday-PDF übernehmen (nicht EK / nicht RG-Preise)
+- Preise **nie neu berechnen** — exakt 1:1 übernehmen
+- Bei zusammengefassten Positionen: Preis/Einheit = erster Einzelpreis, Gesamt = Summe aller Soliday-Gesamtpreise
+- Preis/Einheit × Menge muss exakt dem Gesamt entsprechen
+
+-----
+
+## 5. GLOBALE TEXTERSETZUNGEN
+
+- “Aluminium-Mast” / “Aluminium-Masten” → **Aluminium Rund-Mast**
+- “Edelstahl-Mast” / “Edelstahl-Masten” → **Edelstahl Rund-Mast**
+
+-----
+
+## 6. SEGELTUCH-SEKTION
+
+### Reihenfolge:
+
+1. Segeltuch (Hauptposition)
+1. Segelplatten* *(nur wenn vorhanden)*
+1. Winter-Schutzhülle
+1. Schutzabdeckung für Sonnensegelecken
+1. Segeltuch Befestigungsset
+1. Schnappschäkel Edelstahl *(nur wenn bei Soliday unter Segelzubehör)*
+1. Reinigungs- und Pflegeset *(immer hier, egal wo Soliday es listet)*
+
+### Segeltuch-Hauptposition:
+
+- **Artikelname:** systemabhängig (Default C/CS/ONE: “Segeltuch - Austrosail Nano”, Default M/MA: “Segeltuch - Austronet 960”)
+- **Einheit:** Stk., Menge: 1
+- **Preis:** aus Google Sheet (= 0 / Platzhalter)
+- **Artikelbeschreibung** (jede Zeile einzeln, kursiv in sevdesk):
+
+```
+X.XXX,- € Austrosail Nano
+X.XXX,- € Austrosail Nano Sonderfarben
+X.XXX,- € Soltis 92
+X.XXX,- € Soltis 92 Sonderfarben
+Farbe nach Wahl aus Farbfächer des Herstellers
+```
+
+*(Welche Stoffe angezeigt werden ist systemabhängig — kommt aus Google Sheet)*
+
+### Segelplatten (00E13001416):
+
+- Bezeichnung: **“Segelplatten*”**
+- Artikelbeschreibung: **”*nur beim Austrosail Nano Stoff möglich”**
+- Position: direkt nach Segeltuch-Hauptposition
+- Alle Vorkommen zusammenfassen (erscheinen einmal pro Segelecke bei Soliday)
+
+### Winter-Schutzhülle:
+
+- Länge: aus **Wellenlänge des Aufrollsystems** (steht in Artikelbeschreibung der Hülle als “Wellenlänge: XXXXmm”)
+- Länge **immer aufrunden** auf nächsten vollen Meter (`Math.ceil(mm / 1000)`)
+- **Einheit immer Stk.** (nie Meter)
+- Beim Twin: 2 Stk.
+- Preis: Soliday Gesamtpreis 1:1 (nicht Preis/m)
+- Gilt für alle Systeme: C, CS, CS-Twin, CS-Dreieck, ONE, M, MA und alle weiteren
+
+|Soliday Art.-Nr.|Ausführung|Kugelmann Bezeichnung                                 |
+|----------------|----------|------------------------------------------------------|
+|73004A001       |standard  |Winter-Schutzhülle - [X]m / Austrosail - stone        |
+|71004A010       |standard  |Winter-Schutzhülle - [X]m / Austrosail - stone        |
+|71004A011       |premium   |Winter-Schutzhülle Premium - [X]m / Austrosail - stone|
+|70004A007       |premium   |Winter-Schutzhülle Premium - [X]m / Austrosail - stone|
+
+### Schutzabdeckungen:
+
+|Soliday Art.-Nr.|Kugelmann Bezeichnung                 |
+|----------------|--------------------------------------|
+|71004A003       |Schutzabdeckung für 2 Sonnensegelecken|
+|71004A020       |Schutzabdeckung für 1 Sonnensegelecke |
+
+### Segeltuch Befestigungsset:
+
+|Soliday Art.-Nr.|Kugelmann Bezeichnung    |
+|----------------|-------------------------|
+|00E13001929     |Segeltuch Befestigungsset|
+
+Beim ONE-System immer vorhanden. Position: vor Schnappschäkel.
+
+### Pflegeset:
+
+|Soliday Art.-Nr.|Kugelmann Bezeichnung         |
+|----------------|------------------------------|
+|00E13001325     |Reinigungs- und Pflegeset C/CS|
+|00E13001321     |Reinigungs- und Pflegeset     |
+
+**Pflegeset kommt IMMER unter Segeltuch**, egal wo Soliday es listet.
+
+-----
+
+## 7. SEGELSYSTEM-SEKTION
+
+### Reihenfolge beim C/CS-System:
+
+1. Aufrollsystem/Welle
+1. Motor-Aufpreis (Funk)
+1. Anschlussleitung
+1. Handsender
+1. Windsensor
+1. Windsensor-Zubehör (Adapterplatte, Befestigungsplatte etc.)
+
+### Reihenfolge beim ONE-System:
+
+1. Aufrollsystem/Welle
+1. Bedienset
+1. Winsch / Snap-Winsch *(wenn vorhanden)*
+1. Snap-Grundplatte *(wenn vorhanden)*
+1. Bedienseil 8mm schwarz/orange
+1. Verspannungsset Teile
+1. Drahtseil mit Gabelterminal
+
+### Reihenfolge beim M-System:
+
+1. Aufrollsystem/Welle
+1. Winsch / Snap-Winsch
+1. Snap-Grundplatte *(wenn vorhanden)*
+1. Verspannungsset Teile
+1. Drahtseil mit Gabelterminal
+
+**Beim M-System: kein Bedienseil, kein Bedienset, kein Windsensor, kein Handsender**
+
+### Aufrollsystem-Bezeichnungen (Schema):
+
+- SOLIDAY-C: **“Soliday C Segelsystem - [X]m Welle”**
+- SOLIDAY-CS: **“Soliday CS Segelsystem - [X]m Welle”**
+- SOLIDAY-CS Dreieck: **“Soliday CS Segelsystem - [X]m Welle - Dreieck”**
+- SOLIDAY-CS Twin: **“Soliday CS-Twin Segelsystem - [X]m Welle”**
+- SOLIDAY-ONE: **“Soliday ONE Segelsystem - [X]m Welle”**
+- SOLIDAY-M: **“Soliday M Segelsystem - [X]m Welle”**
+
+Wellenlänge aus Art.-Nr.-Suffix (z.B. `78V1ONE09` → 9m, `70001B011` → 11m).
+
+### Motor & Zubehör:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                                 |
+|-----------|------------------------------------------------------|
+|00E13002183|Aufpreis für Rohrmotor mit Funkempfänger              |
+|00E13000850|Anschlussleitung Becker Motor 2m weiß                 |
+|00E13001921|Funk-Handsender 1-Kanal - SWC541+                     |
+|00E13001922|Funk-Handsender 8-Kanal - SWC548+                     |
+|71003A045  |Sonnen- Windsensor mit Solarzelle - Funk - SC861+     |
+|71003A032  |Sonnen- Windsensor mit Stromanschluss - SC81          |
+|00E13001919|Sonnen- Windsensor mit Stromanschluss - SC811+        |
+|00E13000263|SO-WI-Sensor Befestigungsplatte für Droppole          |
+|00E13001959|Adapterplatte für SoWi-Sensor inkl. Design-Mastschelle|
+
+### ONE Bediensets & Verspannung:
+
+|Art.-Nr.    |Kugelmann Bezeichnung                   |
+|------------|----------------------------------------|
+|00E13002076 |SOLIDAY-ONE Bedienset für Aluminium-Mast|
+|00E13002077 |SOLIDAY-ONE Bedienset für Wandmontage   |
+|00E13002063 |Bedienseil 8mm schwarz/orange           |
+|VPVSTEILEONE|Teile für Verspannungsset SOLIDAY-ONE   |
+|VPVSTEILE   |Teile für Verspannungsset SOLIDAY-M     |
+|VPVS008     |Drahtseil Ø4mm mit Gabelterminal L=8m   |
+|VPVS009     |Drahtseil Ø4mm mit Gabelterminal L=9m   |
+|VPVS011     |Drahtseil Ø4mm mit Gabelterminal L=11m  |
+|VPVS013     |Drahtseil Ø4mm mit Gabelterminal L=13m  |
+
+### Winsch & Snap-System:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                               |
+|-----------|----------------------------------------------------|
+|00E13000059|Seilstopp-Winsch mit Kurbel                         |
+|00E13000591|Snap-Design Winsch inkl. 25cm Kurbel & Adapterplatte|
+|00E13000743|Snap-Grundplatte mit Fallstoppklemme                |
+
+-----
+
+## 8. MASTEN-SEKTION
+
+### Reihenfolge:
+
+1. Kürzere Masten zuerst, längere danach
+1. Biegung Aluminium-Mast *(wenn vorhanden)*
+1. Zuschnitt/Ablängkosten
+1. Abdeckkappe
+1. Versteifungsrohr
+1. Höhenverstellung / Gleitschiene
+
+### Mastlängen-Regel:
+
+**Artikelnummer und Bezeichnung aus Soliday 1:1 übernehmen.** Die tatsächliche Länge aus der Artikelbeschreibung wird ignoriert. Was Soliday als Artikelnummer und erste Zeile listet, bleibt so.
+
+### Droppole Masten:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                |
+|-----------|-------------------------------------|
+|00E13000335|Droppole Mast l=3m - silber eloxiert |
+|00E13000338|Droppole Mast l=3m - schwarz eloxiert|
+|00E13000347|Droppole Mast l=4m - schwarz eloxiert|
+|00E13000348|Droppole Mast l=5m - schwarz eloxiert|
+|00E13000336|Droppole Mast l=4m - silber eloxiert |
+|00E13000337|Droppole Mast l=5m - silber eloxiert |
+
+### Droppole Zugpylone (mit Auszug/Teleskop):
+
+|Art.-Nr. Schema    |Kugelmann Bezeichnung                                    |
+|-------------------|---------------------------------------------------------|
+|PYLDP0X1000 silber |Droppole Zugpylon l=bis [X]m - silber eloxiert           |
+|PYLDP1X1000 schwarz|Droppole Zugpylon l=bis [X]m - schwarz eloxiert          |
+|PYLNI0X1000 V2A    |Edelstahl Rund-Mast Zugpylon l=bis [X]m - geschliffen    |
+|PYLNI1X1000 V4A    |Edelstahl Rund-Mast Zugpylon l=bis [X]m - geschliffen    |
+|PYLAL0X1000 silber |Aluminium Rund-Mast Zugpylon l=bis [X]m - silber eloxiert|
+
+### Aluminium Rund-Masten:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                         |
+|-----------|----------------------------------------------|
+|00E13000235|Aluminium Rund-Mast l=bis 3m - silber eloxiert|
+|00E13000238|Aluminium Rund-Mast l=bis 6m - silber eloxiert|
+|00E13001650|Aluminium Rund-Mast l=bis 3m - anthrazit      |
+|00E13001652|Aluminium Rund-Mast l=bis 6m - anthrazit      |
+
+### Edelstahl Rund-Masten:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                         |
+|-----------|----------------------------------------------|
+|00E13000135|Edelstahl Rund-Mast l=3m - geschliffen        |
+|00E13001766|Edelstahl Rund-Mast l=bis 6m - V4A geschliffen|
+
+*(Es gibt auch V2A-Varianten — gleiche Benennungslogik, Art.-Nr. aus Soliday 1:1)*
+
+### Mastzubehör:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                                       |Sektion|
+|-----------|------------------------------------------------------------|-------|
+|00E13001135|Zuschnitt auf Maß - Droppole Mast                           |Masten |
+|00E13000133|Biegung Aluminium-Mast ohne Versteifungsrohr                |Masten |
+|00E13000217|Abdeckkappe Design für Aluminium Rund-Mast                  |Masten |
+|00E13000216|Abdeckkappe Design für Edelstahl Rund-Mast                  |Masten |
+|00E13001689|Abdeckkappe Design für Aluminium Rund-Mast - anthrazit      |Masten |
+|00E13000131|Versteifungsrohr für Aluminium Rund-Mast                    |Masten |
+|00E13000096|Versteifungsrohr für Edelstahl Rund-Mast                    |Masten |
+|00E13000208|Höhenverstellung Droppole Mast mit Kurbel - silber eloxiert |Masten |
+|00E13000988|Höhenverstellung Droppole Mast mit Kurbel - schwarz eloxiert|Masten |
+|00E13001874|Höhenverstellung für Rund-Masten - Seilzug                  |Masten |
+|00E13001875|Höhenverstellung für Rund-Masten - Seilzug                  |Masten |
+|00E13001787|Design-Adapter mit Lasche Droppole                          |Masten |
+
+### Gleitschienen — Sektionszuordnung:
+
+**→ Masten** (wenn “inkl. Montage” in Soliday-Artikelbeschreibung):
+
+|Art.-Nr.   |Kugelmann Bezeichnung                                |
+|-----------|-----------------------------------------------------|
+|00E13000052|Höhenverstellung - Gleitschiene 1,5m                 |
+|00E13000027|Höhenverstellung - Gleitschiene 1,5m                 |
+|00E13000204|Höhenverstellung - Gleitschiene 1,5m - mit Seilbremse|
+|00E13000764|Höhenverstellung - Gleitschiene 1,5m - Droppole      |
+
+**→ Wandbefestigungen** (wenn ohne Mastmontage):
+
+|Art.-Nr.   |Kugelmann Bezeichnung|
+|-----------|---------------------|
+|00E13000603|Gleitschiene 1,5m    |
+
+-----
+
+## 9. FUNDAMENTE-SEKTION
+
+### Reihenfolge:
+
+1. Schwerlast-Schraubfundament
+1. Droppole Dorn
+1. Bodenplatten
+1. Bodenhülse
+1. Base Cube Grundgestell
+1. Base Cube Abdeckungen
+1. **Beschwerung Base Cube** *(immer nach Abdeckungen einfügen wenn Base Cube vorhanden)*
+1. BaseCube Beton
+1. Abdeckblende Droppole
+
+### Schraubfundament (00E13000227):
+
+- **Bezeichnung:** “Schwerlast-Schraubfundament”
+- **Artikelbeschreibung:** “maschinell eingedreht · inkl. Erdschraube & Justier-Granulat · sofort belastbar - ohne Flurschäden”
+
+### Beschwerung Base Cube:
+
+Wenn `00E13000302` (Base Cube Grundgestell) im Angebot vorkommt → **immer** direkt nach den Base Cube Abdeckungen einfügen:
+
+- Artikelnummer: leer (manuelle Eingabe in sevdesk)
+- Bezeichnung: **“Beschwerung Base Cube”**
+- Einheit: pauschal, Preis: 0,00 €
+
+### Weitere Fundamente:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                                       |Artikelbeschreibung|
+|-----------|------------------------------------------------------------|-------------------|
+|00E13000324|Droppole Dorn für Schraubfundament                          |                   |
+|00E13001870|Bodenplatte 10° Droppole                                    |                   |
+|00E13001872|Bodenplatte 2° Droppole                                     |                   |
+|00E13001782|Bodenplatte für Edelstahl Rund-Mast                         |                   |
+|00E13001604|Bodenplatte 10° für Aluminium Rund-Mast                     |                   |
+|00E13001606|Bodenplatte 0° für Aluminium Rund-Mast                      |                   |
+|00E13000244|Bodenhülse Aluminium Rund-Mast                              |für Betonfundament |
+|00E13000302|Base Cube Grundgestell f. Mast Droppole 10° Neigung         |                   |
+|00E13000304|Base Cube Abdeckungen 5tlg. Holz “Esche”                    |                   |
+|00E13001600|BaseCube Beton L-Form für DP, mit Bodenhülse und Dorn, H=450|                   |
+|00E13001412|Abdeckblende für Droppole-Mast 2-teilig                     |                   |
+
+-----
+
+## 10. WANDBEFESTIGUNGEN-SEKTION
+
+### Reihenfolge:
+
+1. Wandplatten (150/150, 150/156, 150/280 etc.)
+1. Wandschellen
+1. Gegenplatten
+1. Design-Wandhalterungen / Abstandhalter
+
+### “edelstahl poliert” Regel:
+
+Wenn “Design” in Soliday-Artikelbeschreibung UND es gibt beide Varianten (standard + Design) des Artikels → Suffix **” - edelstahl poliert”** anhängen. Bei Artikeln die es nur in einer Version gibt (Kreuzadapter, Mastschellen etc.) keinen Zusatz.
+
+### Wandplatten:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                                             |
+|-----------|------------------------------------------------------------------|
+|00E13000709|Edelstahl Wandbefestigung 150/150/6                               |
+|00E13000711|Edelstahl Wandbefestigung 50/270/8 - senkrecht                    |
+|00E13000046|Edelstahl Wandbefestigung CS 150/156/6                            |
+|00E13002080|Edelstahl Wandbefestigung 150/280/6 mit 2 Laschen                 |
+|00E13001855|Edelstahl Wandbefestigung 150/150/6 - edelstahl poliert           |
+|00E13001857|Edelstahl Wandbefestigung 50/270/8 - senkrecht - edelstahl poliert|
+|00E13001856|Edelstahl Wandbefestigung 270/50/8 - waagrecht - edelstahl poliert|
+|00E13001910|Edelstahl Wandplatte rund ø180mm h=149mm                          |
+
+### Wandschellen & Zubehör:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                                 |
+|-----------|------------------------------------------------------|
+|00E13000243|Wandschelle für Aluminium Rund-Mast                   |
+|00E13000110|Gegenplatte für Wandschelle Aluminium Rund-Mast       |
+|00E13001940|Design Wandhalterung für Aluminium Rund-Mast - 5cm    |
+|00E13000248|Design Wandhalterung für Edelstahl Rund-Mast - 5cm    |
+|00E13000320|Design Wandhalterung für Droppole - 5cm               |
+|00E13000321|Design Wandhalterung für Droppole - 10cm              |
+|00E13000322|Design Wandhalterung für Droppole - 20cm              |
+|00E13000112|Befestigungsplatte für Gleitschiene                   |
+|00E13001025|Sonderkonsole *(Preis 0, manuelle Eingabe in sevdesk)*|
+
+-----
+
+## 11. ZUBEHÖR-SEKTION
+
+### Reihenfolge:
+
+1. Design-Adapter mit Lasche Droppole *(immer zuerst)*
+1. Design-Kreuzadapter mit Bügel
+1. Design-Kreuzadapter
+1. Droppole Ring-Adapterplatten
+1. Design-Mastschellen
+1. Seilsicherung
+1. Schwerlastrolle / Pulley / Professionelle Seilrolle
+1. Dyneema Seil / Pylonseil *(immer nach Seilrollen)*
+1. Schnappschäkel *(nur wenn bei Soliday unter Hardware)*
+1. Schäkel mit Schnellverschluss
+1. Ringbolzen
+1. Sonstiges
+
+### Dyneema Seil Regel:
+
+Art.-Nr. `00E13000107` wenn bei Soliday unter **Segelzubehör** → kommt **immer zu Zubehör** (nicht Segeltuch). Alle Längen zusammenfassen. Gesamtpreis = Summe aller Soliday-Gesamtpreise.
+
+|System          |Kugelmann Bezeichnung                            |
+|----------------|-------------------------------------------------|
+|ONE / M / andere|Dyneema Seil 4mm                                 |
+|C / CS          |C/CS: Zusätzliches Pylonseil 4mm mit Dyneema-Kern|
+
+### Zubehör-Artikel:
+
+|Art.-Nr.   |Kugelmann Bezeichnung                                     |
+|-----------|----------------------------------------------------------|
+|00E13001787|Design-Adapter mit Lasche Droppole                        |
+|00E13001742|Design-Kreuzadapter mit Bügel                             |
+|00E13001741|Design-Kreuzadapter                                       |
+|00E13000206|Droppole Ring-Adapterplatte komplett                      |
+|00E13001937|Droppole Ring-Adapterplatte komplett für Wellenbefestigung|
+|00E13001735|Design-Mastschelle für Aluminium Rund-Mast                |
+|00E13001734|Design-Mastschelle für Edelstahl Rund-Mast                |
+|00E13000843|Seilsicherung komplett zum Verstauen des Seils            |
+|00E13002149|Schwerlastrolle PULLEY-X10                                |
+|00E13001965|Schwerlastrolle für Seile bis 8mm                         |
+|00E13000042|Professionelle Seilrolle 8 für Seile bis 8mm              |
+|00E13000107|Dyneema Seil 4mm *(ONE/M)*                                |
+|00E13000417|Schnappschäkel Edelstahl *(nur wenn unter Hardware)*      |
+|00E13000026|Schäkel mit Schnellverschluss Edelstahl                   |
+|00E13000066|Ringbolzenset M8x80                                       |
+|00E13000127|Ringbolzen M8x100mm                                       |
+
+-----
+
+## 12. MONTAGE UND FRACHT-SEKTION
+
+### Reihenfolge (Vorfracht immer zuletzt):
+
+1. System Installation
+1. Service & Logistik
+1. Dachterrassen Aufschlag *(wenn ausgewählt im Fragebogen)*
+1. Transportzuschlag *(wenn im Soliday-PDF vorhanden)*
+1. Vorfrachtpauschale ← **immer letzter Punkt**
+
+### Neue Positionen (Preise aus Google Sheet, aktuell = 0):
+
+|Art.-Nr. |Kugelmann Bezeichnung            |Einheit |
+|---------|---------------------------------|--------|
+|INST-C   |System Installation - Soliday C  |pauschal|
+|INST-CS  |System Installation - Soliday CS |pauschal|
+|INST-ONE |System Installation - Soliday ONE|pauschal|
+|INST-M   |System Installation - Soliday M  |pauschal|
+|SERV-LOG |Service & Logistik               |Stk.    |
+|VORFRACHT|Vorfrachtpauschale               |pauschal|
+
+### Artikelbeschreibungen:
+
+**System Installation:**
+
+> Professionelle Montage durch zwei Soliday-Fachmonteure
+
+**Vorfrachtpauschale:**
+
+> Baustromgestellung bauseits: 230V - 16A
+> Elektrische Anschlüsse sind bauseits vorzunehmen
+
+### Aus Soliday übernommene Fracht-Artikel:
+
+|Art.-Nr. |Kugelmann Bezeichnung         |
+|---------|------------------------------|
+|99FRACHT5|Transportzuschlag bis 5m Länge|
+|99FRACHT6|Transportzuschlag ab 5m Länge |
+
+-----
+
+## 13. TEUERUNGSZUSCHLAG
+
+- Wird als **Gesamt-Aufschlag** (discountSave) an sevdesk übergeben — nicht als Positionszeile
+- Betrag: Netto-Wert aus Soliday-PDF 1:1
+- Text: “Temporäre Anpassung aufgrund von Rohstoff- & Energiekosten”
+
+-----
+
+## 14. UNBEKANNTE ARTIKEL
+
+Wenn ein Artikel vorkommt der in keiner der obigen Mappings steht:
+
+- Soliday-Bezeichnung **1:1 übernehmen**
+- Sektion nach **bestem Ermessen** zuordnen
+- Preis **1:1 aus Soliday** übernehmen
+
+-----
+
+## 15. GETESTETE SYSTEME (Stand 15.05.2026)
+
+|System            |Status                              |
+|------------------|------------------------------------|
+|SOLIDAY-ONE       |✓ vollständig getestet (5 Varianten)|
+|SOLIDAY-M         |✓ vollständig getestet (4 Varianten)|
+|SOLIDAY-C         |Teilweise (aus früherer Session)    |
+|SOLIDAY-CS        |Teilweise (aus früherer Session)    |
+|SOLIDAY-X         |✗ noch nicht getestet               |
+|SOLIDAY-XS        |✗ noch nicht getestet               |
+|SOLIDAY-MA        |✗ noch nicht getestet               |
+|SOLIDAY-CS-Twin   |Teilweise                           |
+|SOLIDAY-CS-Dreieck|Teilweise                           |
+
+-----
+
+## 16. OFFENE PUNKTE / NOCH ZU ENTSCHEIDEN
+
+- **Segeltuch-Preise:** Kommen aus Google Sheet (Austrosail Nano, Sonderfarben, Soltis 92, Soltis 92 Sonderfarben) — systemabhängige Auswahl noch zu definieren
+- **Montagepreise:** System Installation, Service & Logistik, Vorfracht kommen aus Google Sheet
+- **Fragebogen-Felder** (für HTML-Zwischenschritt): Montagezone, Dachterrassen-Aufschlag noch zu implementieren
+- **X / XS / MA Systeme:** Transformationsregeln noch unbekannt — aus nächsten Angeboten zu erarbeiten
+- **Sonderkonsole:** Preis und Beschreibung werden manuell in sevdesk eingegeben
