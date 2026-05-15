@@ -62,8 +62,10 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
 .card-hdr strong{color:var(--text);font-size:13px}
 .val-ok{display:inline-flex;align-items:center;gap:6px;background:rgba(56,217,169,.1);border:1px solid rgba(56,217,169,.3);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--accent2);margin-bottom:16px}
 .val-err{display:inline-flex;align-items:center;gap:6px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--error);margin-bottom:16px}
-.step2-layout{display:grid;grid-template-columns:1fr 360px;gap:20px}
-@media(max-width:900px){.step2-layout{grid-template-columns:1fr}}
+.step2-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;height:calc(100vh - 260px);margin-bottom:16px}
+@media(max-width:900px){.step2-layout{grid-template-columns:1fr;height:auto}}
+.step2-col-l{overflow-y:auto;min-height:0}
+.step2-col-r{display:flex;flex-direction:column;min-height:0}
 .jtable{width:100%;border-collapse:collapse;font-size:11px}
 .jtable th{padding:8px 10px;text-align:left;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em;font-size:10px}
 .jtable td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:top}
@@ -72,7 +74,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
 .tag{display:inline-block;background:rgba(91,141,238,.12);color:var(--accent);padding:1px 5px;border-radius:3px;font-size:9px;white-space:nowrap}
 .tag-s{background:rgba(245,166,35,.12);color:var(--warn)}
 .num-r{text-align:right}
-.pdf-frame{width:100%;height:580px;border:1px solid var(--border);border-radius:0 0 12px 12px;background:#fff}
+.pdf-frame{flex:1;width:100%;min-height:0;border:1px solid var(--border);border-radius:0 0 12px 12px;background:#fff}
 .chat-wrap{margin-top:14px}
 .chat-lbl{font-size:11px;color:var(--muted);margin-bottom:7px}
 .chat-row{display:flex;gap:10px;align-items:flex-start}
@@ -147,7 +149,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#38d9a9">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 08:31</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 10:42</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -208,7 +210,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
 <div id="viewStep2" class="hidden">
   <div id="valBadge"></div>
   <div class="step2-layout">
-    <div>
+    <div class="step2-col-l">
       <div class="card">
         <div class="card-hdr"><strong>SoSeKu-JSON</strong><span id="s2meta"></span></div>
         <div style="padding:14px 16px">
@@ -230,7 +232,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
         </div>
       </div>
     </div>
-    <div>
+    <div class="step2-col-r">
       <div class="card-hdr" style="border-radius:12px 12px 0 0;border:1px solid var(--border)"><strong>Soliday PDF</strong><span style="font-size:10px;color:var(--muted)">zur Endsumme scrollen</span></div>
       <iframe id="pdfFrame" class="pdf-frame"></iframe>
     </div>
@@ -362,7 +364,11 @@ let _sailPos=[],_wandpl=[],_gsMonPos=[];
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtE=n=>fmt(n)+' €';
 const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewDone','viewError'];
-function showView(id){VIEWS.forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));}
+function showView(id,fromHistory){
+  VIEWS.forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));
+  if(!fromHistory)history.pushState({view:id},'','');
+}
+window.addEventListener('popstate',e=>{if(e.state?.view)showView(e.state.view,true);});
 function setStep(n){
   document.getElementById('stepsBar').classList.remove('hidden');
   for(let i=1;i<=7;i++){
@@ -542,7 +548,7 @@ function renderStep2(){
     badge.innerHTML=`<div class="val-err">&#10005; Abweichung ${fmtE(v.diff)} – bitte manuell prüfen</div>`;
   }else{
     extractAttempts=0;
-    badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)}</div>`;
+    badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen</div>`;
   }
   document.getElementById('s2meta').textContent=`${d.positionen.length} Positionen`;
   document.getElementById('s2info').innerHTML=[
@@ -718,11 +724,17 @@ function renderStep3(){
   const remSum=removedPositionen.reduce((s,p)=>s+(p.gesamt||0),0);
   const check=skSum+remSum;
   const ok=Math.abs(check-solidayTotal)<0.02;
+  const origCount=soSeKuJSON.positionen.length;
+  const remCount=removedPositionen.length;
+  const finalCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
+  const addedCount=sektionen.reduce((s,sek)=>s+sek.positionen.filter(p=>p._gs).length,0);
+  const posOk=(origCount-remCount+addedCount)===finalCount;
   document.getElementById('s3sum').innerHTML=
     `<div class="sum-box"><div class="lbl">Soliday Netto</div><div class="val">${fmtE(solidayTotal)}</div></div>`+
     `<div class="sum-box"><div class="lbl">SoSeKu Summe</div><div class="val">${fmtE(skSum)}</div></div>`+
     `<div class="sum-box"><div class="lbl">Entfernte Pos.</div><div class="val">${fmtE(remSum)}</div></div>`+
-    `<div class="sum-box ${ok?'ok':'err'}"><div class="lbl">Prüfung</div><div class="val">${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
+    `<div class="sum-box ${ok?'ok':'err'}"><div class="lbl">Summenprüfung</div><div class="val">${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`+
+    `<div class="sum-box ${posOk?'ok':'err'}"><div class="lbl">Positionen</div><div class="val">${origCount} PDF &rarr; ${finalCount} SKu (${remCount} entf. &plus; ${addedCount} neu)</div></div>`;
   document.getElementById('s3sektionen').innerHTML=sektionen.map(sek=>`
     <div class="sektion-block">
       <div class="sektion-title">${sek.name}</div>
