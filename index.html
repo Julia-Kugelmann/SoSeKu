@@ -19,8 +19,8 @@ header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;just
 .subtitle{font-size:11px;color:var(--muted);margin-top:2px}
 .btn-reset-hdr{font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border);border-radius:6px;padding:5px 10px;background:none}
 .btn-reset-hdr:hover{border-color:var(--accent);color:var(--text)}
-.steps-wrap{padding:14px 28px;border-bottom:1px solid var(--border);overflow-x:auto}
-.steps{display:flex;align-items:center;min-width:640px}
+.steps-wrap{padding:14px 28px;border-bottom:1px solid var(--border);overflow-x:auto;display:flex;justify-content:center}
+.steps{display:flex;align-items:center}
 .step{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
 .step.active{color:var(--accent)}.step.done{color:var(--accent2)}
 .step-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;border:1px solid currentColor;flex-shrink:0}
@@ -38,7 +38,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .field input::placeholder{color:var(--muted);opacity:.5}
 .setup-note{font-size:10px;color:var(--muted);line-height:1.7;padding:10px 14px;background:rgba(91,141,238,.05);border-radius:8px;border:1px solid rgba(91,141,238,.1);margin-top:10px}
 .setup-note strong{color:var(--accent2)}
-.upload-zone{border:2px dashed rgba(91,141,238,.3);border-radius:18px;padding:56px 32px;text-align:center;cursor:pointer;transition:all .3s;background:rgba(91,141,238,.02)}
+.upload-zone{border:2px dashed rgba(91,141,238,.3);border-radius:18px;padding:40px 32px;text-align:center;cursor:pointer;transition:all .3s;background:rgba(91,141,238,.02)}
 .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:rgba(91,141,238,.06)}
 .upload-icon{font-size:48px;margin-bottom:14px}
 .upload-title{font-family:'Syne',sans-serif;font-size:19px;font-weight:700;margin-bottom:6px}
@@ -84,9 +84,22 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sektion-block{margin-bottom:18px}
 .sektion-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:9px 14px;background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.15);border-radius:10px 10px 0 0;color:var(--accent)}
 .sektion-body{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto}
-.sum-compare{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.sum-compare{margin-bottom:18px}
 #viewStep3{display:flex;flex-direction:column;height:calc(100vh - 150px)}
-.s3-scroll{flex:1;overflow-y:auto;min-height:0;max-width:980px}
+.s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
+.s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center}
+.s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:center}
+.s3-sum-badge{padding:10px 18px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;border-left:1px solid var(--border);min-width:100px}
+.s3-sum-badge.ok{background:rgba(56,217,169,.1);color:var(--accent2)}
+.s3-sum-badge.err{background:rgba(255,107,107,.1);color:var(--error)}
+.s3-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.s3-big{font-size:20px;font-weight:700;color:var(--accent)}
+.s3-eq{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-top:4px}
+.s3-eq .v{font-weight:600;color:var(--text)}
+.s3-eq .op{color:var(--muted)}
+.s3-eq .tot{font-weight:700;color:var(--accent2)}
+.s3-eq .lbl2{font-size:10px;color:var(--muted);text-transform:uppercase}
+.s3-scroll{flex:1;overflow-y:auto;min-height:0;max-width:820px}
 .s3-bottom{background:var(--bg);padding:10px 0 0;border-top:1px solid var(--border)}
 .sum-box{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
 .sum-box .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
@@ -154,7 +167,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:31</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:51</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -193,11 +206,13 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 
 <!-- UPLOAD -->
 <div id="viewUpload" class="hidden">
+  <div style="max-width:620px;margin:0 auto">
   <div class="upload-zone" id="dropZone">
     <div class="upload-icon">&#128196;</div>
     <div class="upload-title">Soliday PDF ablegen</div>
     <div class="upload-sub">oder hier klicken zum Ausw&auml;hlen</div>
     <input type="file" id="fileInput" accept=".pdf" style="display:none">
+  </div>
   </div>
 </div>
 
@@ -758,18 +773,9 @@ function renderStep3(){
   const remSum=removedPositionen.reduce((s,p)=>s+(p.gesamt||0),0);
   const check=skSum+remSum+teu;
   const ok=Math.abs(check-solidayTotal)<0.02;
-  const origCount=soSeKuJSON.positionen.length;
-  const remCount=removedPositionen.length;
-  const finalCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
-  const addedCount=sektionen.reduce((s,sek)=>s+sek.positionen.filter(p=>p._gs).length,0);
-  const posOk=(origCount-remCount+addedCount)===finalCount;
+  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+`<span class='op'>=</span><span class='tot'>${fmtE(check)}</span>`;
   document.getElementById('s3sum').innerHTML=
-    `<div class="sum-box"><div class="lbl">Soliday Netto</div><div class="val">${fmtE(solidayTotal)}</div></div>`+
-    `<div class="sum-box"><div class="lbl">SoSeKu Summe</div><div class="val">${fmtE(skSum)}</div></div>`+
-    `<div class="sum-box"><div class="lbl">Entfernte Pos.</div><div class="val">${fmtE(remSum)}</div></div>`+
-    (teu>0?`<div class="sum-box"><div class="lbl">Teuerungszuschlag</div><div class="val">${fmtE(teu)}</div></div>`:'')+
-    `<div class="sum-box ${ok?'ok':'err'}"><div class="lbl">Summenprüfung</div><div class="val">${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`+
-    `<div class="sum-box ${posOk?'ok':'err'}"><div class="lbl">Positionen</div><div class="val">${origCount} PDF &rarr; ${finalCount} SKu (${remCount} entf. &plus; ${addedCount} neu)</div></div>`;
+    `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
   document.getElementById('s3sektionen').innerHTML=sektionen.map(sek=>`
     <div class="sektion-block">
       <div class="sektion-title">${sek.name}</div>
