@@ -175,7 +175,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 17:27</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 17:31</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -488,7 +488,13 @@ async function fetchSheetTab(tab){
     const r=await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`);
     if(!r.ok)return null;
     const t=await r.text();
-    return t.split('\n')[0].replace(/^"|"$/g,'').replace(/""/g,'"').trim();
+    // Google returns HTTP 200 with the first tab's data when the tab doesn't exist.
+    // A prompt tab has exactly 1 cell in row 0; a data table has multiple non-empty cells.
+    const rows=parseCSV(t);
+    if(!rows.length)return null;
+    const firstRow=rows[0].filter(c=>c.trim());
+    if(firstRow.length>1)return null; // data table, not a prompt tab
+    return firstRow[0]||null;
   }catch{return null;}
 }
 async function fetchSheetTabAll(tab){
