@@ -62,10 +62,11 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .card-hdr strong{color:var(--text);font-size:13px}
 .val-ok{display:inline-flex;align-items:center;gap:6px;background:rgba(56,217,169,.1);border:1px solid rgba(56,217,169,.3);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--accent2);margin-bottom:16px}
 .val-err{display:inline-flex;align-items:center;gap:6px;background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.3);border-radius:8px;padding:8px 14px;font-size:12px;color:var(--error);margin-bottom:16px}
-.step2-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;height:calc(100vh - 330px);margin-bottom:12px}
+.step2-layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;height:calc(100vh - 390px);margin-bottom:10px}
 @media(max-width:900px){.step2-layout{grid-template-columns:1fr;height:auto}}
-.step2-col-l{overflow-y:auto;min-height:0}
+.step2-col-l{display:flex;flex-direction:column;min-height:0}
 .step2-col-r{display:flex;flex-direction:column;min-height:0}
+.s2-json-scroll{flex:1;overflow-y:auto;min-height:0;border:1px solid var(--border);border-radius:0 0 12px 12px;background:var(--surface)}
 .jtable{width:100%;border-collapse:collapse;font-size:11px}
 .jtable th{padding:8px 10px;text-align:left;color:var(--muted);font-weight:400;border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.06em;font-size:10px}
 .jtable td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:top}
@@ -150,7 +151,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#38d9a9">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:01</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:09</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -212,8 +213,8 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
   <div id="valBadge"></div>
   <div class="step2-layout">
     <div class="step2-col-l">
-      <div class="card">
-        <div class="card-hdr"><strong>SoSeKu-JSON</strong><span id="s2meta"></span></div>
+      <div class="card-hdr" style="border-radius:12px 12px 0 0;border:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span id="s2meta"></span></div>
+      <div class="s2-json-scroll" id="s2jsonScroll">
         <div style="padding:14px 16px">
           <div class="info-chips" id="s2info"></div>
           <div style="overflow-x:auto">
@@ -224,17 +225,17 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
           </div>
           <div id="s2footer" style="margin-top:12px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;font-size:12px"></div>
         </div>
-      </div>
-      <div class="chat-wrap">
-        <div class="chat-lbl">Korrektur-Hinweis an Claude (optional):</div>
-        <div class="chat-row">
-          <textarea id="chatStep2" placeholder="z.B. Position 7 hat falsche Menge"></textarea>
-          <button class="btn btn-s" onclick="reextract()">&circlearrowleft; Nochmal</button>
+        <div class="chat-wrap" style="padding:0 14px 14px">
+          <div class="chat-lbl">Korrektur-Hinweis an Claude (optional):</div>
+          <div class="chat-row">
+            <textarea id="chatStep2" placeholder="z.B. Position 7 hat falsche Menge"></textarea>
+            <button class="btn btn-s" onclick="reextract()">&circlearrowleft; Nochmal</button>
+          </div>
         </div>
       </div>
     </div>
     <div class="step2-col-r">
-      <div class="card-hdr" style="border-radius:12px 12px 0 0;border:1px solid var(--border)"><strong>Soliday PDF</strong><span style="font-size:10px;color:var(--muted)">zur Endsumme scrollen</span></div>
+      <div class="card-hdr" style="border-radius:12px 12px 0 0;border:1px solid var(--border)"><strong>Soliday PDF</strong></div>
       <div id="pdfContainer" class="pdf-container"><div class="spinner" style="margin:40px auto"></div></div>
     </div>
   </div>
@@ -580,6 +581,7 @@ function renderStep2(){
     `<span style="color:var(--muted)">MwSt.: <strong>${fmtE(d.mwst)}</strong></span>`+
     `<span style="font-size:16px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt)}</strong></span>`;
   if(pdfBase64){renderPDFPages(pdfBase64);}
+  setTimeout(()=>{const sc=document.getElementById('s2jsonScroll');if(sc)sc.scrollTop=sc.scrollHeight;},120);
   showView('viewStep2');setStep(2);
 }
 async function reextract(){
@@ -1126,6 +1128,7 @@ async function renderPDFPages(b64){
       await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
       con.appendChild(canvas);
     }
+    setTimeout(()=>{con.scrollTop=con.scrollHeight;},80);
   }catch(e){
     con.innerHTML=`<div style="padding:16px;color:var(--error);font-size:11px">PDF konnte nicht angezeigt werden: ${e.message}</div>`;
   }
