@@ -175,7 +175,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 16:44</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 17:23</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -431,13 +431,20 @@ function resetToUpload(){
 
 // === KEYS ===
 const DEF_SHEET_ID='1202ZpjG5241Z8E4wkABqpPRaTWH7BslM6qvNTump0Jw';
-function getKeys(){return{anthropic:sessionStorage.getItem('ant')||'',sevdesk:sessionStorage.getItem('sev')||'',sheetId:sessionStorage.getItem('sid')||DEF_SHEET_ID};}
+function getKeys(){
+  const rawSid=sessionStorage.getItem('sid')||'';
+  const sidM=rawSid.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  const sheetId=sidM?sidM[1]:(rawSid||DEF_SHEET_ID);
+  return{anthropic:sessionStorage.getItem('ant')||'',sevdesk:sessionStorage.getItem('sev')||'',sheetId};
+}
 function saveSetup(){
   const ant=document.getElementById('iAnt').value.trim();
   if(!ant){alert('Anthropic API-Key fehlt');return;}
   sessionStorage.setItem('ant',ant);
   sessionStorage.setItem('sev',document.getElementById('iSev').value.trim());
-  sessionStorage.setItem('sid',document.getElementById('iSheet').value.trim());
+  const rawSheet=document.getElementById('iSheet').value.trim();
+  const sheetM=rawSheet.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  sessionStorage.setItem('sid',sheetM?sheetM[1]:rawSheet);
   document.getElementById('btnReset').style.display='';
   showView('viewUpload');setStep(1);
 }
