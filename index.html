@@ -113,15 +113,15 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sum-box.ok .val{color:var(--accent2)}.sum-box.err .val{color:var(--error)}
 .info-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:11px}
 .info-chips span{background:var(--surface2);border-radius:6px;padding:3px 9px}
-.fragebogen{max-width:960px;margin:0 auto}
+.fragebogen{max-width:1100px;margin:0 auto}
 .fg-sec{margin-bottom:26px}
 .fg-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:13px}
 .radio-grp{display:flex;flex-direction:column;gap:10px}
 .radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
-.zone-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
-.wand-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.dach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.zone-grid{display:grid;grid-template-columns:repeat(6,160px);gap:10px}
+.wand-grid{display:grid;grid-template-columns:repeat(4,160px);gap:10px}
+.dach-grid{display:grid;grid-template-columns:repeat(2,160px);gap:10px}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;min-height:72px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
 .zone-num{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent)}
@@ -178,7 +178,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 21:45</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 21:58</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -836,7 +836,7 @@ function transformiere(json){
   const sysLabel=sys.replace('SOLIDAY-','Soliday ');
   map.montage.unshift(
     {artikelnummer:instNr,name:`System Installation - ${sysLabel}`,beschreibung:'Professionelle Ausführung der kompletten Systemmontage durch 2 Soliday Fachmonteure',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true},
-    {artikelnummer:'SERV-LOG',name:`Service & Logistik (Zone ${fragebogen.zone||2})`,beschreibung:'2 Termine (Grund- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale',preis_einheit:0,menge:1,einheit:'Stk.',gesamt:0,_gs:true}
+    {artikelnummer:'SERV-LOG',name:`Service & Logistik (Zone ${fragebogen.zone||2})`,beschreibung:'2 Termine (Grund- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true}
   );
   const hasMasten=map.masten.length>0;
   map.montage.push({artikelnummer:hasMasten?'VORFRACHT':'VERSAND',name:hasMasten?'Vorfrachtpauschale':'Versandkosten',beschreibung:hasMasten?'Baustromgestellung bauseits: 230V - 16A':'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true});
