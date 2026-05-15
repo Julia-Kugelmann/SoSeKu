@@ -175,7 +175,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 17:23</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 17:27</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -568,17 +568,31 @@ async function processFile(file,correctionHint){
     let prompt=await fetchSheetTab('Extraktion-Prompt')||DEFAULT_PROMPT;
     if(correctionHint)prompt+=`\n\nKorrekturhinweis: ${correctionHint}`;
     prog.style.width='35%';sub.textContent='Claude Haiku analysiert Positionen...';
-    let data;
+    let data,usedSonnet=false;
+    const trySonnet=async(reason)=>{
+      prog.style.width='45%';sub.textContent=`${reason} – wechsle zu Claude Sonnet...`;
+      usedSonnet=true;
+      return callClaude(pdfBase64,'claude-sonnet-4-6',prompt);
+    };
     try{data=await callClaude(pdfBase64,'claude-haiku-4-5-20251001',prompt);}
     catch(e){
-      if(e.isContextError){prog.style.width='45%';sub.textContent='Großes Angebot – wechsle zu Claude Sonnet...';data=await callClaude(pdfBase64,'claude-sonnet-4-6',prompt);}
+      if(e.isContextError)data=await trySonnet('Großes Angebot');
       else throw e;
     }
+    // Truncation: stop_reason=max_tokens even on HTTP 200
+    if(!usedSonnet&&data.stop_reason==='max_tokens')data=await trySonnet('Antwort zu lang');
     prog.style.width='75%';
     const text=(data.content||[]).find(b=>b.type==='text')?.text||'';
     if(!text)throw new Error('Leere Antwort von Claude');
     const clean=text.replace(/```json\n?|```\n?/g,'').trim();
-    if(!clean.endsWith('}'))throw new Error('Claude-Antwort abgeschnitten. Bitte erneut versuchen.');
+    // If still truncated after Sonnet, try one more time with Sonnet
+    if(!clean.endsWith('}')){
+      if(!usedSonnet){data=await trySonnet('Antwort unvollständig');prog.style.width='75%';}
+      const text2=(data.content||[]).find(b=>b.type==='text')?.text||'';
+      const clean2=text2.replace(/```json\n?|```\n?/g,'').trim();
+      if(!clean2.endsWith('}'))throw new Error('Claude-Antwort konnte nicht vollständig geladen werden. Bitte PDF erneut hochladen.');
+      const parsed2=JSON.parse(clean2);soSeKuJSON=parsed2;prog.style.width='100%';setTimeout(renderStep2,300);return;
+    }
     soSeKuJSON=JSON.parse(clean);
     prog.style.width='100%';
     setTimeout(renderStep2,300);
