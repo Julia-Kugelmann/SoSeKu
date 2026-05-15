@@ -175,7 +175,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 17:31</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 17:39</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -947,12 +947,16 @@ function getTierPrices(matrix,billingQm){
 // qm billing extra: +1 if <6, +2 if >=6
 function qmExtra(qm){return qm<6?1:2;}
 function billingQm(qm){return qm+qmExtra(qm);}
-// Select correct stoffe list based on system and billing qm
-function getStoffeForSys(sys,bQm){
+// Select correct stoffe list based on system and original sail qm
+// qmOrig: original qm_segel from Soliday (before billing adjustment)
+function getStoffeForSys(sys,bQm,qmOrig){
   const upper=sys.toUpperCase();
   if(upper==='SOLIDAY-SANDY') return getTierPrices(prices5.stofSandy,bQm)||DEF_STOFFE_C;
   if(upper.startsWith('SONNENSEGEL')) return getTierPrices(prices5.stofFeste,bQm)||DEF_STOFFE_C;
-  const m=prices5.stoffe.length>0?prices5.stoffe:(['SOLIDAY-M','SOLIDAY-MA'].includes(upper)?DEF_STOFFE_M:DEF_STOFFE_C);
+  let m=prices5.stoffe.length>0?prices5.stoffe:(['SOLIDAY-M','SOLIDAY-MA'].includes(upper)?DEF_STOFFE_M:DEF_STOFFE_C);
+  // Soltis 92 only available up to 55 m² on C/CS systems
+  const isCS=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(upper);
+  if(isCS&&(qmOrig||0)>55) m=m.filter(s=>!s.name.toLowerCase().includes('soltis'));
   return m;
 }
 async function loadPrices5(){
@@ -1021,10 +1025,12 @@ function renderStep5(){
     _sailPos.forEach((sail,si)=>{
       const qm=sail.qm_segel;
       const bQm=billingQm(qm);
-      const stoffe=getStoffeForSys(sys,bQm);
+      const stoffe=getStoffeForSys(sys,bQm,qm);
+      const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
       h+=`<div class="s5-card">
         <div class="s5-card-hdr"><strong>${sail.name||'Segeltuch'}</strong><span>${qm} m&sup2;</span></div>
         <div class="s5-card-body">
+          ${soltisFiltered?`<div style="font-size:10px;color:var(--warn);margin-bottom:6px">* Soltis 92 nicht verfügbar (Segelgröße > 55 m²)</div>`:''}
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Stoff &amp; Preis/m&sup2;</div>
           ${stoffe.map((s,fi)=>`
             <label class="s5-radio-row">
@@ -1143,7 +1149,7 @@ function applyPrices5(){
         const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
         const qm=sail.qm_segel;
         const bQm=billingQm(qm);
-        const stoffe=getStoffeForSys(sys,bQm);
+        const stoffe=getStoffeForSys(sys,bQm,qm);
         const t=+(bQm*p).toFixed(2);
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
