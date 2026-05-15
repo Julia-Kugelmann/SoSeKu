@@ -91,7 +91,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .jtable col.col-nr{width:110px}.jtable col.col-qty{width:62px}.jtable col.col-unit{width:48px}.jtable col.col-pe{width:84px}.jtable col.col-tot{width:84px}
 .sum-compare{margin-bottom:18px}
 #viewStep3{display:flex;flex-direction:column;height:calc(100vh - 150px)}
-.s3-content{max-width:860px;margin:0 auto;width:100%}
+.s3-content{max-width:860px;margin:0 auto;width:100%;flex:1;overflow-y:auto;min-height:0;padding-bottom:14px}
 .s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
 .s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
 .s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:flex-start}
@@ -120,7 +120,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 .zone-grid{display:grid;grid-template-columns:repeat(6,160px);gap:10px}
-.wand-grid{display:grid;grid-template-columns:repeat(4,160px);gap:10px}
+.wand-grid{display:grid;grid-template-columns:repeat(2,160px);gap:10px}
 .dach-grid{display:grid;grid-template-columns:repeat(2,160px);gap:10px}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;min-height:72px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
@@ -178,7 +178,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 21:58</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 23:14</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -732,7 +732,7 @@ const NAMEN={
   '00E13000843':'Seilsicherung komplett zum Verstauen des Seils',
   '00E13002149':'Schwerlastrolle PULLEY-X10','00E13001965':'Schwerlastrolle für Seile bis 8mm',
   '00E13000042':'Professionelle Seilrolle 8 für Seile bis 8mm',
-  '00E13000417':'Schnappschäkel Edelstahl','00E13000026':'Schäkel mit Schnellverschluss Edelstahl',
+  '00E13000417':'Schnappschäkel Edelstahl','00E13000026':'Schäkel mit Schnellverschluss',
   '00E13000066':'Ringbolzenset M8x80','00E13000127':'Ringbolzen M8x100mm',
   '00E13001325':'Reinigungs- und Pflegeset C/CS','00E13001321':'Reinigungs- und Pflegeset',
   '00E13001416':'Segelplatten*',
@@ -840,6 +840,20 @@ function transformiere(json){
   );
   const hasMasten=map.masten.length>0;
   map.montage.push({artikelnummer:hasMasten?'VORFRACHT':'VERSAND',name:hasMasten?'Vorfrachtpauschale':'Versandkosten',beschreibung:hasMasten?'Baustromgestellung bauseits: 230V - 16A':'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true});
+  // Fundamente: Schraubfundament → Droppole Dorn → Rest
+  const _FUND_ORDER=['00E13000227','00E13000324'];
+  map.fundamente.sort((a,b)=>{
+    const ai=_FUND_ORDER.indexOf(a.artikelnummer)<0?999:_FUND_ORDER.indexOf(a.artikelnummer);
+    const bi=_FUND_ORDER.indexOf(b.artikelnummer)<0?999:_FUND_ORDER.indexOf(b.artikelnummer);
+    return ai-bi;
+  });
+  // Zubehör: Design-Adapter + Kreuzadapter zuerst
+  const _ZUB_ORDER=['00E13001787','00E13001742','00E13001741'];
+  map.zubehoer.sort((a,b)=>{
+    const ai=_ZUB_ORDER.indexOf(a.artikelnummer)<0?999:_ZUB_ORDER.indexOf(a.artikelnummer);
+    const bi=_ZUB_ORDER.indexOf(b.artikelnummer)<0?999:_ZUB_ORDER.indexOf(b.artikelnummer);
+    return ai-bi;
+  });
   if(map.fundamente.some(p=>p.artikelnummer==='00E13000302')){
     const idx=map.fundamente.findIndex(p=>p.artikelnummer==='00E13000304');
     map.fundamente.splice(idx>=0?idx+1:map.fundamente.length,0,{artikelnummer:'',name:'Beschwerung Base Cube',beschreibung:'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0});
