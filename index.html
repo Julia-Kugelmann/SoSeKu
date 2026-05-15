@@ -113,7 +113,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sum-box.ok .val{color:var(--accent2)}.sum-box.err .val{color:var(--error)}
 .info-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:11px}
 .info-chips span{background:var(--surface2);border-radius:6px;padding:3px 9px}
-.fragebogen{max-width:680px;margin:0 auto}
+.fragebogen{max-width:960px;margin:0 auto}
 .fg-sec{margin-bottom:26px}
 .fg-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:13px}
 .radio-grp{display:flex;flex-direction:column;gap:10px}
@@ -122,18 +122,20 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .zone-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
 .wand-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .dach-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:11px;text-align:center;cursor:pointer;transition:all .2s}
+.zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s}
 .zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
-.zone-num{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--accent)}
-.zone-time{font-size:10px;color:var(--muted);margin-top:2px}
+.zone-num{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent)}
+.zone-time{font-size:13px;color:var(--text);margin-top:5px;font-weight:500}
 .check-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .check-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 .fg-free{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;resize:vertical;min-height:80px}
 .fg-free:focus{border-color:var(--accent)}
 /* Step 5 */
+.s5-wrap{max-width:1100px;margin:0 auto;width:100%}
 .s5-section{margin-bottom:28px}
 .s5-sec-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--accent);padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:14px}
-.s5-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden}
+.s5-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px;margin-bottom:0}
+.s5-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .s5-card-hdr{padding:11px 15px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .s5-card-hdr strong{font-size:13px;color:var(--text)}
 .s5-card-hdr span{font-size:11px;color:var(--muted)}
@@ -175,7 +177,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 17:39</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 21:27</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -332,7 +334,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 
 <!-- STEP 5 -->
 <div id="viewStep5" class="hidden">
-  <div class="s3-content" id="s5content"></div>
+  <div class="s5-wrap" id="s5content"></div>
   <div class="btn-row">
     <button class="btn btn-s" onclick="showView('viewStep4');setStep(4)">&larr; Zur&uuml;ck</button>
     <button class="btn btn-p" onclick="goToStep6()">Weiter &rarr; Vorschau</button>
@@ -391,7 +393,7 @@ let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,extractAttempts=0,maxStep=0;
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0};
-let _sailPos=[],_wandpl=[],_gsMonPos=[];
+let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[];
 
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -434,7 +436,7 @@ const DEF_SHEET_ID='1202ZpjG5241Z8E4wkABqpPRaTWH7BslM6qvNTump0Jw';
 function getKeys(){
   const rawSid=sessionStorage.getItem('sid')||'';
   const sidM=rawSid.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  const sheetId=sidM?sidM[1]:(rawSid||DEF_SHEET_ID);
+  const sheetId=sidM?sidM[1]:rawSid; // no hardcoded fallback — must be entered
   return{anthropic:sessionStorage.getItem('ant')||'',sevdesk:sessionStorage.getItem('sev')||'',sheetId};
 }
 function saveSetup(){
@@ -879,6 +881,8 @@ function goToStep4(){showView('viewStep4');setStep(4);}
 // === STEP 5 ===
 const WANDPL_NRS=new Set(['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910']);
 const WANDPL_AP={'00E13000709':4,'00E13000711':4,'00E13000046':4,'00E13002080':6,'00E13001855':4,'00E13001857':4,'00E13001856':4,'00E13001910':4};
+// Bodenplatten: immer 4 Klebeanker, immer ziegel-10 Preis, kein Dämmungs-Hinweis
+const BODENPL_NRS=new Set(['00E13001870','00E13001872','00E13001782','00E13001604','00E13001653','00E13001606','00E13001661','00E13000666','00E13000244']);
 const DEF_STOFFE_C=[{name:'Austrosail Nano',preis:0},{name:'Austrosail Nano Sonderfarben',preis:0},{name:'Soltis 92',preis:0},{name:'Soltis 92 Sonderfarben',preis:0}];
 const DEF_STOFFE_M=[{name:'Austronet 960',preis:0},{name:'Austronet 960 Sonderfarben',preis:0}];
 
@@ -998,6 +1002,8 @@ function renderStep5(){
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
   _wandpl=wSek?wSek.positionen.filter(p=>p.artikelnummer&&(prices5.apAnzahl[p.artikelnummer]||WANDPL_NRS.has(p.artikelnummer))):[];
+  const fSek=transformedData.sektionen.find(s=>s.id==='fundamente');
+  _bodenpl=fSek?fSek.positionen.filter(p=>p.artikelnummer&&BODENPL_NRS.has(p.artikelnummer)):[];
   const mSek=transformedData.sektionen.find(s=>s.id==='montage');
   _gsMonPos=mSek?mSek.positionen.filter(p=>p._gs):[];
 
@@ -1008,7 +1014,7 @@ function renderStep5(){
   </div>`;
 
   // 5A Segeltuch
-  h+=`<div class="s5-section"><div class="s5-sec-title">5A &middot; Segeltuch</div>`;
+  h+=`<div class="s5-section"><div class="s5-sec-title">5A &middot; Segeltuch</div><div class="s5-grid">`;
   if(_sailPos.length===0){
     const stoffe0=getStoffeForSys(sys,2);
     h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Segeltuch (Gesamtpreis)</strong><span>kein qm_segel aus Extraktion</span></div>
@@ -1047,11 +1053,11 @@ function renderStep5(){
       </div>`;
     });
   }
-  h+=`</div>`;
+  h+=`</div></div>`; // close s5-grid + s5-section
 
-  // 5B Wandbefestigungen
-  h+=`<div class="s5-section"><div class="s5-sec-title">5B &middot; Wandbefestigungen</div>`;
-  if(_wandpl.length===0){
+  // 5B Wandbefestigungen + Bodenplatten
+  h+=`<div class="s5-section"><div class="s5-sec-title">5B &middot; Wandbefestigungen &amp; Bodenplatten</div><div class="s5-grid">`;
+  if(_wandpl.length===0&&_bodenpl.length===0){
     h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
   } else {
     _wandpl.forEach((pl,wi)=>{
@@ -1073,11 +1079,28 @@ function renderStep5(){
         </div>
       </div>`;
     });
+    // Bodenplatten: immer 4 Klebeanker, immer ziegel-10 Preis
+    const bpPreis=prices5.apPreis['ziegel-10']||38;
+    _bodenpl.forEach((pl,bi)=>{
+      const cnt=4*Math.max(1,Math.round(pl.menge));
+      const auf=+(cnt*bpPreis).toFixed(2);
+      const total=+(pl.gesamt+auf).toFixed(2);
+      h+=`<div class="s5-card">
+        <div class="s5-card-hdr"><strong>${pl.name}</strong><span style="color:var(--accent2)">Bodenplatte</span></div>
+        <div class="s5-card-body">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Fixregel: 4 Klebeanker &times; ${fmtE(bpPreis)} &euro;/AP</div>
+          <div class="s5-calc">
+            <span style="color:var(--muted)">Soliday: ${fmtE(pl.gesamt)} + ${fmtE(auf)} AP =</span>
+            <strong id="bpT${bi}">${fmtE(total)}</strong>
+          </div>
+        </div>
+      </div>`;
+    });
   }
-  h+=`</div>`;
+  h+=`</div></div>`;
 
   // 5C Montage
-  h+=`<div class="s5-section"><div class="s5-sec-title">5C &middot; Montage und Fracht</div>`;
+  h+=`<div class="s5-section"><div class="s5-sec-title">5C &middot; Montage und Fracht</div><div class="s5-grid">`;
   _gsMonPos.forEach((pos,mi)=>{
     const gp=gsMonPreis(pos.artikelnummer);
     h+=`<div class="s5-card">
@@ -1103,7 +1126,7 @@ function renderStep5(){
       </div></div>
     </div>`;
   }
-  h+=`</div>`;
+  h+=`</div></div>`; // close s5-grid + s5-section
 
   document.getElementById('s5content').innerHTML=h;
   _sailPos.forEach((_,si)=>updSail(si));
@@ -1176,6 +1199,25 @@ function applyPrices5(){
         const ng=+(pl.gesamt+auf).toFixed(2);
         pos.gesamt=ng;
         pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
+        // Beschreibung mit Wandart
+        const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'inkl. Klebeanker an Holzbauweise (bis max. 10 cm Dämmung)','holz-18':'inkl. Klebeanker an Holzbauweise (bis max. 18 cm Dämmung)'};
+        pos.beschreibung=wdesc[fragebogen.wandart||'ziegel-10']||'';
+      }
+    });
+  }
+  // 5B: Bodenplatten — immer 4 Klebeanker × ziegel-10 Preis, kein Dämmungshinweis
+  const fSek2=transformedData.sektionen.find(s=>s.id==='fundamente');
+  if(fSek2){
+    const bpPreis=prices5.apPreis['ziegel-10']||38;
+    _bodenpl.forEach(pl=>{
+      const cnt=4*Math.max(1,Math.round(pl.menge));
+      const auf=+(cnt*bpPreis).toFixed(2);
+      const pos=fSek2.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
+      if(pos){
+        const ng=+(pl.gesamt+auf).toFixed(2);
+        pos.gesamt=ng;
+        pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
+        pos.beschreibung='inkl. 4 Klebeanker';
       }
     });
   }
