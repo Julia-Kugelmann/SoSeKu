@@ -86,14 +86,15 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sektion-body{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto}
 .sum-compare{margin-bottom:18px}
 #viewStep3{display:flex;flex-direction:column;height:calc(100vh - 150px)}
+#s3sektionen{max-width:640px}
 .s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
-.s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center}
-.s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:center}
+.s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
+.s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:flex-start}
 .s3-sum-badge{padding:10px 18px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;border-left:1px solid var(--border);min-width:100px}
 .s3-sum-badge.ok{background:rgba(56,217,169,.1);color:var(--accent2)}
 .s3-sum-badge.err{background:rgba(255,107,107,.1);color:var(--error)}
 .s3-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
-.s3-big{font-size:20px;font-weight:700;color:var(--accent)}
+.s3-big{font-size:20px;font-weight:700;color:var(--accent);margin-top:auto}
 .s3-eq{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-top:4px}
 .s3-eq .v{font-weight:600;color:var(--text)}
 .s3-eq .op{color:var(--muted)}
@@ -167,7 +168,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 12:15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 12:22</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
