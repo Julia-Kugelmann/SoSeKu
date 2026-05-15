@@ -85,6 +85,9 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sektion-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:9px 14px;background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.15);border-radius:10px 10px 0 0;color:var(--accent)}
 .sektion-body{background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow-x:auto}
 .sum-compare{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+#viewStep3{display:flex;flex-direction:column;height:calc(100vh - 150px)}
+.s3-scroll{flex:1;overflow-y:auto;min-height:0;max-width:980px}
+.s3-bottom{background:var(--bg);padding:10px 0 0;border-top:1px solid var(--border)}
 .sum-box{flex:1;min-width:160px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:13px 15px}
 .sum-box .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
 .sum-box .val{font-size:17px;font-weight:600}
@@ -151,7 +154,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:20</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 11:31</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -659,7 +662,15 @@ const NAMEN={
   '00E13000066':'Ringbolzenset M8x80','00E13000127':'Ringbolzen M8x100mm',
   '00E13001325':'Reinigungs- und Pflegeset C/CS','00E13001321':'Reinigungs- und Pflegeset',
   '00E13001416':'Segelplatten*',
-  '99FRACHT5':'Transportzuschlag bis 5m Länge','99FRACHT6':'Transportzuschlag ab 5m Länge'
+  '99FRACHT5':'Transportzuschlag bis 5m Länge','99FRACHT6':'Transportzuschlag ab 5m Länge',
+  '71004A003':'Schutzabdeckung für 2 Sonnensegelecken','71004A020':'Schutzabdeckung für 1 Sonnensegelecke',
+  '00E13001929':'Segeltuch Befestigungsset',
+  '00E13000263':'SO-WI-Sensor Befestigungsplatte für Droppole',
+  '00E13001959':'Adapterplatte für SoWi-Sensor inkl. Design-Mastschelle',
+  '00E13000208':'Höhenverstellung Droppole Mast mit Kurbel - silber eloxiert',
+  '00E13000988':'Höhenverstellung Droppole Mast mit Kurbel - schwarz eloxiert',
+  '00E13001874':'Höhenverstellung für Rund-Masten - Seilzug',
+  '00E13001875':'Höhenverstellung für Rund-Masten - Seilzug'
 };
 const NR2SEK={};
 ['00E13002183','00E13000850','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002076','00E13002077','00E13002063','VPVSTEILEONE','VPVSTEILE','VPVS008','VPVS009','VPVS011','VPVS013','00E13000059','00E13000591','00E13000743'].forEach(n=>NR2SEK[n]='segelsystem');
@@ -667,12 +678,15 @@ const NR2SEK={};
 ['00E13000227','00E13000324','00E13001870','00E13001872','00E13001782','00E13001604','00E13001606','00E13000244','00E13000302','00E13000304','00E13001600','00E13001412'].forEach(n=>NR2SEK[n]='fundamente');
 ['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13001940','00E13000248','00E13000320','00E13000321','00E13000322','00E13000112','00E13001025','00E13000603'].forEach(n=>NR2SEK[n]='wandbefestigungen');
 ['00E13001787','00E13001742','00E13001741','00E13000206','00E13001937','00E13001735','00E13001734','00E13000843','00E13002149','00E13001965','00E13000042','00E13000026','00E13000066','00E13000127'].forEach(n=>NR2SEK[n]='zubehoer');
-['00E13001416','00E13001325','00E13001321'].forEach(n=>NR2SEK[n]='segeltuch');
+['00E13001416','00E13001325','00E13001321','73004A001','71004A010','71004A011','70004A007','71004A003','71004A020','00E13001929'].forEach(n=>NR2SEK[n]='segeltuch');
+['00E13000263','00E13001959'].forEach(n=>NR2SEK[n]='segelsystem');
+['00E13000208','00E13000988','00E13001874','00E13001875'].forEach(n=>NR2SEK[n]='masten');
 ['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
 
 function assignSek(p){
   const nr=p.artikelnummer;
   if(NR2SEK[nr])return NR2SEK[nr];
+  if(nr&&/^PYL/.test(nr))return'masten';
   if(nr==='00E13000417')return(p.soliday_sektion||'').toLowerCase().includes('hardware')?'zubehoer':'segeltuch';
   if(nr==='00E13000107')return'zubehoer';
   const s=(p.soliday_sektion||'').toLowerCase();
@@ -684,11 +698,24 @@ function assignSek(p){
   return'zubehoer';
 }
 
+function pylonName(nr){
+  const m=nr.match(/^PYL(AL|NI|DP)([01])(\d+)1000$/);
+  if(!m)return null;
+  const[,t,v,len]=m;
+  const farbe={AL0:'silber eloxiert',AL1:'schwarz eloxiert',NI0:'geschliffen (V2A)',NI1:'geschliffen (V4A)',DP0:'silber eloxiert',DP1:'schwarz eloxiert'};
+  const pre={AL:'Aluminium Rund-Mast Zugpylon',NI:'Edelstahl Rund-Mast Zugpylon',DP:'Droppole Zugpylon'};
+  return`${pre[t]||'Zugpylon'} l=bis ${parseInt(len)}m - ${farbe[t+v]||'eloxiert'}`;
+}
 function transformiere(json){
   const sys=(json.system||'').toUpperCase();
   const removed=[];
   let pos=json.positionen.filter(p=>{if(WEGLASS.includes(p.artikelnummer)){removed.push({...p});return false;}return true;});
-  pos=pos.map(p=>{const p2={...p};if(NAMEN[p2.artikelnummer])p2.name=NAMEN[p2.artikelnummer];else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}return p2;});
+  const WINTER_NR=['73004A001','71004A010','71004A011','70004A007'];
+  pos=pos.map(p=>{const p2={...p};
+    if(WINTER_NR.includes(p2.artikelnummer)){const mm=Number(json.wellenlaenge_aufrollsystem_mm||0);const m=mm>0?Math.ceil(mm/1000):'?';const prem=['71004A011','70004A007'].includes(p2.artikelnummer);p2.name=`Winter-Schutzhülle${prem?' Premium':''} - ${m}m / Austrosail - stone`;p2.einheit='Stk.';}
+    else if(NAMEN[p2.artikelnummer]){p2.name=NAMEN[p2.artikelnummer];}
+    else{const pn=pylonName(p2.artikelnummer);if(pn){p2.name=pn;}else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}}
+    return p2;});
   const merged=[];
   pos.forEach(p=>{
     if(!p.artikelnummer){merged.push({...p});return;}
@@ -704,7 +731,7 @@ function transformiere(json){
   const sysLabel=sys.replace('SOLIDAY-','Soliday ');
   map.montage.unshift(
     {artikelnummer:instNr,name:`System Installation - ${sysLabel}`,beschreibung:'Professionelle Ausführung der kompletten Systemmontage durch 2 Soliday Fachmonteure',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true},
-    {artikelnummer:'SVC-LOG',name:`Service & Logistik (Zone ${fragebogen.zone||2})`,beschreibung:'2 Termine (Grund- & Endmontage) inkl. Rüstzeiten & Maschinenpauschale',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true}
+    {artikelnummer:'SERV-LOG',name:`Service & Logistik (Zone ${fragebogen.zone||2})`,beschreibung:'2 Termine (Grund- & Endmontage) inkl. Rüstzeiten & Maschinenpauschale',preis_einheit:0,menge:1,einheit:'Stk.',gesamt:0,_gs:true}
   );
   const hasMasten=map.masten.length>0;
   map.montage.push({artikelnummer:hasMasten?'VORFRACHT':'VERSAND',name:hasMasten?'Vorfrachtpauschale':'Versandkosten',beschreibung:hasMasten?'Baustromgestellung bauseits: 230V - 16A':'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true});
@@ -726,9 +753,10 @@ async function retransform(){
 function renderStep3(){
   const{sektionen,removedPositionen}=transformedData;
   const solidayTotal=Number(soSeKuJSON.netto_gesamt);
+  const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
   const skSum=sektionen.reduce((s,sek)=>s+sek.positionen.reduce((ss,p)=>ss+(p.gesamt||0),0),0);
   const remSum=removedPositionen.reduce((s,p)=>s+(p.gesamt||0),0);
-  const check=skSum+remSum;
+  const check=skSum+remSum+teu;
   const ok=Math.abs(check-solidayTotal)<0.02;
   const origCount=soSeKuJSON.positionen.length;
   const remCount=removedPositionen.length;
@@ -739,6 +767,7 @@ function renderStep3(){
     `<div class="sum-box"><div class="lbl">Soliday Netto</div><div class="val">${fmtE(solidayTotal)}</div></div>`+
     `<div class="sum-box"><div class="lbl">SoSeKu Summe</div><div class="val">${fmtE(skSum)}</div></div>`+
     `<div class="sum-box"><div class="lbl">Entfernte Pos.</div><div class="val">${fmtE(remSum)}</div></div>`+
+    (teu>0?`<div class="sum-box"><div class="lbl">Teuerungszuschlag</div><div class="val">${fmtE(teu)}</div></div>`:'')+
     `<div class="sum-box ${ok?'ok':'err'}"><div class="lbl">Summenprüfung</div><div class="val">${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`+
     `<div class="sum-box ${posOk?'ok':'err'}"><div class="lbl">Positionen</div><div class="val">${origCount} PDF &rarr; ${finalCount} SKu (${remCount} entf. &plus; ${addedCount} neu)</div></div>`;
   document.getElementById('s3sektionen').innerHTML=sektionen.map(sek=>`
@@ -1017,7 +1046,7 @@ function applyPrices5(){
     });
     if(fragebogen.dachterrasse&&!mSek.positionen.find(p=>p.artikelnummer==='DACH')){
       const dp=parseFloat(document.getElementById('mDach')?.value||'0')||0;
-      const svcI=mSek.positionen.findIndex(p=>p.artikelnummer==='SVC-LOG');
+      const svcI=mSek.positionen.findIndex(p=>p.artikelnummer==='SERV-LOG');
       mSek.positionen.splice(svcI>=0?svcI+1:1,0,{artikelnummer:'DACH',name:'Dachterrassen-Aufschlag',beschreibung:'',preis_einheit:dp,menge:1,einheit:'pauschal',gesamt:dp});
     }
   }
