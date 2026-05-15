@@ -147,7 +147,7 @@ main{max-width:1100px;margin:0 auto;padding:28px 20px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#38d9a9">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-15 08:31</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1073,48 +1073,17 @@ function goToStep7(){
 }
 
 // === SEVDESK ===
-function mapUnity(e){
-  const u=(e||'').toLowerCase().trim();
-  if(u==='m²'||u==='m2')return{id:'3',objectName:'Unity'};
-  if(u==='m')return{id:'2',objectName:'Unity'};
-  return{id:'1',objectName:'Unity'};
-}
-function buildSevdeskPayload(contactId,cpId){
-  const today=new Date().toISOString().split('T')[0];
-  const ops=[];
-  for(const sek of transformedData.sektionen){
-    ops.push({objectName:'OrderPos',mapAll:'true',name:sek.name,quantity:'0',price:'0',unity:{id:'1',objectName:'Unity'},taxRate:'0',text:'',partNumber:''});
-    for(const p of sek.positionen){
-      ops.push({objectName:'OrderPos',mapAll:'true',
-        name:p.name,
-        quantity:String(+(p.menge||1).toFixed(4)),
-        price:String(+(p.preis_einheit||0).toFixed(4)),
-        unity:mapUnity(p.einheit),
-        taxRate:'20',
-        text:p.beschreibung||'',
-        partNumber:p.artikelnummer||''
-      });
-    }
-  }
-  const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
-  return{
-    order:{objectName:'Order',orderType:'AN',
-      contact:{id:String(contactId),objectName:'Contact'},
-      contactPerson:{id:String(cpId),objectName:'SevUser'},
-      orderDate:`${today}T00:00:00+00:00`,
-      status:'100',currency:'EUR',version:'0',mapAll:'true',
-      header:('Angebot '+(soSeKuJSON.kommission||'')).trim()
-    },
-    orderPosSave:ops,
-    orderPosDelete:null,
-    discountSave:teu>0?[{objectName:'Discounts',mapAll:true,discount:false,percentage:false,value:Number(teu.toFixed(2)),text:'Teuerungszuschlag'}]:null,
-    discountDelete:null
-  };
+function mapUnity(e,unities,defaultUnity){
+  const n=(e||'').toLowerCase().replace(/\./g,'').trim();
+  if(['m2','m²','qm'].includes(n))return unities.find(u=>/m.?2|qm/i.test(u.name))||defaultUnity;
+  if(['m','lm','lfm'].includes(n))return unities.find(u=>/^(lm|lfm|m)$/i.test((u.name||'').trim()))||defaultUnity;
+  if(['h','std'].includes(n))return unities.find(u=>/std|stunde|hour/i.test(u.name))||defaultUnity;
+  return defaultUnity;
 }
 async function sdGet(path){
   const{sevdesk}=getKeys();
   const r=await fetch(`https://my.sevdesk.de/api/v1${path}`,{headers:{Authorization:sevdesk}});
-  if(!r.ok)throw new Error(`sevdesk ${path} → ${r.status}`);
+  if(!r.ok)throw new Error(`sevdesk GET ${path} → ${r.status}`);
   return r.json();
 }
 async function sdPost(path,body){
@@ -1128,29 +1097,109 @@ async function importToSevdesk(){
   document.getElementById('btnImport').textContent='Wird importiert...';
   showView('viewLoading');setStep(7);
   document.getElementById('loadTitle').textContent='Import in sevdesk...';
-  document.getElementById('loadSub').textContent='Kontakt wird gesucht';
-  document.getElementById('progBar').style.width='20%';
+  const sub=document.getElementById('loadSub');
+  const bar=document.getElementById('progBar');
   try{
+    sub.textContent='Kontakt wird gesucht';bar.style.width='15%';
     const contacts=await sdGet('/Contact?depth=1&name=import&limit=10');
     const ca=contacts.objects||[];
     if(ca.length===0)throw new Error('Kein Kontakt "import" in sevdesk gefunden.\nBitte einen Kontakt mit dem Namen "import" anlegen.');
-    const cid=ca[0].id;
-    document.getElementById('progBar').style.width='45%';
-    document.getElementById('loadSub').textContent='Bearbeiter wird ermittelt';
+    const customer=ca[0];
+
+    sub.textContent='Einheiten werden geladen';bar.style.width='28%';
+    const unitiesData=await sdGet('/Unity?limit=50');
+    const unities=unitiesData.objects||[];
+    const defaultUnity=unities.find(u=>/stk|stueck|stück|pc|pcs/i.test(u.name))
+                      ||unities.find(u=>String(u.id)==='1')||unities[0];
+    if(!defaultUnity)throw new Error('Keine Einheiten gefunden.');
+
+    sub.textContent='Bearbeiter wird ermittelt';bar.style.width='42%';
     const users=await sdGet('/SevUser?limit=1');
-    const cpid=(users.objects||[])[0]?.id;
-    if(!cpid)throw new Error('Kein SevUser in sevdesk gefunden.');
-    document.getElementById('progBar').style.width='65%';
-    document.getElementById('loadSub').textContent='Angebot wird angelegt';
-    const payload=buildSevdeskPayload(cid,cpid);
+    const sevUser=(users.objects||[])[0];
+    if(!sevUser?.id)throw new Error('Kein SevUser in sevdesk gefunden.');
+
+    sub.textContent='Angebotsnummer wird geholt';bar.style.width='58%';
+    const nextNumData=await sdGet('/Order/Factory/getNextOrderNumber?orderType=AN&useNextNumber=true');
+    const orderNumber=nextNumData.objects||nextNumData.number||`AN-${Date.now()}`;
+
+    sub.textContent='Angebot wird angelegt';bar.style.width='75%';
+
+    const today=new Date();
+    const pad=n=>String(n).padStart(2,'0');
+    const offerDate=`${pad(today.getDate())}.${pad(today.getMonth()+1)}.${today.getFullYear()}`;
+
+    const addrParts=[customer.name,customer.street||null,
+      (customer.zipCode||customer.zip)&&customer.city
+        ?`${customer.zipCode||customer.zip} ${customer.city}`:customer.city||null
+    ].filter(Boolean);
+    const address=addrParts.join('\n')||customer.name||'Import';
+
+    const ops=[];let posIdx=0;
+    for(const sek of transformedData.sektionen){
+      ops.push({objectName:'OrderPos',mapAll:'true',part:null,
+        name:sek.name,quantity:0,price:'0',
+        unity:{id:String(defaultUnity.id),objectName:'Unity'},
+        positionNumber:posIdx++,text:null,discount:0,optional:false,taxRate:0
+      });
+      for(const p of sek.positionen){
+        ops.push({objectName:'OrderPos',mapAll:'true',part:null,
+          name:String(p.name),
+          quantity:Number((p.menge||1).toFixed(4)),
+          price:String(Number(p.preis_einheit||0).toFixed(2)),
+          unity:mapUnity(p.einheit,unities,defaultUnity),
+          positionNumber:posIdx++,
+          text:p.beschreibung||null,
+          discount:0,optional:false,taxRate:19,
+          partNumber:p.artikelnummer||''
+        });
+      }
+    }
+
+    const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
+    const hasTeuerung=teu!==0;
+
+    const payload={
+      order:{
+        id:null,objectName:'Order',mapAll:true,
+        orderNumber:orderNumber,
+        contact:{id:String(customer.id),objectName:'Contact'},
+        orderDate:offerDate,
+        status:100,
+        header:('Angebot '+(soSeKuJSON.kommission||'')).trim(),
+        headText:'',footText:'',
+        address:address,
+        addressCountry:{id:'1',objectName:'StaticCountry'},
+        version:0,smallSettlement:0,
+        contactPerson:{id:String(sevUser.id),objectName:'SevUser'},
+        taxRate:19,discount:0,
+        discountTime:hasTeuerung?1:0,
+        taxSet:null,taxText:'Umsatzsteuer 19%',
+        taxRule:{id:'1',objectName:'TaxRule'},
+        orderType:'AN',currency:'EUR',showNet:1,sendType:'VPR'
+      },
+      orderPosSave:ops,
+      orderPosDelete:null,
+      discountSave:hasTeuerung?[{
+        objectName:'Discounts',mapAll:true,
+        discount:false,percentage:false,
+        value:Number(teu.toFixed(2)),
+        text:'Teuerungszuschlag'
+      }]:null,
+      discountDelete:null
+    };
+
     const result=await sdPost('/Order/Factory/saveOrder',payload);
-    document.getElementById('progBar').style.width='100%';
+    bar.style.width='100%';
     const oid=result.objects?.order?.id||result.objects?.id;
     const url=oid?`https://my.sevdesk.de/#/ar/offer/${oid}`:'https://my.sevdesk.de/#/ar/offer';
     document.getElementById('doneLink').href=url;
     document.getElementById('doneLink').textContent=oid?`Angebot #${oid} in sevdesk öffnen →`:'In sevdesk öffnen →';
     setTimeout(()=>showView('viewDone'),400);
-  }catch(e){showError(e.message);}
+  }catch(e){
+    document.getElementById('btnImport').disabled=false;
+    document.getElementById('btnImport').textContent='Nochmal versuchen →';
+    showError(e.message);
+  }
 }
 </script>
 </body>
