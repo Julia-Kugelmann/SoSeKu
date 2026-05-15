@@ -90,9 +90,9 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sek-hdr-row+tr td,.sek-hdr-row td{border-top:none}
 .jtable col.col-nr{width:110px}.jtable col.col-qty{width:62px}.jtable col.col-unit{width:48px}.jtable col.col-pe{width:84px}.jtable col.col-tot{width:84px}
 .sum-compare{margin-bottom:18px}
-#viewStep3{display:flex;flex-direction:column;height:calc(100vh - 150px)}
+#viewStep3{display:flex;flex-direction:column}
 .s3-header{max-width:860px;margin:0 auto;width:100%;flex-shrink:0}
-.s3-content{max-width:860px;margin:0 auto;width:100%;flex:1;overflow-y:auto;min-height:0;padding-bottom:14px}
+.s3-content{max-width:860px;margin:0 auto;width:100%;height:calc(100vh - 390px);overflow-y:auto;min-height:0;padding-bottom:14px}
 .s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
 .s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
 .s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:flex-start}
@@ -120,13 +120,13 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .radio-grp{display:flex;flex-direction:column;gap:10px}
 .radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
-.zone-grid{display:grid;grid-template-columns:repeat(6,160px);gap:10px}
-.wand-grid{display:grid;grid-template-columns:repeat(2,160px);gap:10px}
-.dach-grid{display:grid;grid-template-columns:repeat(2,160px);gap:10px}
-.zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;min-height:72px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.zone-grid{display:grid;grid-template-columns:repeat(6,140px);gap:8px;width:fit-content;margin:0 auto}
+.wand-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
+.dach-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
+.zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:8px 8px;text-align:center;cursor:pointer;transition:all .2s;min-height:52px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
-.zone-num{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent)}
-.zone-time{font-size:13px;color:var(--text);margin-top:5px;font-weight:500}
+.zone-num{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--accent)}
+.zone-time{font-size:11px;color:var(--text);margin-top:3px;font-weight:500}
 .check-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .check-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 .fg-free{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;resize:vertical;min-height:80px}
@@ -179,7 +179,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 00:08</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 01:12</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -323,6 +323,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
       <div class="fg-title">Extras</div>
       <div class="dach-grid">
         <div class="zone-item" id="dachCard" onclick="toggleDach()"><div class="zone-num">Dachterrasse</div><div class="zone-time">Aufschlag wird hinzugef&uuml;gt</div></div>
+        <div class="zone-item" id="eigenCard" onclick="toggleEigenleistung()"><div class="zone-num">Eigenleistung</div><div class="zone-time">Fundamente in Eigenleistung</div></div>
       </div>
     </div>
     <div class="fg-sec">
@@ -394,10 +395,10 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <script>
 // === STATE ===
 let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
-let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,extractAttempts=0,maxStep=0;
+let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,extractAttempts=0,maxStep=0;
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0};
-let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[];
+let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -843,13 +844,26 @@ function transformiere(json){
   );
   const hasMasten=map.masten.length>0;
   map.montage.push({artikelnummer:hasMasten?'VORFRACHT':'VERSAND',name:hasMasten?'Vorfrachtpauschale':'Versandkosten',beschreibung:hasMasten?'Baustromgestellung bauseits: 230V - 16A':'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true});
-  // Fundamente: Schraubfundament → Droppole Dorn → Rest
+  // Fundamente: Schraubfundament → Droppole Dorn → Rest → Eigenleistung ans Ende
+  if(fragebogen.eigenleistung)
+    map.fundamente.push({artikelnummer:'EINWEIS-FUND',name:'Einweisung Fundamente',beschreibung:'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true});
   const _FUND_ORDER=['00E13000227','00E13000324'];
   map.fundamente.sort((a,b)=>{
+    if(a._gs&&!b._gs)return 1;if(!a._gs&&b._gs)return -1;
     const ai=_FUND_ORDER.indexOf(a.artikelnummer)<0?999:_FUND_ORDER.indexOf(a.artikelnummer);
     const bi=_FUND_ORDER.indexOf(b.artikelnummer)<0?999:_FUND_ORDER.indexOf(b.artikelnummer);
     return ai-bi;
   });
+  // Masten: nach Länge, dann Zuschnitt, dann Versteifung, dann Kappen, dann Höhenverstellung
+  const _MAST_G={'00E13000335':0,'00E13000338':0,'00E13000235':1,'00E13001650':1,'00E13000135':2,
+    '00E13000336':3,'00E13000347':3,'00E13000238':4,'00E13001652':4,
+    '00E13000337':5,'00E13000348':5,'00E13001766':6,
+    '00E13001135':7,'00E13000133':7,
+    '00E13000131':8,'00E13000096':8,
+    '00E13000217':9,'00E13001689':9,'00E13000216':9,
+    '00E13000052':10,'00E13000027':10,'00E13000204':10,'00E13000764':10,
+    '00E13000208':10,'00E13000988':10,'00E13001874':10,'00E13001875':10};
+  map.masten.sort((a,b)=>(_MAST_G[a.artikelnummer]??50)-(_MAST_G[b.artikelnummer]??50));
   // Zubehör: Design-Adapter + Kreuzadapter zuerst
   const _ZUB_ORDER=['00E13001787','00E13001742','00E13001741'];
   map.zubehoer.sort((a,b)=>{
@@ -901,13 +915,14 @@ function toggleDach(){
   selDach=!selDach;
   document.getElementById('dachCard').classList.toggle('sel',selDach);
 }
+function toggleEigenleistung(){
+  selEigenleistung=!selEigenleistung;
+  document.getElementById('eigenCard').classList.toggle('sel',selEigenleistung);
+}
 function goToStep4(){showView('viewStep4');setStep(4);}
 
 // === STEP 5 ===
-const WANDPL_NRS=new Set(['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910']);
-const WANDPL_AP={'00E13000709':4,'00E13000711':4,'00E13000046':4,'00E13002080':6,'00E13001855':4,'00E13001857':4,'00E13001856':4,'00E13001910':4};
-// Bodenplatten: immer 4 Klebeanker, immer ziegel-10 Preis, kein Dämmungs-Hinweis
-const BODENPL_NRS=new Set(['00E13001870','00E13001872','00E13001782','00E13001604','00E13001653','00E13001606','00E13001661','00E13000666','00E13000244']);
+// Klebeanker nur wenn Art.-Nr. im Ankerpunkt Verzeichnis (prices5.apAnzahl)
 const DEF_STOFFE_C=[{name:'Austrosail Nano',preis:0},{name:'Austrosail Nano Sonderfarben',preis:0},{name:'Soltis 92',preis:0},{name:'Soltis 92 Sonderfarben',preis:0}];
 const DEF_STOFFE_M=[{name:'Austronet 960',preis:0},{name:'Austronet 960 Sonderfarben',preis:0}];
 
@@ -916,6 +931,7 @@ async function initStep5(){
     wandart:selWandart,
     zone:selZoneNr,
     dachterrasse:selDach,
+    eigenleistung:selEigenleistung,
     freitext:document.getElementById('fgFrei').value
   };
   showView('viewLoading');setStep(5);
@@ -990,7 +1006,7 @@ function getStoffeForSys(sys,bQm,qmOrig){
 }
 async function loadPrices5(){
   const sys=(soSeKuJSON?.system||'').toUpperCase();
-  prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0,dachterrasse:0};
+  prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0,dachterrasse:0,eigenleistung:0};
   const[sAR,sFR,sSnR,pR,aR]=await Promise.all([
     fetchSheetTabAll('Stoffe - Aufrollbare Segel'),
     fetchSheetTabAll('Stoffe - Feste Segel'),
@@ -1009,6 +1025,7 @@ async function loadPrices5(){
     else if(desc.includes('Std')||desc.includes('Stundensatz')) prices5.stundensatz=preis;
     else if(desc==='Schraubfundament') prices5.schraubfundament=preis;
     else if(key==='DACH'||desc==='Dachterrasse'||desc==='Dachterrassen-Aufschlag') prices5.dachterrasse=preis;
+    else if(key==='EIGENLEISTUNG'||desc.includes('Einweisung Fundamente')||desc.includes('Eigenleistung Fundament')) prices5.eigenleistung=preis;
   });
   if(aR.length>1) aR.slice(1).forEach(r=>{
     const nr=(r[1]||'').trim(),cnt=parseInt(r[2])||0;
@@ -1020,6 +1037,7 @@ function gsMonPreis(key){
   if(key==='SERV-LOG') return prices5.zonePreis['zone'+(fragebogen.zone||2)]||0;
   if(key==='VORFRACHT'||key==='VERSAND') return prices5.fracht[key]||0;
   if(key==='DACH') return prices5.dachterrasse||0;
+  if(key==='EINWEIS-FUND') return prices5.eigenleistung||0;
   return 0;
 }
 
@@ -1029,9 +1047,10 @@ function renderStep5(){
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
-  _wandpl=wSek?wSek.positionen.filter(p=>p.artikelnummer&&(prices5.apAnzahl[p.artikelnummer]||WANDPL_NRS.has(p.artikelnummer))):[];
+  _wandpl=wSek?wSek.positionen.filter(p=>p.artikelnummer&&prices5.apAnzahl[p.artikelnummer]>0):[];
   const fSek=transformedData.sektionen.find(s=>s.id==='fundamente');
-  _bodenpl=fSek?fSek.positionen.filter(p=>p.artikelnummer&&BODENPL_NRS.has(p.artikelnummer)):[];
+  _bodenpl=fSek?fSek.positionen.filter(p=>p.artikelnummer&&prices5.apAnzahl[p.artikelnummer]>0&&!p._gs):[];
+  _gsFundPos=fSek?fSek.positionen.filter(p=>p._gs):[];
   const mSek=transformedData.sektionen.find(s=>s.id==='montage');
   _gsMonPos=mSek?mSek.positionen.filter(p=>p._gs):[];
 
@@ -1109,18 +1128,19 @@ function renderStep5(){
         </div>
       </div>`;
     });
-    // Bodenplatten: immer 4 Klebeanker, immer ziegel-10 Preis
+    // Bodenplatten: Klebeanker-Anzahl aus Sheet, immer ziegel-10 Preis
     const bpPreis=prices5.apPreis['ziegel-10']||38;
     _bodenpl.forEach((pl,bi)=>{
-      const cnt=4*Math.max(1,Math.round(pl.menge));
+      const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+      const cnt=apPerUnit*Math.max(1,Math.round(pl.menge));
       const auf=+(cnt*bpPreis).toFixed(2);
       const total=+(pl.gesamt+auf).toFixed(2);
       h+=`<div class="s5-card">
         <div class="s5-card-hdr"><strong>${pl.name}</strong><span style="color:var(--accent2)">Bodenplatte</span></div>
         <div class="s5-card-body">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Fixregel: 4 Klebeanker &times; ${fmtE(bpPreis)} &euro;/AP</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${apPerUnit} Klebeanker/Stk. &times; ${fmtE(bpPreis)} &euro;/AP</div>
           <div class="s5-calc">
-            <span style="color:var(--muted)">Soliday: ${fmtE(pl.gesamt)} + ${fmtE(auf)} AP =</span>
+            <span style="color:var(--muted)">${fmtE(pl.gesamt)} + ${fmtE(auf)} AP =</span>
             <strong id="bpT${bi}">${fmtE(total)}</strong>
           </div>
         </div>
@@ -1157,6 +1177,17 @@ function renderStep5(){
       </div></div>
     </div>`;
   }
+  _gsFundPos.forEach((pos,fi)=>{
+    const gp=gsMonPreis(pos.artikelnummer);
+    h+=`<div class="s5-card">
+      <div class="s5-card-hdr"><strong>${pos.name}</strong><span>Fundamente</span></div>
+      <div class="s5-card-body"><div class="s5-irow">
+        <span class="s5-lbl">Preis</span>
+        <input type="number" class="s5-inp s5-w120" id="fgP${fi}" value="${gp.toFixed(2)}" step="0.01" min="0">
+        <span class="s5-unit">&euro;</span>
+      </div></div>
+    </div>`;
+  });
   h+=`</div></div>`; // close s5-grid + s5-section
 
   document.getElementById('s5content').innerHTML=h;
@@ -1245,15 +1276,22 @@ function applyPrices5(){
   if(fSek2){
     const bpPreis=prices5.apPreis['ziegel-10']||38;
     _bodenpl.forEach(pl=>{
-      const cnt=4*Math.max(1,Math.round(pl.menge));
+      const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+      const cnt=apPerUnit*Math.max(1,Math.round(pl.menge));
       const auf=+(cnt*bpPreis).toFixed(2);
       const pos=fSek2.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
       if(pos){
         const ng=+(pl.gesamt+auf).toFixed(2);
         pos.gesamt=ng;
         pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
-        pos.beschreibung='inkl. 4 Klebeanker';
+        pos.beschreibung=`inkl. ${apPerUnit} Klebeanker`;
       }
+    });
+    // Eigenleistung Fundamente
+    _gsFundPos.forEach((orig,fi)=>{
+      const p=parseFloat(document.getElementById(`fgP${fi}`)?.value||'0')||0;
+      const pos=fSek2?.positionen.find(pp=>pp.artikelnummer===orig.artikelnummer);
+      if(pos){pos.preis_einheit=p;pos.gesamt=+(p*(pos.menge||1)).toFixed(2);}
     });
   }
   // Schraubfundament: SoSeKu-Preis aus Sheet
