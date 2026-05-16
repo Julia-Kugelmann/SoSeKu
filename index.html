@@ -179,7 +179,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 06:15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 06:45</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1058,8 +1058,8 @@ async function loadPrices5(){
     stundensatz:0,dachterrasse:0,eigenleistung:0,
     // Montage Zeitbausteine (Matrix): parsed values für aktuelles System
     montKalkParsed:null,
-    // Wellenverbinder Verzeichnis: "SYSTEM-Xm" → Anzahl Verbinder
-    verbVz:{}
+    // Wellenverbinder Verzeichnis (Matrix): wellenM → Anzahl Verbinder für aktuelles System
+    verbByWelle:{}
   };
   const[sAR,sFR,sSnR,pR,aR,vR]=await Promise.all([
     fetchSheetTabAll('Stoffe - Aufrollbare Segel'),
@@ -1111,12 +1111,10 @@ async function loadPrices5(){
   // Zeile 15: Wandbefestigungspunkt 18cm          → col B (universal)
   prices5.montKalkParsed=parseMontKalkMatrix(mR,sys);
 
-  // ── Wellenverbinder Verzeichnis: System | Wellenlänge (m) | Anzahl ──
-  if(vR.length>1) vR.slice(1).forEach(r=>{
-    const sys2=normKey(r[0]),welStr=(r[1]||'').trim().replace(',','.');
-    const wellen=parseFloat(welStr)||0,count=parseInt(r[2])||0;
-    if(sys2&&wellen&&count) prices5.verbVz[sys2+'-'+wellen]=count;
-  });
+  // ── Wellenverbinder Verzeichnis (Matrix-Format) ─────────────────────
+  // Row 1: M/MA/X/XS | One | C | CS
+  // Rows: "bis 4m Welle" | "5m Welle" | … → Anzahl Verbinder je System-Spalte
+  prices5.verbByWelle=parseVerbinderMatrix(vR,sys);
 }
 
 // ── Matrix-Parser: Montage Zeitbausteine ─────────────────────────────
@@ -1163,6 +1161,53 @@ function parseMontKalkMatrix(rows,sysU){
   return result;
 }
 
+// ── Matrix-Parser: Wellenverbinder Verzeichnis ───────────────────────
+// Row 1: Spaltenköpfe (M/MA/X/XS | One | C | CS)
+// Rows: "bis 4m Welle" → bisMap; "5m Welle" → exactMap
+// Returns: { wellenM → anzahlVerbinder }
+function parseVerbinderMatrix(rows,sysU){
+  if(!rows||rows.length<2) return{};
+  const hdrRow=rows[0];
+  const matchers=[
+    {sys:['SOLIDAY-M','SOLIDAY-MA','SOLIDAY-X','SOLIDAY-XS'],rx:/m.*ma|m\s*\/|^m.*x/i},
+    {sys:['SOLIDAY-ONE'],rx:/one/i},
+    {sys:['SOLIDAY-C'],rx:/^c$/i},
+    {sys:['SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'],rx:/^cs$/i},
+  ];
+  let colIdx=-1;
+  for(const{sys,rx}of matchers){
+    if(sys.includes(sysU)){
+      for(let i=1;i<hdrRow.length;i++){if(rx.test((hdrRow[i]||'').trim())){colIdx=i;break;}}
+      break;
+    }
+  }
+  if(colIdx<0) return{};
+  const exactMap={},bisMap={};
+  for(const r of rows.slice(1)){
+    const lbl=(r[0]||'').trim().toLowerCase();
+    if(!lbl)continue;
+    const m=lbl.match(/(\d+)\s*m/);
+    if(!m)continue;
+    const welN=parseInt(m[1]);
+    const raw=(r[colIdx]||'').toString().trim();
+    if(raw==='')continue; // empty cell = not applicable for this system
+    const cnt=parseInt(raw)||0;
+    if(lbl.includes('bis'))bisMap[welN]=cnt;
+    else exactMap[welN]=cnt;
+  }
+  // Build lookup wellenM → count for 1-15m
+  const result={};
+  for(let w=1;w<=15;w++){
+    if(exactMap[w]!==undefined){result[w]=exactMap[w];}
+    else{
+      // Find smallest bisMap key ≥ w (covers "bis Xm" range)
+      const bk=Object.keys(bisMap).map(Number).sort((a,b)=>a-b).find(k=>k>=w);
+      if(bk!==undefined)result[w]=bisMap[bk];
+    }
+  }
+  return result;
+}
+
 // ── Montagekosten-Berechnung ─────────────────────────────────────────────
 // Formel: (Grundstd[sys] + (Segel-1)×weiteresSegel[sys]
 //          + AP×apH + SF×sfH + Verb×verbH) × Stundensatz
@@ -1201,10 +1246,9 @@ function calcInstPreis(){
   const sfCount=fSek?fSek.positionen.filter(p=>p.artikelnummer==='00E13000227')
     .reduce((s,p)=>s+Math.round(p.menge||0),0):0;
 
-  // 4. Wellenverbinder (M, FLEX, Festes Segel haben keine)
+  // 4. Wellenverbinder aus Matrix-Tabelle (M, FLEX, Festes Segel haben keine)
   const noVerbinder=['M','FLEX'].includes(sysShort)||sysU.startsWith('SONNENSEGEL');
-  const verbCount=noVerbinder?0:
-    (prices5.verbVz[sysU+'-'+wellenM]||prices5.verbVz[sysShort+'-'+wellenM]||0);
+  const verbCount=noVerbinder?0:(prices5.verbByWelle[wellenM]||0);
 
   const totalH=sailH+apH_total+sfCount*mk.schraubfund+verbCount*mk.verbZuschlag;
   return+(totalH*prices5.stundensatz).toFixed(2);
@@ -1252,14 +1296,14 @@ function renderStep5(){
   _gsMonPos=mSek?mSek.positionen.filter(p=>p._gs):[];
 
   const sheetOk=prices5.stoffe.length>0||prices5.stofFeste.length>0||prices5.stofSandy.length>0||Object.keys(prices5.zonePreis).length>0;
-  const zK=Object.keys(prices5.zonePreis),vvK=Object.keys(prices5.verbVz);
+  const zK=Object.keys(prices5.zonePreis),vvK=Object.keys(prices5.verbByWelle);
   const mk=prices5.montKalkParsed;
   const zPreview=zK.length?` (${zK.slice(0,2).join(', ')})`:' (–)';
   const mkInfo=mk?.ok?`Grundpreis ${mk.grundpreis}h · SF ${mk.schraubfund}h · AP10 ${mk.ap10}h`:'Montage-Tab nicht gefunden';
   let h=`<div style="font-size:11px;color:${sheetOk?'var(--accent2)':'var(--warn)'};margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span>${sheetOk?'✓':'!'} Google Sheet</span>
     <span style="color:var(--muted)">${sheetOk
-      ?`${prices5.stoffe.length} Stoffe · ${zK.length} Zonen${zPreview} · ${mkInfo} · Verbinder-Vz: ${vvK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · Std/Team: ${prices5.stundensatz}€`
+      ?`${prices5.stoffe.length} Stoffe · ${zK.length} Zonen${zPreview} · ${mkInfo} · Verbinder-Vz: ${vvK.length} Einträge · AP: ${Object.keys(prices5.apAnzahl).length} · Std/Team: ${prices5.stundensatz}€`
       :'Preisdaten nicht geladen — Sheet ID prüfen'}</span>
   </div>`;
 
