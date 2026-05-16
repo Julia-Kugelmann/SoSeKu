@@ -121,7 +121,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 .zone-grid,.wand-grid{display:flex;flex-direction:column;gap:8px}
-#wandGrid .zone-item:nth-child(3){margin-top:14px}
+#wandGrid .zone-item:nth-child(3){margin-top:60px}
 .dach-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
 .fg-outer{display:flex;gap:20px;align-items:start;max-width:1100px;margin:0 auto}
 .fg-col-1{flex:0 0 170px}
@@ -183,7 +183,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 10:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 10:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -985,9 +985,12 @@ async function initStep5(){
   document.getElementById('loadTitle').textContent='Preisdaten werden geladen...';
   document.getElementById('loadSub').textContent='Google Sheet wird abgefragt';
   document.getElementById('progBar').style.width='20%';
-  await loadPrices5();
+  try{await loadPrices5();}catch(e){showError('Preisdaten-Ladefehler: '+e.message);return;}
   document.getElementById('progBar').style.width='100%';
-  setTimeout(()=>{renderStep5();showView('viewStep5');setStep(5);},300);
+  setTimeout(()=>{
+    try{renderStep5();}catch(e){showError('Anzeige-Fehler Schritt 5: '+e.message);return;}
+    showView('viewStep5');setStep(5);
+  },300);
 }
 
 // Parse German number format: "63,71 €" or "1.234,56" → float
@@ -1109,6 +1112,7 @@ async function loadPrices5(){
     else if(key==='eigenleistung'||descL.includes('einweisung fundamente')) prices5.eigenleistung=preis;
     else if(key==='stundensatz'||key.includes('stundensatz')||desc.toLowerCase().includes('stundensatz')) prices5.stundensatz=preis;
   });
+  prices5.preislisteZeilen=pR.length;
 
   // ── Ankerpunkt Anzahl Verzeichnis: (leer) | Art.-Nr. | Anzahl ──
   if(aR.length>1) aR.slice(1).forEach(r=>{
@@ -1319,7 +1323,7 @@ function renderStep5(){
   let h=`<div style="font-size:11px;color:${sheetOk?'var(--accent2)':'var(--warn)'};margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span>${sheetOk?'✓':'!'} Google Sheet</span>
     <span style="color:var(--muted)">${sheetOk
-      ?`${prices5.stoffe.length} Stoffe · ${zK.length} Zonen${zPreview} · ${mkInfo} · Verbinder-Vz: ${vvK.length} Einträge · AP: ${Object.keys(prices5.apAnzahl).length} · Preisliste: ${pR.length}Z · Std/Team: ${prices5.stundensatz}€`
+      ?`${prices5.stoffe.length} Stoffe · ${zK.length} Zonen${zPreview} · ${mkInfo} · Verbinder-Vz: ${vvK.length} Einträge · AP: ${Object.keys(prices5.apAnzahl).length} · Preisliste: ${prices5.preislisteZeilen||0}Z · Std/Team: ${prices5.stundensatz}€`
       :'Preisdaten nicht geladen — Sheet ID prüfen'}</span>
   </div>`;
 
