@@ -115,8 +115,8 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .info-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;font-size:11px}
 .info-chips span{background:var(--surface2);border-radius:6px;padding:3px 9px}
 .fragebogen{max-width:1100px;margin:0 auto}
-.fg-sec{margin-bottom:26px}
-.fg-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:13px}
+.fg-sec{margin-bottom:40px}
+.fg-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:13px;text-align:center}
 .radio-grp{display:flex;flex-direction:column;gap:10px}
 .radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
@@ -179,7 +179,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 01:12</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 01:48</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -898,7 +898,7 @@ function renderStep3(){
   const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'');
   document.getElementById('s3sum').innerHTML=
     `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div><div class='s3-big' style='color:${ok?"var(--accent2)":"var(--error)"}'>${fmtE(check)}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
-  document.getElementById('s3sektionen').innerHTML=`<div class="sektion-body"><table class="jtable"><colgroup><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sektionen.map(sek=>`<tr class="sek-hdr-row"><td colspan="6">${sek.name}</td></tr>${sek.positionen.map(p=>`<tr><td><span class="tag">${p.artikelnummer||'–'}</span></td><td><div>${p.name}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td><td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`).join('')}`).join('')}</tbody></table></div>`;
+  document.getElementById('s3sektionen').innerHTML=`<div class="info-chips" style="margin-bottom:14px"><span>System: <strong>${soSeKuJSON.system||'–'}</strong></span><span>Kommission: <strong>${soSeKuJSON.kommission||'–'}</strong></span><span>Datum: <strong>${soSeKuJSON.datum||'–'}</strong></span></div><div class="sektion-body"><table class="jtable"><colgroup><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sektionen.map(sek=>`<tr class="sek-hdr-row"><td colspan="6">${sek.name}</td></tr>${sek.positionen.map(p=>`<tr><td><span class="tag">${p.artikelnummer||'–'}</span></td><td><div>${p.name}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td><td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`).join('')}`).join('')}</tbody></table></div>`;
   showView('viewStep3');setStep(3);
 }
 
@@ -1353,7 +1353,16 @@ function renderStep6(){
   const mwst=nettoT*0.19;
   const brutto=nettoT+mwst;
   const d=soSeKuJSON;
-  let h=`<div class="info-chips" style="margin-bottom:16px">`+
+  const solidayTotal=Number(soSeKuJSON.netto_gesamt);
+  const delta=nettoT-solidayTotal;
+  const deltaSign=delta>=0?'+':'';
+  let h=`<div class='s3-sum-wrap' style='margin-bottom:16px'>`+
+    `<div class='s3-sum-left'><div class='s3-lbl'>Soliday Basis (Netto)</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div>`+
+    `<div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Angebot (Netto)</div>`+
+    `<div class='s3-eq'><span class='v'>${fmtE(netto)}</span>`+(teu>0?`<span class='op'>+</span><span class='lbl2'>temporäre Anpassung</span><span class='v'>${fmtE(teu)}</span>`:'')+`</div>`+
+    `<div class='s3-big'>${fmtE(nettoT)}</div></div>`+
+    `<div class='s3-sum-badge' style='background:rgba(91,141,238,.1);color:var(--accent)'>${deltaSign}${fmtE(delta)}</div></div>`;
+  h+=`<div class="info-chips" style="margin-bottom:12px">`+
     `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`+
     `<span>System: <strong>${d.system||'–'}</strong></span>`+
     `<span>Datum: <strong>${d.datum||'–'}</strong></span></div>`;
