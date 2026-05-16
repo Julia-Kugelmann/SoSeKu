@@ -92,7 +92,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .sum-compare{margin-bottom:18px}
 #viewStep3{display:flex;flex-direction:column}
 .s3-header{max-width:860px;margin:0 auto;width:100%;flex-shrink:0}
-.s3-content{max-width:860px;margin:0 auto;width:100%;height:calc(100vh - 390px);overflow-y:auto;min-height:0;padding-bottom:14px}
+.s3-content{max-width:860px;margin:0 auto;width:100%;height:calc(100vh - 460px);overflow-y:auto;min-height:0;padding-bottom:14px}
 .s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
 .s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
 .s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:flex-start}
@@ -120,9 +120,11 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .radio-grp{display:flex;flex-direction:column;gap:10px}
 .radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
-.zone-grid{display:grid;grid-template-columns:repeat(6,140px);gap:8px;width:fit-content;margin:0 auto}
-.wand-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
+.zone-grid{display:grid;grid-template-columns:200px;gap:8px}
+.wand-grid{display:grid;grid-template-columns:200px;gap:8px}
 .dach-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
+.fg-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;max-width:540px;margin:0 auto;align-items:start}
+.fg-col{display:flex;flex-direction:column}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:8px 8px;text-align:center;cursor:pointer;transition:all .2s;min-height:52px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
 .zone-num{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--accent)}
@@ -179,7 +181,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 06:45</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 08:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -306,38 +308,44 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
       </div>
     </div>
     <div id="montageOptions">
-    <div class="fg-sec">
-      <div class="fg-title">Wandaufbau</div>
-      <div class="wand-grid" id="wandGrid">
-        <div class="zone-item sel" data-v="ziegel-10" onclick="selWand('ziegel-10')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
-        <div class="zone-item" data-v="holz-10" onclick="selWand('holz-10')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
-        <div class="zone-item" data-v="ziegel-18" onclick="selWand('ziegel-18')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
-        <div class="zone-item" data-v="holz-18" onclick="selWand('holz-18')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
+    <div class="fg-cols">
+      <div class="fg-col">
+        <div class="fg-sec">
+          <div class="fg-title">Anfahrtszone</div>
+          <div class="zone-grid" id="zoneGrid">
+            <div class="zone-item" onclick="selZone(1)"><div class="zone-num">Zone 1</div><div class="zone-time">bis 15 min</div></div>
+            <div class="zone-item sel" onclick="selZone(2)"><div class="zone-num">Zone 2</div><div class="zone-time">bis 30 min</div></div>
+            <div class="zone-item" onclick="selZone(3)"><div class="zone-num">Zone 3</div><div class="zone-time">bis 45 min</div></div>
+            <div class="zone-item" onclick="selZone(4)"><div class="zone-num">Zone 4</div><div class="zone-time">bis 60 min</div></div>
+            <div class="zone-item" onclick="selZone(5)"><div class="zone-num">Zone 5</div><div class="zone-time">bis 75 min</div></div>
+            <div class="zone-item" onclick="selZone(6)"><div class="zone-num">Zone 6</div><div class="zone-time">bis 90 min</div></div>
+          </div>
+        </div>
+        <div class="fg-sec">
+          <div class="fg-title">Anzahl Montagetermine</div>
+          <div class="zone-grid">
+            <div class="zone-item sel" id="t2Card" onclick="selTermineF(2)"><div class="zone-num">2 Termine</div></div>
+            <div class="zone-item" id="t3Card" onclick="selTermineF(3)"><div class="zone-num">3 Termine</div></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="fg-sec">
-      <div class="fg-title">Anfahrtszone</div>
-      <div class="zone-grid" id="zoneGrid">
-        <div class="zone-item" onclick="selZone(1)"><div class="zone-num">Zone 1</div><div class="zone-time">bis 15 min</div></div>
-        <div class="zone-item sel" onclick="selZone(2)"><div class="zone-num">Zone 2</div><div class="zone-time">bis 30 min</div></div>
-        <div class="zone-item" onclick="selZone(3)"><div class="zone-num">Zone 3</div><div class="zone-time">bis 45 min</div></div>
-        <div class="zone-item" onclick="selZone(4)"><div class="zone-num">Zone 4</div><div class="zone-time">bis 60 min</div></div>
-        <div class="zone-item" onclick="selZone(5)"><div class="zone-num">Zone 5</div><div class="zone-time">bis 75 min</div></div>
-        <div class="zone-item" onclick="selZone(6)"><div class="zone-num">Zone 6</div><div class="zone-time">bis 90 min</div></div>
-      </div>
-    </div>
-    <div class="fg-sec">
-      <div class="fg-title">Anzahl Montagetermine</div>
-      <div class="dach-grid">
-        <div class="zone-item sel" id="t2Card" onclick="selTermineF(2)"><div class="zone-num">2 Termine</div></div>
-        <div class="zone-item" id="t3Card" onclick="selTermineF(3)"><div class="zone-num">3 Termine</div></div>
-      </div>
-    </div>
-    <div class="fg-sec">
-      <div class="fg-title">Extras</div>
-      <div class="dach-grid">
-        <div class="zone-item" id="dachCard" onclick="toggleDach()"><div class="zone-num">Dachterrasse</div><div class="zone-time">Aufschlag wird hinzugef&uuml;gt</div></div>
-        <div class="zone-item" id="eigenCard" onclick="toggleEigenleistung()"><div class="zone-num">Eigenleistung</div><div class="zone-time">Fundamente in Eigenleistung</div></div>
+      <div class="fg-col">
+        <div class="fg-sec">
+          <div class="fg-title">Wandaufbau</div>
+          <div class="wand-grid" id="wandGrid">
+            <div class="zone-item sel" data-v="ziegel-10" onclick="selWand('ziegel-10')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
+            <div class="zone-item" data-v="holz-10" onclick="selWand('holz-10')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
+            <div class="zone-item" data-v="ziegel-18" onclick="selWand('ziegel-18')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
+            <div class="zone-item" data-v="holz-18" onclick="selWand('holz-18')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
+          </div>
+        </div>
+        <div class="fg-sec">
+          <div class="fg-title">Extras</div>
+          <div class="zone-grid">
+            <div class="zone-item" id="dachCard" onclick="toggleDach()"><div class="zone-num">Dachterrasse</div><div class="zone-time">Aufschlag wird hinzugef&uuml;gt</div></div>
+            <div class="zone-item" id="eigenCard" onclick="toggleEigenleistung()"><div class="zone-num">Eigenleistung</div><div class="zone-time">Fundamente in Eigenleistung</div></div>
+          </div>
+        </div>
       </div>
     </div>
     </div><!-- end #montageOptions -->
@@ -1091,7 +1099,7 @@ async function loadPrices5(){
     else if(key==='versand') prices5.fracht['VERSAND']=preis;
     else if(key==='dach'||desc.toLowerCase().includes('dachterrasse')) prices5.dachterrasse=preis;
     else if(key==='eigenleistung'||desc.toLowerCase().includes('einweisung fundamente')) prices5.eigenleistung=preis;
-    else if(key==='stundensatz'||key.includes('std')&&key.includes('team')||desc.toLowerCase().includes('stundensatz')) prices5.stundensatz=preis;
+    else if(key==='stundensatz'||key.includes('stundensatz')||desc.toLowerCase().includes('stundensatz')) prices5.stundensatz=preis;
   });
 
   // ── Ankerpunkt Anzahl Verzeichnis: (leer) | Art.-Nr. | Anzahl ──
