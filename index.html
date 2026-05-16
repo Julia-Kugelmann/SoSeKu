@@ -179,7 +179,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 03:44</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 04:15</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -908,7 +908,10 @@ function renderStep3(){
     `<div class="info-chips" style="margin-bottom:10px"><span>System: <strong>${soSeKuJSON.system||'–'}</strong></span><span>Kommission: <strong>${soSeKuJSON.kommission||'–'}</strong></span><span>Datum: <strong>${soSeKuJSON.datum||'–'}</strong></span>${soSeKuJSON.wellenlaenge_aufrollsystem_mm?`<span>Welle: <strong>${soSeKuJSON.wellenlaenge_aufrollsystem_mm} mm</strong></span>`:''}</div>`;
   document.getElementById('s3sum').innerHTML=
     `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div><div class='s3-big' style='color:${ok?"var(--accent2)":"var(--error)"}'>${fmtE(check)}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
-  document.getElementById('s3sektionen').innerHTML=`<div class="sektion-body"><table class="jtable"><colgroup><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sektionen.map(sek=>`<tr class="sek-hdr-row"><td colspan="6">${sek.name}</td></tr>${sek.positionen.map(p=>`<tr><td><span class="tag">${p.artikelnummer||'–'}</span></td><td><div>${p.name}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td><td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`).join('')}`).join('')}</tbody></table></div>`;
+  const posCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
+  document.getElementById('s3sektionen').innerHTML=
+    `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${soSeKuJSON.system||'–'} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen</span></div>`+
+    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sektionen.map(sek=>`<tr class="sek-hdr-row"><td colspan="6">${sek.name}</td></tr>${sek.positionen.map(p=>`<tr><td><span class="tag">${p.artikelnummer||'–'}</span></td><td><div>${p.name}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td><td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`).join('')}`).join('')}</tbody></table></div>`;
   showView('viewStep3');setStep(3);
 }
 
@@ -1036,8 +1039,12 @@ async function loadPrices5(){
   if(pR.length>1) pR.forEach(r=>{
     const keyRaw=(r[0]||'').trim();
     const key=keyRaw.toLowerCase().replace(/\s+/g,''); // normalize: lowercase, no spaces
-    const preis=parseDE(r[2]),desc=(r[1]||'').trim();
-    if(!key||!preis&&preis!==0)return;
+    // Flexible column detection: price can be in col C (r[2]) or col B (r[1])
+    const p2=r[2]!==undefined?parseDE(r[2]):0;
+    const p1=r[1]!==undefined?parseDE(r[1]):0;
+    const preis=p2||p1; // prefer col C (with desc in col B), fallback to col B
+    const desc=p2?((r[1]||'').trim()):((r[2]||'').trim());
+    if(!key||(!preis&&preis!==0))return;
     if(['ziegel-10','ziegel-18','holz-10','holz-18'].includes(key)) prices5.apPreis[key]=preis;
     else if(key.startsWith('zone')) prices5.zonePreis[key]=preis; // zone1, zone2, zone1-3t ...
     else if(keyRaw==='VORFRACHT'||keyRaw==='VERSAND') prices5.fracht[keyRaw]=preis;
@@ -1075,7 +1082,7 @@ function calcInstPreis(instNr){
   // Verbinder: Systeme ohne Verbinder: M, MA, FLEX, Festes Segel (SONNENSEGEL-*)
   const sysShort=instNr.replace('INST-','');
   const sysU=(soSeKuJSON.system||'').toUpperCase();
-  const noVerbinder=['M','MA','FLEX'].includes(sysShort)||sysU.startsWith('SONNENSEGEL');
+  const noVerbinder=sysShort==='M'||sysShort==='FLEX'||sysU.startsWith('SONNENSEGEL');
   let verbH=0;
   if(!noVerbinder&&wellenM>0){
     const vCount=prices5.verbinder['VERB-'+sysShort+'-'+wellenM]||0;
@@ -1109,9 +1116,12 @@ function renderStep5(){
   _gsMonPos=mSek?mSek.positionen.filter(p=>p._gs):[];
 
   const sheetOk=prices5.stoffe.length>0||prices5.stofFeste.length>0||prices5.stofSandy.length>0||Object.keys(prices5.zonePreis).length>0;
-  let h=`<div style="font-size:11px;color:${sheetOk?'var(--accent2)':'var(--warn)'};margin-bottom:14px;display:flex;align-items:center;gap:8px">
+  const zK=Object.keys(prices5.zonePreis).length,iK=Object.keys(prices5.instPreis).length,mK=Object.keys(prices5.montHours).length,vK=Object.keys(prices5.verbinder).length;
+  let h=`<div style="font-size:11px;color:${sheetOk?'var(--accent2)':'var(--warn)'};margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span>${sheetOk?'✓':'!'} Google Sheet</span>
-    <span style="color:var(--muted)">${sheetOk?`${prices5.stoffe.length} Stoffe · ${Object.keys(prices5.zonePreis).length} Zonen · AP: ${Object.keys(prices5.apAnzahl).length} Art.-Nr.`:'Preisdaten nicht geladen — Sheet ID prüfen'}</span>
+    <span style="color:var(--muted)">${sheetOk
+      ?`${prices5.stoffe.length} Stoffe · ${zK} Zonen · INST: ${iK} · MONT: ${mK} · VERB: ${vK} · AP: ${Object.keys(prices5.apAnzahl).length} · Std/Team: ${prices5.stundensatz}€`
+      :'Preisdaten nicht geladen — Sheet ID prüfen'}</span>
   </div>`;
 
   // 5A + 5B nebeneinander
