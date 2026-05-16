@@ -120,10 +120,11 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .radio-grp{display:flex;flex-direction:column;gap:10px}
 .radio-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
 .radio-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
-.zone-grid{display:grid;grid-template-columns:200px;gap:8px}
-.wand-grid{display:grid;grid-template-columns:200px;gap:8px}
+.zone-grid,.wand-grid{display:flex;flex-direction:column;gap:8px}
 .dach-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
-.fg-cols{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;max-width:540px;margin:0 auto;align-items:start}
+.fg-outer{display:flex;gap:20px;align-items:start;max-width:1100px;margin:0 auto}
+.fg-col-1{flex:0 0 170px}
+.fg-montage-opts{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;min-width:0}
 .fg-col{display:flex;flex-direction:column}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:8px 8px;text-align:center;cursor:pointer;transition:all .2s;min-height:52px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
@@ -181,7 +182,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 08:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 09:15</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -300,17 +301,18 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <!-- STEP 4 -->
 <div id="viewStep4" class="hidden">
   <div class="fragebogen" style="padding-top:28px">
-    <div class="fg-sec">
-      <div class="fg-title">Montage</div>
-      <div class="dach-grid">
-        <div class="zone-item sel" id="mitMontCard" onclick="toggleMontage(true)"><div class="zone-num">Mit Montage</div></div>
-        <div class="zone-item" id="ohneMontCard" onclick="toggleMontage(false)"><div class="zone-num">Ohne Montage</div><div class="zone-time">Nur Material</div></div>
+    <div class="fg-outer">
+      <!-- Col 1: Montage -->
+      <div class="fg-col fg-col-1">
+        <div class="fg-title">Montage</div>
+        <div class="zone-grid">
+          <div class="zone-item sel" id="mitMontCard" onclick="toggleMontage(true)"><div class="zone-num">Mit Montage</div></div>
+          <div class="zone-item" id="ohneMontCard" onclick="toggleMontage(false)"><div class="zone-num">Ohne Montage</div><div class="zone-time">Nur Material</div></div>
+        </div>
       </div>
-    </div>
-    <div id="montageOptions">
-    <div class="fg-cols">
-      <div class="fg-col">
-        <div class="fg-sec">
+      <!-- Cols 2–5: montageOptions (hidden when Ohne Montage) -->
+      <div id="montageOptions" class="fg-montage-opts">
+        <div class="fg-col">
           <div class="fg-title">Anfahrtszone</div>
           <div class="zone-grid" id="zoneGrid">
             <div class="zone-item" onclick="selZone(1)"><div class="zone-num">Zone 1</div><div class="zone-time">bis 15 min</div></div>
@@ -321,25 +323,23 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
             <div class="zone-item" onclick="selZone(6)"><div class="zone-num">Zone 6</div><div class="zone-time">bis 90 min</div></div>
           </div>
         </div>
-        <div class="fg-sec">
-          <div class="fg-title">Anzahl Montagetermine</div>
-          <div class="zone-grid">
-            <div class="zone-item sel" id="t2Card" onclick="selTermineF(2)"><div class="zone-num">2 Termine</div></div>
-            <div class="zone-item" id="t3Card" onclick="selTermineF(3)"><div class="zone-num">3 Termine</div></div>
-          </div>
-        </div>
-      </div>
-      <div class="fg-col">
-        <div class="fg-sec">
+        <div class="fg-col">
           <div class="fg-title">Wandaufbau</div>
-          <div class="wand-grid" id="wandGrid">
+          <div class="zone-grid" id="wandGrid">
             <div class="zone-item sel" data-v="ziegel-10" onclick="selWand('ziegel-10')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="holz-10" onclick="selWand('holz-10')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="ziegel-18" onclick="selWand('ziegel-18')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="holz-18" onclick="selWand('holz-18')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
           </div>
         </div>
-        <div class="fg-sec">
+        <div class="fg-col">
+          <div class="fg-title">Termine</div>
+          <div class="zone-grid">
+            <div class="zone-item sel" id="t2Card" onclick="selTermineF(2)"><div class="zone-num">2 Termine</div></div>
+            <div class="zone-item" id="t3Card" onclick="selTermineF(3)"><div class="zone-num">3 Termine</div></div>
+          </div>
+        </div>
+        <div class="fg-col">
           <div class="fg-title">Extras</div>
           <div class="zone-grid">
             <div class="zone-item" id="dachCard" onclick="toggleDach()"><div class="zone-num">Dachterrasse</div><div class="zone-time">Aufschlag wird hinzugef&uuml;gt</div></div>
@@ -348,10 +348,9 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
         </div>
       </div>
     </div>
-    </div><!-- end #montageOptions -->
-    <div class="fg-sec">
+    <div style="max-width:700px;margin:32px auto 0">
       <div class="fg-title">Freitext / Zusatzangaben</div>
-      <textarea class="fg-free" id="fgFrei" placeholder="Weitere Hinweise zur Montage..." style="max-width:700px;display:block;margin:0 auto"></textarea>
+      <textarea class="fg-free" id="fgFrei" placeholder="Weitere Hinweise zur Montage..."></textarea>
     </div>
   </div>
   <div class="btn-row">
@@ -956,7 +955,7 @@ function toggleMontage(v){
   selMontage=v;
   document.getElementById('mitMontCard').classList.toggle('sel',v);
   document.getElementById('ohneMontCard').classList.toggle('sel',!v);
-  document.getElementById('montageOptions').style.display=v?'':'none';
+  document.getElementById('montageOptions').style.display=v?'grid':'none';
   if(!v){
     if(selDach){selDach=false;document.getElementById('dachCard').classList.remove('sel');}
     if(selEigenleistung){selEigenleistung=false;document.getElementById('eigenCard').classList.remove('sel');}
@@ -1090,15 +1089,20 @@ async function loadPrices5(){
   if(pR.length>1) pR.forEach(r=>{
     const keyRaw=(r[0]||'').trim();
     const key=keyRaw.toLowerCase().replace(/\s+/g,'');
-    const preis=sheetNum(r,2,1); // prefer col C, fallback col B
     const desc=(r[1]||'').trim();
+    const descL=desc.toLowerCase();
+    // Stundensatz: detect before !preis guard, scan all columns for first positive value
+    if(!prices5.stundensatz&&(key.includes('stundensatz')||descL.includes('stundensatz')||key.includes('std/team')||key.includes('teamstd'))){
+      for(let c=1;c<Math.min(r.length,10);c++){const v=parseDE(r[c]);if(v>0){prices5.stundensatz=v;return;}}
+    }
+    const preis=sheetNum(r,2,1,3,4); // prefer col C, fallback col B, D, E
     if(!key||!preis) return;
     if(['ziegel-10','ziegel-18','holz-10','holz-18'].includes(key)) prices5.apPreis[key]=preis;
     else if(key.startsWith('zone')) prices5.zonePreis[key]=preis;
     else if(key==='vorfracht') prices5.fracht['VORFRACHT']=preis;
     else if(key==='versand') prices5.fracht['VERSAND']=preis;
-    else if(key==='dach'||desc.toLowerCase().includes('dachterrasse')) prices5.dachterrasse=preis;
-    else if(key==='eigenleistung'||desc.toLowerCase().includes('einweisung fundamente')) prices5.eigenleistung=preis;
+    else if(key==='dach'||descL.includes('dachterrasse')) prices5.dachterrasse=preis;
+    else if(key==='eigenleistung'||descL.includes('einweisung fundamente')) prices5.eigenleistung=preis;
     else if(key==='stundensatz'||key.includes('stundensatz')||desc.toLowerCase().includes('stundensatz')) prices5.stundensatz=preis;
   });
 
