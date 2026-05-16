@@ -179,7 +179,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 04:15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 04:42</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1090,10 +1090,27 @@ function calcInstPreis(instNr){
   }
   return+((baseH+totalAP*apH+sfCount*sfH+verbH)*(prices5.stundensatz||0)).toFixed(2);
 }
+function findZonePrice(zoneNum,want3t){
+  // Direct lookup (expected format)
+  const d2='zone'+zoneNum, d3='zone'+zoneNum+'-3t';
+  if(want3t&&prices5.zonePreis[d3]) return prices5.zonePreis[d3];
+  if(!want3t&&prices5.zonePreis[d2]) return prices5.zonePreis[d2];
+  // Flexible scan: match any key containing the zone number
+  for(const [k,v] of Object.entries(prices5.zonePreis)){
+    const m=k.match(/zone.?(\d+)/i);
+    if(!m||parseInt(m[1])!==zoneNum) continue;
+    const has3t=/3t/i.test(k);
+    if(want3t===has3t) return v;
+  }
+  // 3-Termine fallback: use 2-Termine price
+  if(want3t) return findZonePrice(zoneNum,false);
+  return 0;
+}
 function gsMonPreis(key){
   if(key==='SERV-LOG'){
-    const z='zone'+(fragebogen.zone||2);
-    return (fragebogen.termine||2)===3?(prices5.zonePreis[z+'-3t']||prices5.zonePreis[z]||0):(prices5.zonePreis[z]||0);
+    const zn=fragebogen.zone||2;
+    const is3t=(fragebogen.termine||2)===3;
+    return findZonePrice(zn,is3t);
   }
   if(key==='VORFRACHT'||key==='VERSAND') return prices5.fracht[key]||0;
   if(key==='DACH') return prices5.dachterrasse||0;
@@ -1116,11 +1133,13 @@ function renderStep5(){
   _gsMonPos=mSek?mSek.positionen.filter(p=>p._gs):[];
 
   const sheetOk=prices5.stoffe.length>0||prices5.stofFeste.length>0||prices5.stofSandy.length>0||Object.keys(prices5.zonePreis).length>0;
-  const zK=Object.keys(prices5.zonePreis).length,iK=Object.keys(prices5.instPreis).length,mK=Object.keys(prices5.montHours).length,vK=Object.keys(prices5.verbinder).length;
+  const zK=Object.keys(prices5.zonePreis),iK=Object.keys(prices5.instPreis),mK=Object.keys(prices5.montHours),vK=Object.keys(prices5.verbinder);
+  const zPreview=zK.length?` (${zK.slice(0,2).join(', ')})`:' (–)';
+  const iPreview=iK.length?` (${iK.slice(0,2).join(', ')})`:' (–)';
   let h=`<div style="font-size:11px;color:${sheetOk?'var(--accent2)':'var(--warn)'};margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span>${sheetOk?'✓':'!'} Google Sheet</span>
     <span style="color:var(--muted)">${sheetOk
-      ?`${prices5.stoffe.length} Stoffe · ${zK} Zonen · INST: ${iK} · MONT: ${mK} · VERB: ${vK} · AP: ${Object.keys(prices5.apAnzahl).length} · Std/Team: ${prices5.stundensatz}€`
+      ?`${prices5.stoffe.length} Stoffe · ${zK.length} Zonen${zPreview} · INST: ${iK.length}${iPreview} · MONT: ${mK.length} · VERB: ${vK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · Std/Team: ${prices5.stundensatz}€`
       :'Preisdaten nicht geladen — Sheet ID prüfen'}</span>
   </div>`;
 
