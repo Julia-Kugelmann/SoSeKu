@@ -179,7 +179,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 03:15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 03:44</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1022,7 +1022,7 @@ function getStoffeForSys(sys,bQm,qmOrig){
 }
 async function loadPrices5(){
   const sys=(soSeKuJSON?.system||'').toUpperCase();
-  prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},instPreis:{},montHours:{},stundensatz:0,schraubfundament:0,dachterrasse:0,eigenleistung:0};
+  prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},instPreis:{},montHours:{},verbinder:{},stundensatz:0,schraubfundament:0,dachterrasse:0,eigenleistung:0};
   const[sAR,sFR,sSnR,pR,aR]=await Promise.all([
     fetchSheetTabAll('Stoffe - Aufrollbare Segel'),
     fetchSheetTabAll('Stoffe - Feste Segel'),
@@ -1047,6 +1047,7 @@ async function loadPrices5(){
     else if(desc==='Schraubfundament'||keyRaw==='SCHRAUBFUND') prices5.schraubfundament=preis;
     else if(keyRaw.toUpperCase().startsWith('INST-')) prices5.instPreis[keyRaw.toUpperCase()]=preis;
     else if(keyRaw.toUpperCase().startsWith('MONT-')) prices5.montHours[keyRaw.toUpperCase()]=preis;
+    else if(keyRaw.toUpperCase().startsWith('VERB-')) prices5.verbinder[keyRaw.toUpperCase()]=preis;
   });
   if(aR.length>1) aR.slice(1).forEach(r=>{
     const nr=(r[1]||'').trim(),cnt=parseInt(r[2])||0;
@@ -1071,7 +1072,16 @@ function calcInstPreis(instNr){
   const wKey='MONT-AP-'+(fragebogen.wandart||'ziegel-10').toUpperCase();
   const apH=prices5.montHours[wKey]||prices5.montHours['MONT-AP']||0;
   const sfH=prices5.montHours['MONT-SF']||prices5.montHours['MONT-SCHRAUBFUND']||0;
-  return+((baseH+totalAP*apH+sfCount*sfH)*(prices5.stundensatz||0)).toFixed(2);
+  // Verbinder: Systeme ohne Verbinder: M, MA, FLEX, Festes Segel (SONNENSEGEL-*)
+  const sysShort=instNr.replace('INST-','');
+  const sysU=(soSeKuJSON.system||'').toUpperCase();
+  const noVerbinder=['M','MA','FLEX'].includes(sysShort)||sysU.startsWith('SONNENSEGEL');
+  let verbH=0;
+  if(!noVerbinder&&wellenM>0){
+    const vCount=prices5.verbinder['VERB-'+sysShort+'-'+wellenM]||0;
+    verbH=vCount*(prices5.montHours['MONT-VERB']||0);
+  }
+  return+((baseH+totalAP*apH+sfCount*sfH+verbH)*(prices5.stundensatz||0)).toFixed(2);
 }
 function gsMonPreis(key){
   if(key==='SERV-LOG'){
