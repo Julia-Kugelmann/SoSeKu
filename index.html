@@ -12,7 +12,7 @@
   --warn:#f5a623;--error:#ff6b6b;--text:#e2e2f0;--muted:#8888aa;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(91,141,238,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(56,217,169,.06) 0%,transparent 60%);font-family:'DM Mono',monospace;color:var(--text)}
+body{height:100vh;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(91,141,238,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(56,217,169,.06) 0%,transparent 60%);font-family:'DM Mono',monospace;color:var(--text)}
 header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
 .logo .s1{color:#f5a623}.logo .s2{color:#5b8dee}.logo .arr{color:var(--muted);margin:0 6px}
@@ -29,7 +29,7 @@ header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;just
 .step.active .step-num{background:var(--accent);color:#fff;border-color:var(--accent)}
 .step.done .step-num{background:var(--accent2);color:#0d0d18;border-color:var(--accent2)}
 .step-line{width:20px;height:1px;background:var(--border);flex-shrink:0}
-main{margin:0 auto;padding:20px 14px}
+main{flex:1;min-height:0;width:100%;padding:20px 14px;overflow-y:auto}
 .setup-wrap{max-width:460px;margin:0 auto}
 .setup-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px}
 .setup-sub{font-size:12px;color:var(--muted);margin-bottom:24px;line-height:1.6}
@@ -135,7 +135,7 @@ main{margin:0 auto;padding:20px 14px}
 .fg-free{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;resize:vertical;min-height:80px}
 .fg-free:focus{border-color:var(--accent)}
 /* Pinned-button layout for steps 4-6 */
-.view-pinned{display:flex;flex-direction:column;height:calc(100vh - 168px)}
+.view-pinned{display:flex;flex-direction:column;height:100%}
 .view-pinned>.view-scroll{flex:1;overflow-y:auto;min-height:0;padding-bottom:8px}
 .view-pinned>.btn-row{flex-shrink:0}
 /* Step 5 */
@@ -190,7 +190,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 15:15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 15:45</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -441,6 +441,8 @@ const fmtE=n=>fmt(n)+' €';
 const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewDone','viewError'];
 function showView(id,fromHistory){
   VIEWS.forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));
+  const dbgBar=document.getElementById('s5debugBar');
+  if(dbgBar) dbgBar.style.display=id==='viewStep5'?'block':'none';
   if(!fromHistory)history.pushState({view:id},'','');
 }
 window.addEventListener('popstate',e=>{if(e.state?.view)showView(e.state.view,true);});
@@ -1120,7 +1122,7 @@ async function loadPrices5(){
     else if(key.startsWith('zone')) prices5.zonePreis[key]=preis;
     else if(key==='vorfracht') prices5.fracht['VORFRACHT']=preis;
     else if(key==='versand') prices5.fracht['VERSAND']=preis;
-    else if(key==='dach'||descL.includes('dachterrasse')) prices5.dachterrasse=preis;
+    else if(key.includes('dach')||descL.includes('dachterrasse')) prices5.dachterrasse=preis;
     else if(key==='eigenleistung'||descL.includes('einweisung fundamente')) prices5.eigenleistung=preis;
     else if(key==='stundensatz'||key.includes('stundensatz')||desc.toLowerCase().includes('stundensatz')) prices5.stundensatz=preis;
     else if(keyRaw==='00E13000227'||key==='00e13000227') prices5.schraubfundament=preis;
@@ -1335,13 +1337,11 @@ function renderStep5(){
   const zK=Object.keys(prices5.zonePreis),vvK=Object.keys(prices5.verbByWelle);
   const mk=prices5.montKalkParsed;
   const zPreview=zK.length?` (${zK.slice(0,2).join(', ')})`:' (–)';
-  const mkInfo=mk?.ok?`Grundpreis ${mk.grundpreis}h · SF ${mk.schraubfund}h · AP10 ${mk.ap10}h`:'Montage-Tab nicht gefunden';
-  let h=`<div style="font-size:11px;color:${sheetOk?'var(--accent2)':'var(--warn)'};margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-    <span>${sheetOk?'✓':'!'} Google Sheet</span>
-    <span style="color:var(--muted)">${sheetOk
-      ?`${prices5.stoffe.length} Stoffe · ${zK.length} Zonen${zPreview} · ${mkInfo} · Verbinder-Vz: ${vvK.length} Einträge · AP: ${Object.keys(prices5.apAnzahl).length} · Preisliste: ${prices5.preislisteZeilen||0}Z · Std/Team: ${prices5.stundensatz}€`
-      :'Preisdaten nicht geladen — Sheet ID prüfen'}</span>
-  </div>`;
+  const mkInfo=mk?.ok?`GP ${mk.grundpreis}h · SF ${mk.schraubfund}h · AP10 ${mk.ap10}h`:'Montage-Tab nicht gefunden';
+  // Debug bar at bottom of screen
+  const dbgBar=document.getElementById('s5debugBar');
+  if(dbgBar) dbgBar.innerHTML=`<span style="color:${sheetOk?'var(--accent2)':'var(--warn)'}">${sheetOk?'✓':'!'} Sheet</span>&ensp;${sheetOk?`${prices5.stoffe.length} Stoffe · ${zK.length} Zonen${zPreview} · ${mkInfo} · Verbinder: ${vvK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · PL: ${prices5.preislisteZeilen||0}Z · Std: ${prices5.stundensatz}€ · Dach: ${prices5.dachterrasse}€ · SF: ${prices5.schraubfundament}€`:'Preisdaten nicht geladen — Sheet ID prüfen'}`;
+  let h=``;
 
   // Calc breakdown for INST card
   const mk2=prices5.montKalkParsed;
@@ -1542,7 +1542,7 @@ function renderStep5(){
   h+=`</div></div>`; // section + col 3
 
   // ═══ COL 4: Fracht & Extras ═══
-  h+=`<div class="s5-col"><div class="s5-section"><div class="s5-sec-title">Fracht &amp; Extras</div>`;
+  h+=`<div class="s5-col"><div class="s5-section" style="display:flex;flex-direction:column;gap:12px"><div class="s5-sec-title">Fracht &amp; Extras</div>`;
   if(fragebogen.dachterrasse){
     const dp=gsMonPreis('DACH');
     h+=`<div class="s5-card">
@@ -1583,7 +1583,7 @@ function renderStep5(){
       </div>
     </div>`;
   });
-  h+=`</div></div>`; // section + col 3
+  h+=`</div></div>`; // section + col 4
 
   h+=`</div>`; // s5-layout
 
@@ -2034,5 +2034,6 @@ async function importToSevdesk(){
   }
 }
 </script>
+<div id="s5debugBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,24,.92);border-top:1px solid var(--border);padding:3px 14px;font-size:10px;color:var(--muted);z-index:999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
 </body>
 </html>
