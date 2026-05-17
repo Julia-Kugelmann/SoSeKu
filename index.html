@@ -186,7 +186,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 12:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 13:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1458,10 +1458,14 @@ function renderStep5(){
   if(instPos){
     const mi=monPosIdx[instPos.artikelnummer];
     const gp=gsMonPreis(instPos.artikelnummer);
-    const wandplHdr=_wandpl.length>0?` &middot; ${_wandpl.length} Wandpl.`:'';
-    const sfHdr=sfCnt2>0?` &middot; ${sfCnt2} SF`:'';
+    const wandHdr=_wandpl.length>0?`${_wandpl.length}&times; Wand`:'';
+    const sfHdr=sfCnt2>0?`${sfCnt2}&times; Erdschraube`:'';
+    const hdrChips=[`${wellenM2}m Welle`,wandHdr,sfHdr].filter(Boolean).join(' · ');
     h+=`<div class="s5-card">
-      <div class="s5-card-hdr"><strong>${instPos.name}</strong><span style="font-size:10px;color:var(--muted)">${sysLabel2} ${wellenM2}m${wandplHdr}${sfHdr}</span></div>
+      <div class="s5-card-hdr">
+        <strong>${instPos.name}</strong>
+        <span style="font-size:14px;font-weight:700;color:var(--accent2)">${hdrChips}</span>
+      </div>
       <div class="s5-card-body">
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
           <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum()">
@@ -1470,7 +1474,7 @@ function renderStep5(){
         ${mk2?.ok?`<div class="s5-calc-detail">
           <div>Segel (${sailCount2}${sailCount2>1?` Stk. · GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
           ${apCnt2>0?`<div>${_wandpl.length} Wandplatten (${apCnt2} AP &times; ${apRate2.toFixed(2)}h): ${apH2.toFixed(2)}h</div>`:''}
-          ${sfCnt2>0?`<div>Schraubfund. (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
+          ${sfCnt2>0?`<div>Schraubfundamente (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
           ${verbCnt2>0?`<div>Wellen-Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
         </div>
         <div class="s5-calc">
@@ -1494,7 +1498,6 @@ function renderStep5(){
           <span class="s5-unit">&euro;</span>
         </div>
         <div class="s5-calc">
-          <span style="color:var(--muted)">Zone ${fragebogen.zone||2} &middot; ${zT2} =</span>
           <strong>${fmtE(gp)}</strong>
         </div>
       </div>
@@ -1534,10 +1537,13 @@ function renderStep5(){
     const dp=gsMonPreis('DACH');
     h+=`<div class="s5-card">
       <div class="s5-card-hdr"><strong>Dachterrassen-Aufschlag</strong></div>
-      <div class="s5-card-body"><div class="s5-irow"><span class="s5-lbl">Preis</span>
-        <input type="number" class="s5-inp s5-w120" id="mDach" value="${dp.toFixed(2)}" step="0.01" min="0">
-        <span class="s5-unit">&euro;</span>
-      </div></div>
+      <div class="s5-card-body">
+        <div class="s5-irow"><span class="s5-lbl">Preis</span>
+          <input type="number" class="s5-inp s5-w120" id="mDach" value="${dp.toFixed(2)}" step="0.01" min="0">
+          <span class="s5-unit">&euro;</span>
+        </div>
+        <div class="s5-calc"><strong>${fmtE(dp)}</strong></div>
+      </div>
     </div>`;
   }
   frachtPosList.forEach(pos=>{
@@ -1550,6 +1556,7 @@ function renderStep5(){
           <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0">
           <span class="s5-unit">&euro;</span>
         </div>
+        <div class="s5-calc"><strong>${fmtE(gp)}</strong></div>
       </div>
     </div>`;
   });
@@ -1557,10 +1564,13 @@ function renderStep5(){
     const gp=gsMonPreis(pos.artikelnummer);
     h+=`<div class="s5-card">
       <div class="s5-card-hdr"><strong>${pos.name}</strong><span>Fundamente</span></div>
-      <div class="s5-card-body"><div class="s5-irow"><span class="s5-lbl">Preis</span>
-        <input type="number" class="s5-inp s5-w120" id="fgP${fi}" value="${gp.toFixed(2)}" step="0.01" min="0">
-        <span class="s5-unit">&euro;</span>
-      </div></div>
+      <div class="s5-card-body">
+        <div class="s5-irow"><span class="s5-lbl">Preis</span>
+          <input type="number" class="s5-inp s5-w120" id="fgP${fi}" value="${gp.toFixed(2)}" step="0.01" min="0">
+          <span class="s5-unit">&euro;</span>
+        </div>
+        <div class="s5-calc"><strong>${fmtE(gp)}</strong></div>
+      </div>
     </div>`;
   });
   h+=`</div></div>`; // section + col 3
