@@ -190,7 +190,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 17:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 17:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -989,7 +989,15 @@ function toggleMontage(v){
     if(selEigenleistung){selEigenleistung=false;document.getElementById('eigenCard').classList.remove('sel');}
   }
 }
-function goToStep4(){showView('viewStep4');setStep(4);}
+function goToStep4(){
+  // Sync UI to current JS state (in case state changed while away)
+  document.getElementById('dachCard').classList.toggle('sel',selDach);
+  document.getElementById('eigenCard').classList.toggle('sel',selEigenleistung);
+  document.getElementById('mitMontCard').classList.toggle('sel',selMontage);
+  document.getElementById('ohneMontCard').classList.toggle('sel',!selMontage);
+  document.getElementById('montageOptions').style.display=selMontage?'grid':'none';
+  showView('viewStep4');setStep(4);
+}
 
 // === STEP 5 ===
 // Klebeanker nur wenn Art.-Nr. im Ankerpunkt Verzeichnis (prices5.apAnzahl)
@@ -1009,7 +1017,8 @@ async function initStep5(){
   // Re-transform with current fragebogen (applies montage/eigenleistung settings)
   transformedData=transformiere(soSeKuJSON);
   // Skip sheet reload if prices already loaded (back-nav from step 5)
-  if(prices5.stundensatz>0){
+  const pricesLoaded=prices5.stoffe.length>0||Object.keys(prices5.zonePreis).length>0||prices5.preislisteZeilen>0;
+  if(pricesLoaded){
     try{renderStep5();}catch(e){showError('Anzeige-Fehler Schritt 5: '+e.message);return;}
     showView('viewStep5');setStep(5);
     return;
@@ -1125,7 +1134,7 @@ async function loadPrices5(){
   // ── SoSeKu Preisliste: Schlüssel | Beschreibung | Wert ──
   if(pR.length>1) pR.forEach(r=>{
     // Brute-force row scan (runs before key/preis guard — catches any column layout)
-    const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s.]/g,'')).join('|');
+    const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s./\\]+/g,'')).join('|');
     if(!prices5.stundensatz&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
       for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){prices5.stundensatz=v;return;}}
     }
@@ -2063,6 +2072,6 @@ async function importToSevdesk(){
   }
 }
 </script>
-<div id="s5debugBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,24,.92);border-top:1px solid var(--border);padding:3px 14px;font-size:10px;color:var(--muted);z-index:999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+<div id="s5debugBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,24,.92);border-top:1px solid var(--border);padding:3px 14px;font-size:10px;color:var(--muted);z-index:999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none"></div>
 </body>
 </html>
