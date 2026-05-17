@@ -190,7 +190,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 16:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 17:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -444,10 +444,12 @@ function fixViewPinnedHeight(){
   const sb=document.getElementById('stepsBar');
   const hdrH=hdr?hdr.getBoundingClientRect().height:0;
   const sbH=sb&&!sb.classList.contains('hidden')?sb.getBoundingClientRect().height:0;
-  const avail=Math.floor(window.innerHeight - hdrH - sbH - 40); // 40 = main padding top+bottom
+  const vh=window.visualViewport?window.visualViewport.height:window.innerHeight;
+  const avail=Math.floor(vh - hdrH - sbH - 40 - 12); // 40=main padding, 12=safety buffer
   document.querySelectorAll('.view-pinned').forEach(el=>el.style.height=Math.max(300,avail)+'px');
 }
 window.addEventListener('resize',fixViewPinnedHeight);
+if(window.visualViewport) window.visualViewport.addEventListener('resize',fixViewPinnedHeight);
 function showView(id,fromHistory){
   VIEWS.forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));
   const dbgBar=document.getElementById('s5debugBar');
@@ -1006,6 +1008,12 @@ async function initStep5(){
   };
   // Re-transform with current fragebogen (applies montage/eigenleistung settings)
   transformedData=transformiere(soSeKuJSON);
+  // Skip sheet reload if prices already loaded (back-nav from step 5)
+  if(prices5.stundensatz>0){
+    try{renderStep5();}catch(e){showError('Anzeige-Fehler Schritt 5: '+e.message);return;}
+    showView('viewStep5');setStep(5);
+    return;
+  }
   showView('viewLoading');setStep(5);
   document.getElementById('loadTitle').textContent='Preisdaten werden geladen...';
   document.getElementById('loadSub').textContent='Google Sheet wird abgefragt';
@@ -1126,6 +1134,9 @@ async function loadPrices5(){
     }
     if(!prices5.schraubfundament&&(rowStr.includes('00e13000227')||rowStr.includes('schraubfundament'))){
       for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>50&&v<10000){prices5.schraubfundament=v;break;}}
+    }
+    if(!prices5.eigenleistung&&(rowStr.includes('eigenleistung')||rowStr.includes('einweisung'))){
+      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>0&&v<5000){prices5.eigenleistung=v;break;}}
     }
     // Structured key→value parsing
     const keyRaw=(r[0]||'').trim();
@@ -1514,8 +1525,12 @@ function renderStep5(){
     const zoneTimeMap2={1:'bis 15 min',2:'bis 30 min',3:'bis 45 min',4:'bis 60 min',5:'bis 75 min',6:'bis 90 min'};
     const zT2=zoneTimeMap2[fragebogen.zone||2]||'';
     const tAnz2=fragebogen.termine||2;
+    const slChips=`Zone ${fragebogen.zone||2} – ${zT2}<br>${tAnz2} Termine`;
     h+=`<div class="s5-card" style="margin-top:16px">
-      <div class="s5-card-hdr"><strong>${servPos.name}</strong><span style="font-size:10px;color:var(--muted)">${zT2} &middot; ${tAnz2} Termine</span></div>
+      <div class="s5-card-hdr" style="align-items:flex-start">
+        <strong>${servPos.name}</strong>
+        <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7">${slChips}</span>
+      </div>
       <div class="s5-card-body">
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
           <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
