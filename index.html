@@ -127,7 +127,8 @@ main{margin:0 auto;padding:20px 14px}
 .fg-montage-opts{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;min-width:0}
 .fg-col{display:flex;flex-direction:column}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:8px 8px;text-align:center;cursor:pointer;transition:all .2s;min-height:52px;display:flex;flex-direction:column;justify-content:center;align-items:center}
-.zone-item:hover,.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
+.zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
+@media(hover:hover){.zone-item:hover{border-color:var(--accent);background:rgba(91,141,238,.08)}}
 .zone-num{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--accent)}
 .zone-time{font-size:11px;color:var(--text);margin-top:3px;font-weight:500}
 .check-item{display:flex;align-items:center;gap:11px;cursor:pointer;font-size:12px}
@@ -190,7 +191,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 17:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 18:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -968,11 +969,11 @@ function selWand(v){
 }
 function toggleDach(){
   selDach=!selDach;
-  document.getElementById('dachCard').classList.toggle('sel',selDach);
+  document.getElementById('dachCard').classList[selDach?'add':'remove']('sel');
 }
 function toggleEigenleistung(){
   selEigenleistung=!selEigenleistung;
-  document.getElementById('eigenCard').classList.toggle('sel',selEigenleistung);
+  document.getElementById('eigenCard').classList[selEigenleistung?'add':'remove']('sel');
 }
 function selTermineF(n){
   selTermine=n;
@@ -991,10 +992,10 @@ function toggleMontage(v){
 }
 function goToStep4(){
   // Sync UI to current JS state (in case state changed while away)
-  document.getElementById('dachCard').classList.toggle('sel',selDach);
-  document.getElementById('eigenCard').classList.toggle('sel',selEigenleistung);
-  document.getElementById('mitMontCard').classList.toggle('sel',selMontage);
-  document.getElementById('ohneMontCard').classList.toggle('sel',!selMontage);
+  document.getElementById('dachCard').classList[selDach?'add':'remove']('sel');
+  document.getElementById('eigenCard').classList[selEigenleistung?'add':'remove']('sel');
+  document.getElementById('mitMontCard').classList[selMontage?'add':'remove']('sel');
+  document.getElementById('ohneMontCard').classList[selMontage?'remove':'add']('sel');
   document.getElementById('montageOptions').style.display=selMontage?'grid':'none';
   showView('viewStep4');setStep(4);
 }
