@@ -12,7 +12,7 @@
   --warn:#f5a623;--error:#ff6b6b;--text:#e2e2f0;--muted:#8888aa;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{height:100vh;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(91,141,238,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(56,217,169,.06) 0%,transparent 60%);font-family:'DM Mono',monospace;color:var(--text)}
+body{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(91,141,238,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(56,217,169,.06) 0%,transparent 60%);font-family:'DM Mono',monospace;color:var(--text)}
 header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
 .logo .s1{color:#f5a623}.logo .s2{color:#5b8dee}.logo .arr{color:var(--muted);margin:0 6px}
@@ -29,7 +29,7 @@ header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;just
 .step.active .step-num{background:var(--accent);color:#fff;border-color:var(--accent)}
 .step.done .step-num{background:var(--accent2);color:#0d0d18;border-color:var(--accent2)}
 .step-line{width:20px;height:1px;background:var(--border);flex-shrink:0}
-main{flex:1;min-height:0;width:100%;padding:20px 14px;overflow-y:auto}
+main{margin:0 auto;padding:20px 14px}
 .setup-wrap{max-width:460px;margin:0 auto}
 .setup-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;margin-bottom:6px}
 .setup-sub{font-size:12px;color:var(--muted);margin-bottom:24px;line-height:1.6}
@@ -135,7 +135,7 @@ main{flex:1;min-height:0;width:100%;padding:20px 14px;overflow-y:auto}
 .fg-free{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;resize:vertical;min-height:80px}
 .fg-free:focus{border-color:var(--accent)}
 /* Pinned-button layout for steps 4-6 */
-.view-pinned{display:flex;flex-direction:column;height:100%}
+.view-pinned{display:flex;flex-direction:column}
 .view-pinned>.view-scroll{flex:1;overflow-y:auto;min-height:0;padding-bottom:8px}
 .view-pinned>.btn-row{flex-shrink:0}
 /* Step 5 */
@@ -190,7 +190,7 @@ main{flex:1;min-height:0;width:100%;padding:20px 14px;overflow-y:auto}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 15:45</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 16:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -439,11 +439,21 @@ let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtE=n=>fmt(n)+' €';
 const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewDone','viewError'];
+function fixViewPinnedHeight(){
+  const hdr=document.querySelector('header');
+  const sb=document.getElementById('stepsBar');
+  const hdrH=hdr?hdr.getBoundingClientRect().height:0;
+  const sbH=sb&&!sb.classList.contains('hidden')?sb.getBoundingClientRect().height:0;
+  const avail=Math.floor(window.innerHeight - hdrH - sbH - 40); // 40 = main padding top+bottom
+  document.querySelectorAll('.view-pinned').forEach(el=>el.style.height=Math.max(300,avail)+'px');
+}
+window.addEventListener('resize',fixViewPinnedHeight);
 function showView(id,fromHistory){
   VIEWS.forEach(v=>document.getElementById(v).classList.toggle('hidden',v!==id));
   const dbgBar=document.getElementById('s5debugBar');
   if(dbgBar) dbgBar.style.display=id==='viewStep5'?'block':'none';
   if(!fromHistory)history.pushState({view:id},'','');
+  setTimeout(fixViewPinnedHeight,0);
 }
 window.addEventListener('popstate',e=>{if(e.state?.view)showView(e.state.view,true);});
 function setStep(n){
@@ -506,6 +516,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   const _si=document.getElementById('iSheet');
   if(_si&&!_si.value)_si.value=sessionStorage.getItem('sid')||DEF_SHEET_ID;
   if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
+  fixViewPinnedHeight();
 });
 
 // === GOOGLE SHEET ===
@@ -1080,7 +1091,7 @@ async function loadPrices5(){
     stoffe:[],stofFeste:[],stofSandy:[],
     apPreis:{},apAnzahl:{},
     zonePreis:{},fracht:{},
-    stundensatz:0,dachterrasse:0,eigenleistung:0,
+    stundensatz:0,dachterrasse:0,eigenleistung:0,schraubfundament:0,
     // Montage Zeitbausteine (Matrix): parsed values für aktuelles System
     montKalkParsed:null,
     // Wellenverbinder Verzeichnis (Matrix): wellenM → Anzahl Verbinder für aktuelles System
@@ -1105,27 +1116,30 @@ async function loadPrices5(){
 
   // ── SoSeKu Preisliste: Schlüssel | Beschreibung | Wert ──
   if(pR.length>1) pR.forEach(r=>{
+    // Brute-force row scan (runs before key/preis guard — catches any column layout)
+    const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s.]/g,'')).join('|');
+    if(!prices5.stundensatz&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
+      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){prices5.stundensatz=v;return;}}
+    }
+    if(!prices5.dachterrasse&&rowStr.includes('dach')){
+      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>0&&v<5000){prices5.dachterrasse=v;break;}}
+    }
+    if(!prices5.schraubfundament&&(rowStr.includes('00e13000227')||rowStr.includes('schraubfundament'))){
+      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>50&&v<10000){prices5.schraubfundament=v;break;}}
+    }
+    // Structured key→value parsing
     const keyRaw=(r[0]||'').trim();
     const key=keyRaw.toLowerCase().replace(/\s+/g,'');
     const desc=(r[1]||'').trim();
     const descL=desc.toLowerCase();
-    // Stundensatz: brute-force — check every cell for any stundensatz keyword, then grab first positive number in that row
-    if(!prices5.stundensatz){
-      const allText=r.map(c=>(c||'').toLowerCase().replace(/[.\s/\\]+/g,'')).join('|');
-      if(allText.includes('stundensatz')||allText.includes('stdteam')||allText.includes('teamstd')){
-        for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){prices5.stundensatz=v;return;}}
-      }
-    }
-    const preis=sheetNum(r,2,1,3,4); // prefer col C, fallback col B, D, E
+    const preis=sheetNum(r,2,1,3,4);
     if(!key||!preis) return;
     if(['ziegel-10','ziegel-18','holz-10','holz-18'].includes(key)) prices5.apPreis[key]=preis;
     else if(key.startsWith('zone')) prices5.zonePreis[key]=preis;
     else if(key==='vorfracht') prices5.fracht['VORFRACHT']=preis;
     else if(key==='versand') prices5.fracht['VERSAND']=preis;
-    else if(key.includes('dach')||descL.includes('dachterrasse')) prices5.dachterrasse=preis;
     else if(key==='eigenleistung'||descL.includes('einweisung fundamente')) prices5.eigenleistung=preis;
-    else if(key==='stundensatz'||key.includes('stundensatz')||desc.toLowerCase().includes('stundensatz')) prices5.stundensatz=preis;
-    else if(keyRaw==='00E13000227'||key==='00e13000227') prices5.schraubfundament=preis;
+    else if(key==='stundensatz'||key.includes('stundensatz')) prices5.stundensatz=preis;
   });
   prices5.preislisteZeilen=pR.length;
 
