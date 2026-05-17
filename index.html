@@ -186,7 +186,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 11:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 12:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1458,15 +1458,16 @@ function renderStep5(){
   if(instPos){
     const mi=monPosIdx[instPos.artikelnummer];
     const gp=gsMonPreis(instPos.artikelnummer);
+    const wandplHdr=_wandpl.length>0?` &middot; ${_wandpl.length} Wandpl.`:'';
+    const sfHdr=sfCnt2>0?` &middot; ${sfCnt2} SF`:'';
     h+=`<div class="s5-card">
-      <div class="s5-card-hdr"><strong>${instPos.name}</strong></div>
+      <div class="s5-card-hdr"><strong>${instPos.name}</strong><span style="font-size:10px;color:var(--muted)">${sysLabel2} ${wellenM2}m${wandplHdr}${sfHdr}</span></div>
       <div class="s5-card-body">
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
-          <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0">
+          <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum()">
           <span class="s5-unit">&euro;</span>
         </div>
         ${mk2?.ok?`<div class="s5-calc-detail">
-          <div>${sysLabel2} &middot; ${wellenM2}m Welle</div>
           <div>Segel (${sailCount2}${sailCount2>1?` Stk. · GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
           ${apCnt2>0?`<div>${_wandpl.length} Wandplatten (${apCnt2} AP &times; ${apRate2.toFixed(2)}h): ${apH2.toFixed(2)}h</div>`:''}
           ${sfCnt2>0?`<div>Schraubfund. (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
@@ -1486,16 +1487,30 @@ function renderStep5(){
     const zT2=zoneTimeMap2[fragebogen.zone||2]||'';
     const tAnz2=fragebogen.termine||2;
     h+=`<div class="s5-card" style="margin-top:16px">
-      <div class="s5-card-hdr"><strong>${servPos.name}</strong></div>
+      <div class="s5-card-hdr"><strong>${servPos.name}</strong><span style="font-size:10px;color:var(--muted)">${zT2} &middot; ${tAnz2} Termine</span></div>
       <div class="s5-card-body">
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
-          <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0">
+          <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum()">
           <span class="s5-unit">&euro;</span>
         </div>
-        <div class="s5-calc-detail"><div>Zone ${fragebogen.zone||2} &middot; ${zT2} &middot; ${tAnz2} Termine</div></div>
         <div class="s5-calc">
           <span style="color:var(--muted)">Zone ${fragebogen.zone||2} &middot; ${zT2} =</span>
           <strong>${fmtE(gp)}</strong>
+        </div>
+      </div>
+    </div>`;
+  }
+  if(instPos||servPos){
+    const instId=instPos?`mP${monPosIdx[instPos.artikelnummer]}`:'';
+    const slId=servPos?`mP${monPosIdx['SERV-LOG']}`:'';
+    const instV=instPos?gsMonPreis(instPos.artikelnummer):0;
+    const slV=servPos?gsMonPreis('SERV-LOG'):0;
+    h+=`<div class="s5-card" style="margin-top:16px;border-color:rgba(56,217,169,.3)">
+      <div class="s5-card-hdr" style="background:rgba(56,217,169,.05)"><strong>Montage gesamt</strong><span style="font-size:10px;color:var(--muted)">Installation + Service</span></div>
+      <div class="s5-card-body">
+        <div class="s5-calc" style="border-top:none;padding-top:0">
+          <span style="color:var(--muted)" id="monSumLbl">${fmtE(instV)} + ${fmtE(slV)} =</span>
+          <strong id="monSumTotal">${fmtE(instV+slV)}</strong>
         </div>
       </div>
     </div>`;
@@ -1555,6 +1570,19 @@ function renderStep5(){
   document.getElementById('s5content').innerHTML=h;
   _sailPos.forEach((_,si)=>updSail(si));
   _wandpl.forEach((_,wi)=>updWand(wi));
+  updMonSum();
+}
+
+function updMonSum(){
+  const instPos2=_gsMonPos.find(p=>p.artikelnummer.startsWith('INST'));
+  const servPos2=_gsMonPos.find(p=>p.artikelnummer==='SERV-LOG');
+  const instId=instPos2?`mP${_gsMonPos.indexOf(instPos2)}`:'';
+  const slId=servPos2?`mP${_gsMonPos.indexOf(servPos2)}`:'';
+  const inst=parseFloat(document.getElementById(instId)?.value||'0')||0;
+  const sl=parseFloat(document.getElementById(slId)?.value||'0')||0;
+  const lbl=document.getElementById('monSumLbl'),tot=document.getElementById('monSumTotal');
+  if(lbl) lbl.textContent=`${fmtE(inst)} + ${fmtE(sl)} =`;
+  if(tot) tot.textContent=fmtE(inst+sl);
 }
 
 function updSail(si){
