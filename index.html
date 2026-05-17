@@ -138,7 +138,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 .s5-wrap{max-width:1100px;margin:0 auto;width:100%}
 .s5-section{margin-bottom:24px}
 .s5-sec-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--accent);padding-bottom:8px;border-bottom:1px solid var(--border);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em}
-.s5-layout{display:grid;grid-template-columns:1fr 1fr 280px;gap:20px;max-width:1500px;margin:0 auto}
+.s5-layout{display:grid;grid-template-columns:1fr 1fr 1fr 260px;gap:20px;max-width:1600px;margin:0 auto}
 .s5-col{display:flex;flex-direction:column;gap:16px}
 .s5-ab{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
 .s5-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
@@ -186,7 +186,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-16 12:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 10:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -332,7 +332,7 @@ main{max-width:1500px;margin:0 auto;padding:20px 14px}
           <div class="zone-grid" id="wandGrid">
             <div class="zone-item sel" data-v="ziegel-10" onclick="selWand('ziegel-10')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="holz-10" onclick="selWand('holz-10')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
-            <div class="zone-item" style="visibility:hidden;pointer-events:none;margin-bottom:8px" aria-hidden="true"></div>
+            <div class="zone-item" style="visibility:hidden;pointer-events:none" aria-hidden="true"></div>
             <div class="zone-item" data-v="ziegel-18" onclick="selWand('ziegel-18')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="holz-18" onclick="selWand('holz-18')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
           </div>
@@ -1275,7 +1275,8 @@ function calcInstPreis(){
   const verbCount=noVerbinder?0:(prices5.verbByWelle[wellenM]||0);
 
   const totalH=sailH+apH_total+sfCount*mk.schraubfund+verbCount*mk.verbZuschlag;
-  return+(totalH*prices5.stundensatz).toFixed(2);
+  const raw=totalH*prices5.stundensatz;
+  return Math.ceil(raw/10)*10;
 }
 function findZonePrice(zoneNum,want3t){
   // Direct lookup (expected format)
@@ -1308,6 +1309,7 @@ function gsMonPreis(key){
 
 function renderStep5(){
   const sys=(soSeKuJSON.system||'').toUpperCase();
+  const sysLabel2=sys.startsWith('SOLIDAY-')?'Soliday '+sys.replace('SOLIDAY-',''):sys.startsWith('SONNENSEGEL')?sys.replace('SONNENSEGEL-','Sonnensegel '):sys;
   const apDef=prices5.apPreis[fragebogen.wandart||'ziegel-10']||0;
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
@@ -1382,7 +1384,7 @@ function renderStep5(){
       const stoffe=getStoffeForSys(sys,bQm,qm);
       const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
       h+=`<div class="s5-card">
-        <div class="s5-card-hdr"><strong>${sail.name||'Segeltuch'}</strong><span>${qm} m&sup2;</span></div>
+        <div class="s5-card-hdr"><strong>Segeltuch &ndash; ${sysLabel2}</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${qm} m&sup2;</span></div>
         <div class="s5-card-body">
           ${soltisFiltered?`<div style="font-size:10px;color:var(--warn);margin-bottom:6px">* Soltis 92 nicht verfügbar (Segelgröße > 55 m²)</div>`:''}
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Stoff &amp; Preis/m&sup2;</div>
@@ -1402,8 +1404,10 @@ function renderStep5(){
     });
   }
   h+=`</div>`; // close s5-section Segeltuch
+  h+=`</div>`; // close col 1
 
-  // — Wandbefestigungen + Bodenplatten —
+  // ═══ COL 2: Wandbefestigungen ═══
+  h+=`<div class="s5-col">`;
   h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
   if(_wandpl.length===0&&_bodenpl.length===0){
     h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
@@ -1411,7 +1415,7 @@ function renderStep5(){
     _wandpl.forEach((pl,wi)=>{
       const defAP=(prices5.apAnzahl[pl.artikelnummer]||WANDPL_AP[pl.artikelnummer]||4)*Math.max(1,Math.round(pl.menge));
       h+=`<div class="s5-card">
-        <div class="s5-card-hdr"><strong>${pl.name}</strong><span>${Number(pl.menge).toLocaleString('de-DE')} &times; ${fmtE(pl.preis_einheit)}</span></div>
+        <div class="s5-card-hdr"><strong>${pl.name}</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${Math.round(pl.menge)}&times;</span></div>
         <div class="s5-card-body">
           <div class="s5-irow">
             <span class="s5-lbl">Ankerpunkte gesamt</span>
@@ -1447,9 +1451,9 @@ function renderStep5(){
     });
   }
   h+=`</div>`; // close s5-section Wandbefestigungen
-  h+=`</div>`; // close col 1
+  h+=`</div>`; // close col 2
 
-  // ═══ COL 2: Montage ═══
+  // ═══ COL 3: Montage ═══
   h+=`<div class="s5-col"><div class="s5-section"><div class="s5-sec-title">Montage</div>`;
   if(instPos){
     const mi=monPosIdx[instPos.artikelnummer];
@@ -1464,26 +1468,28 @@ function renderStep5(){
         ${mk2?.ok?`<div class="s5-calc-detail">
           <div>${sysShort2} &middot; ${wellenM2}m Welle</div>
           <div>Segel (${sailCount2}${sailCount2>1?` Stk. · GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
-          ${apCnt2>0?`<div>Ankerpunkte (${apCnt2} AP &times; ${apRate2.toFixed(2)}h): ${apH2.toFixed(2)}h</div>`:''}
+          ${apCnt2>0?`<div>${_wandpl.length} Wandplatten (${apCnt2} AP &times; ${apRate2.toFixed(2)}h): ${apH2.toFixed(2)}h</div>`:''}
           ${sfCnt2>0?`<div>Schraubfund. (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
-          ${verbCnt2>0?`<div>Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
-          <div class="s5-cd-total">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)}&nbsp;&euro;/h = ${fmtE(+(totalH2*prices5.stundensatz).toFixed(2))}</div>
+          ${verbCnt2>0?`<div>Wellen-Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
+          <div class="s5-cd-total">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)}&nbsp;&euro;/h = ${fmtE(Math.ceil(totalH2*prices5.stundensatz/10)*10)}</div>
         </div>`:''}
-        ${instPos.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6;white-space:pre-line">${instPos.beschreibung}</div>`:''}
       </div>
     </div>`;
   }
   if(servPos){
     const mi=monPosIdx['SERV-LOG'];
     const gp=gsMonPreis('SERV-LOG');
-    h+=`<div class="s5-card">
+    const zoneTimeMap2={1:'bis 15 min',2:'bis 30 min',3:'bis 45 min',4:'bis 60 min',5:'bis 75 min',6:'bis 90 min'};
+    const zT2=zoneTimeMap2[fragebogen.zone||2]||'';
+    const tAnz2=fragebogen.termine||2;
+    h+=`<div class="s5-card" style="margin-top:16px">
       <div class="s5-card-hdr"><strong>${servPos.name}</strong></div>
       <div class="s5-card-body">
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
           <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0">
           <span class="s5-unit">&euro;</span>
         </div>
-        ${servPos.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:8px;line-height:1.6;white-space:pre-line">${servPos.beschreibung}</div>`:''}
+        <div style="font-size:10px;color:var(--muted);margin-top:8px">Zone ${fragebogen.zone||2} · ${zT2} · ${tAnz2} Termine</div>
       </div>
     </div>`;
   }
@@ -1498,9 +1504,9 @@ function renderStep5(){
       </div></div>
     </div>`;
   });
-  h+=`</div></div>`; // section + col 2
+  h+=`</div></div>`; // section + col 3
 
-  // ═══ COL 3: Fracht & Extras ═══
+  // ═══ COL 4: Fracht & Extras ═══
   h+=`<div class="s5-col"><div class="s5-section"><div class="s5-sec-title">Fracht &amp; Extras</div>`;
   if(fragebogen.dachterrasse){
     const dp=gsMonPreis('DACH');
@@ -1552,7 +1558,7 @@ function updSail(si){
   const t=billingQm(qm)*p;
   const d=document.getElementById(`sPd${si}`),tv=document.getElementById(`sT${si}`);
   if(d)d.textContent=fmt(p);
-  if(tv)tv.textContent=fmtE(t);
+  if(tv)tv.textContent=fmtE(Math.ceil(t));
 }
 function updWand(wi){
   const pl=_wandpl[wi];
@@ -1564,7 +1570,7 @@ function updWand(wi){
   const unitPrice=pl.preis_einheit+aufPerUnit;
   const ea=document.getElementById(`wAuf${wi}`),et=document.getElementById(`wT${wi}`);
   if(ea)ea.textContent=fmtE(aufPerUnit);
-  if(et)et.textContent=fmtE(unitPrice);
+  if(et)et.textContent=fmtE(Math.ceil(unitPrice));
 }
 
 function applyPrices5(){
@@ -1588,7 +1594,7 @@ function applyPrices5(){
         const qm=sail.qm_segel;
         const bQm=billingQm(qm);
         const stoffe=getStoffeForSys(sys,bQm,qm);
-        const t=+(bQm*p).toFixed(2);
+        const t=Math.ceil(bQm*p);
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
         const desc='Alternativ:\n'+stoffe.map((s,fi)=>{
@@ -1612,7 +1618,7 @@ function applyPrices5(){
       const auf=ap*ap2;
       const pos=wSek.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
       if(pos){
-        const ng=+(pl.gesamt+auf).toFixed(2);
+        const ng=Math.ceil(pl.gesamt+auf);
         pos.gesamt=ng;
         pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
         // Beschreibung mit Wandart
