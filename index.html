@@ -134,6 +134,10 @@ main{margin:0 auto;padding:20px 14px}
 .check-item input{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
 .fg-free{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;resize:vertical;min-height:80px}
 .fg-free:focus{border-color:var(--accent)}
+/* Pinned-button layout for steps 4-6 */
+.view-pinned{display:flex;flex-direction:column;height:calc(100vh - 126px)}
+.view-pinned>.view-scroll{flex:1;overflow-y:auto;min-height:0;padding-bottom:8px}
+.view-pinned>.btn-row{flex-shrink:0}
 /* Step 5 */
 .s5-wrap{margin:0 auto;width:100%}
 .s5-section{margin-bottom:24px}
@@ -186,7 +190,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 13:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 14:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -303,7 +307,8 @@ main{margin:0 auto;padding:20px 14px}
 </div>
 
 <!-- STEP 4 -->
-<div id="viewStep4" class="hidden">
+<div id="viewStep4" class="hidden view-pinned">
+  <div class="view-scroll">
   <div class="fragebogen" style="padding-top:28px">
     <div class="fg-outer">
       <!-- Col 1: Montage -->
@@ -358,6 +363,7 @@ main{margin:0 auto;padding:20px 14px}
       <textarea class="fg-free" id="fgFrei" placeholder="Weitere Hinweise zur Montage..."></textarea>
     </div>
   </div>
+  </div><!-- close view-scroll -->
   <div class="btn-row">
     <button class="btn btn-s" onclick="showView('viewStep3');setStep(3)">&larr; Zur&uuml;ck</button>
     <button class="btn btn-p" onclick="initStep5()">Weiter &rarr; Preisberechnung</button>
@@ -365,8 +371,10 @@ main{margin:0 auto;padding:20px 14px}
 </div>
 
 <!-- STEP 5 -->
-<div id="viewStep5" class="hidden">
-  <div class="s5-wrap" id="s5content"></div>
+<div id="viewStep5" class="hidden view-pinned">
+  <div class="view-scroll">
+    <div class="s5-wrap" id="s5content"></div>
+  </div>
   <div class="btn-row">
     <button class="btn btn-s" onclick="showView('viewStep4');setStep(4)">&larr; Zur&uuml;ck</button>
     <button class="btn btn-p" onclick="goToStep6()">Weiter &rarr; Vorschau</button>
@@ -374,8 +382,8 @@ main{margin:0 auto;padding:20px 14px}
 </div>
 
 <!-- STEP 6 -->
-<div id="viewStep6" class="hidden">
-  <div class="s3-content" id="s6content"></div>
+<div id="viewStep6" class="hidden view-pinned">
+  <div class="view-scroll" id="s6content"></div>
   <div class="btn-row">
     <button class="btn btn-s" onclick="showView('viewStep5');setStep(5)">&larr; Zur&uuml;ck</button>
     <button class="btn btn-p" onclick="goToStep7()">Weiter &rarr; Import</button>
@@ -1310,7 +1318,8 @@ function gsMonPreis(key){
 function renderStep5(){
   const sys=(soSeKuJSON.system||'').toUpperCase();
   const sysLabel2=sys.startsWith('SOLIDAY-')?'Soliday '+sys.replace('SOLIDAY-',''):sys.startsWith('SONNENSEGEL')?sys.replace('SONNENSEGEL-','Sonnensegel '):sys;
-  const apDef=prices5.apPreis[fragebogen.wandart||'ziegel-10']||0;
+  const withMontage=fragebogen.montage!==false;
+  const apDef=withMontage?(prices5.apPreis[fragebogen.wandart||'ziegel-10']||0):0;
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
@@ -1431,8 +1440,8 @@ function renderStep5(){
         </div>
       </div>`;
     });
-    // Bodenplatten: Klebeanker-Anzahl aus Sheet, immer ziegel-10 Preis
-    const bpPreis=prices5.apPreis['ziegel-10']||38;
+    // Bodenplatten: Klebeanker-Anzahl aus Sheet, immer ziegel-10 Preis (nur wenn Mit Montage)
+    const bpPreis=withMontage?(prices5.apPreis['ziegel-10']||38):0;
     _bodenpl.forEach((pl,bi)=>{
       const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
       const cnt=apPerUnit*Math.max(1,Math.round(pl.menge));
@@ -1460,11 +1469,11 @@ function renderStep5(){
     const gp=gsMonPreis(instPos.artikelnummer);
     const wandHdr=_wandpl.length>0?`${_wandpl.length}&times; Wand`:'';
     const sfHdr=sfCnt2>0?`${sfCnt2}&times; Erdschraube`:'';
-    const hdrChips=[`${wellenM2}m Welle`,wandHdr,sfHdr].filter(Boolean).join(' · ');
+    const hdrChips=[`${wellenM2}m Welle`,wandHdr,sfHdr].filter(Boolean).join('<br>');
     h+=`<div class="s5-card">
-      <div class="s5-card-hdr">
+      <div class="s5-card-hdr" style="align-items:flex-start">
         <strong>${instPos.name}</strong>
-        <span style="font-size:14px;font-weight:700;color:var(--accent2)">${hdrChips}</span>
+        <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7">${hdrChips}</span>
       </div>
       <div class="s5-card-body">
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
@@ -1609,7 +1618,7 @@ function updWand(wi){
   const pl=_wandpl[wi];
   const ap=parseInt(document.getElementById(`wAP${wi}`)?.value||'0')||0;
   const ap2=parseFloat(document.getElementById(`wAPP${wi}`)?.value||'0')||0;
-  const auf=ap*ap2;
+  const auf=(fragebogen.montage!==false)?ap*ap2:0;
   const menge=pl.menge>0?pl.menge:1;
   const aufPerUnit=auf/menge;
   const unitPrice=pl.preis_einheit+aufPerUnit;
@@ -1655,9 +1664,9 @@ function applyPrices5(){
     segSek.positionen=[...newSail,...nonSail];
   }
 
-  // 5B: Wandplatten
+  // 5B: Wandplatten (nur wenn Mit Montage)
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
-  if(wSek){
+  if(wSek&&fragebogen.montage!==false){
     _wandpl.forEach((pl,wi)=>{
       const ap=parseInt(document.getElementById(`wAP${wi}`)?.value||'0')||0;
       const ap2=parseFloat(document.getElementById(`wAPP${wi}`)?.value||'0')||0;
@@ -1667,28 +1676,31 @@ function applyPrices5(){
         const ng=Math.ceil(pl.gesamt+auf);
         pos.gesamt=ng;
         pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
-        // Beschreibung mit Wandart
         const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'inkl. Klebeanker an Holzbauweise (bis max. 10 cm Dämmung)','holz-18':'inkl. Klebeanker an Holzbauweise (bis max. 18 cm Dämmung)'};
         pos.beschreibung=wdesc[fragebogen.wandart||'ziegel-10']||'';
+        pos._modified=true;
       }
     });
   }
-  // 5B: Bodenplatten — immer 4 Klebeanker × ziegel-10 Preis, kein Dämmungshinweis
+  // 5B: Bodenplatten (nur wenn Mit Montage)
   const fSek2=transformedData.sektionen.find(s=>s.id==='fundamente');
   if(fSek2){
-    const bpPreis=prices5.apPreis['ziegel-10']||38;
-    _bodenpl.forEach(pl=>{
-      const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
-      const cnt=apPerUnit*Math.max(1,Math.round(pl.menge));
-      const auf=+(cnt*bpPreis).toFixed(2);
-      const pos=fSek2.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
-      if(pos){
-        const ng=+(pl.gesamt+auf).toFixed(2);
-        pos.gesamt=ng;
-        pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
-        pos.beschreibung=`inkl. ${apPerUnit} Klebeanker`;
-      }
-    });
+    if(fragebogen.montage!==false){
+      const bpPreis=prices5.apPreis['ziegel-10']||38;
+      _bodenpl.forEach(pl=>{
+        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+        const cnt=apPerUnit*Math.max(1,Math.round(pl.menge));
+        const auf=+(cnt*bpPreis).toFixed(2);
+        const pos=fSek2.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
+        if(pos){
+          const ng=+(pl.gesamt+auf).toFixed(2);
+          pos.gesamt=ng;
+          pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
+          pos.beschreibung=`inkl. ${apPerUnit} Klebeanker`;
+          pos._modified=true;
+        }
+      });
+    }
     // Eigenleistung Fundamente
     _gsFundPos.forEach((orig,fi)=>{
       const p=parseFloat(document.getElementById(`fgP${fi}`)?.value||'0')||0;
@@ -1703,6 +1715,7 @@ function applyPrices5(){
       const sfG=+(sfPos.menge*(prices5.schraubfundament)).toFixed(2);
       sfPos.preis_einheit=prices5.schraubfundament;
       sfPos.gesamt=sfG;
+      sfPos._modified=true;
     }
   }
 
@@ -1758,12 +1771,48 @@ function renderStep6(){
   const solidayTotal=Number(soSeKuJSON.netto_gesamt);
   const delta=nettoT-solidayTotal;
   const deltaSign=delta>=0?'+':'';
+
+  // Summenvergleich: nur unveränderte Positionen (ohne Segeltuch, ohne _modified, ohne _gs)
+  // Unverändert in transformedData = Positionen mit unverändertem Soliday-Preis
+  const unmodArtNrs=new Set();
+  for(const sek of transformedData.sektionen){
+    if(sek.id==='segeltuch') continue;
+    for(const p of sek.positionen){
+      if(!p._gs&&!p._modified&&p.artikelnummer) unmodArtNrs.add(p.artikelnummer);
+    }
+  }
+  // SoSeKu-Summe: Original-Positionen deren Art.-Nr. unverändert übernommen wurden
+  let unmodSoSeKu=0;
+  const soSeKuByArtNr={};
+  for(const p of (soSeKuJSON.positionen||[])){
+    if(!soSeKuByArtNr[p.artikelnummer]) soSeKuByArtNr[p.artikelnummer]=0;
+    soSeKuByArtNr[p.artikelnummer]+=Number(p.gesamt||0);
+  }
+  for(const nr of unmodArtNrs) unmodSoSeKu+=soSeKuByArtNr[nr]||0;
+  // sevdesk-Summe: gleiche unveränderte Positionen im finalen JSON
+  let unmodSevdesk=0;
+  for(const sek of transformedData.sektionen){
+    if(sek.id==='segeltuch') continue;
+    for(const p of sek.positionen){
+      if(!p._gs&&!p._modified&&p.artikelnummer&&unmodArtNrs.has(p.artikelnummer))
+        unmodSevdesk+=Number(p.gesamt||0);
+    }
+  }
+  const unmodDelta=Math.round((unmodSevdesk-unmodSoSeKu)*100)/100;
+  const unmodOk=Math.abs(unmodDelta)<0.02;
+
   let h=`<div class='s3-sum-wrap' style='margin-bottom:16px'>`+
     `<div class='s3-sum-left'><div class='s3-lbl'>Soliday Basis (Netto)</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div>`+
     `<div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Angebot (Netto)</div>`+
     `<div class='s3-eq'><span class='v'>${fmtE(netto)}</span>`+(teu>0?`<span class='op'>+</span><span class='lbl2'>temporäre Anpassung</span><span class='v'>${fmtE(teu)}</span>`:'')+`</div>`+
     `<div class='s3-big'>${fmtE(nettoT)}</div></div>`+
     `<div class='s3-sum-badge' style='background:rgba(91,141,238,.1);color:var(--accent)'>${deltaSign}${fmtE(delta)}</div></div>`;
+  // Gegenprüfung unveränderte Positionen
+  h+=`<div class='s3-sum-wrap' style='margin-bottom:16px'>`+
+    `<div class='s3-sum-left'><div class='s3-lbl'>Unveränderte Pos. (SoSeKu)</div><div class='s3-big' style='font-size:16px'>${fmtE(unmodSoSeKu)}</div><div style='font-size:10px;color:var(--muted);margin-top:4px'>${unmodArtNrs.size} Art.-Nr.</div></div>`+
+    `<div class='s3-sum-right'><div class='s3-lbl'>Unveränderte Pos. (sevdesk)</div><div class='s3-big' style='font-size:16px'>${fmtE(unmodSevdesk)}</div><div style='font-size:10px;color:var(--muted);margin-top:4px'>Gegenprüfung</div></div>`+
+    `<div class='s3-sum-badge ${unmodOk?"ok":"err"}'>${unmodOk?'✓':'✗'} ${fmtE(unmodDelta)}</div></div>`;
+  h=`<div style="padding:16px 0">`+h;
   h+=`<div class="info-chips" style="margin-bottom:12px">`+
     `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`+
     `<span>System: <strong>${d.system||'–'}</strong></span>`+
@@ -1775,7 +1824,7 @@ function renderStep6(){
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto gesamt</span><span>${fmtE(nettoT)}</span></div>`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">MwSt. 19 %</span><span>${fmtE(mwst)}</span></div>`;
   h+=`<div class="s6-tr" style="font-size:15px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Brutto gesamt</span><span style="color:var(--accent)">${fmtE(brutto)}</span></div>`;
-  h+=`</div>`;
+  h+=`</div></div>`;
   document.getElementById('s6content').innerHTML=h;
   showView('viewStep6');setStep(6);
 }
