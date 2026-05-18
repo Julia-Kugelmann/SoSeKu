@@ -160,7 +160,7 @@ main{margin:0 auto;padding:20px 14px}
 .s5-radio-name{flex:1;font-size:12px}
 .s5-inp{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none;text-align:right;transition:border-color .2s}
 .s5-inp:focus{border-color:var(--accent)}
-.s5-w90{width:90px}.s5-w70{width:70px}.s5-w120{width:120px}
+.s5-w90{width:90px}.s5-w70{width:70px}.s5-w120{width:120px}.s5-w50{width:50px}
 .s5-unit{font-size:11px;color:var(--muted);white-space:nowrap}
 .s5-calc{display:flex;align-items:center;gap:8px;padding:10px 8px 2px;border-top:1px solid var(--border);margin-top:10px;font-size:12px;flex-wrap:wrap}
 .s5-calc strong{color:var(--accent2);font-size:15px;margin-left:auto}
@@ -191,7 +191,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-17 18:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 12:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -210,7 +210,9 @@ main{margin:0 auto;padding:20px 14px}
     <div class="step-line"></div>
     <div class="step" id="st6" onclick="navigateToStep(6)"><div class="step-num">6</div><span>Vorschau</span></div>
     <div class="step-line"></div>
-    <div class="step" id="st7" onclick="navigateToStep(7)"><div class="step-num">7</div><span>Import</span></div>
+    <div class="step" id="st7" onclick="navigateToStep(7)"><div class="step-num">7</div><span>Runden</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="st8" onclick="navigateToStep(8)"><div class="step-num">8</div><span>Import</span></div>
   </div>
 </div>
 
@@ -338,7 +340,7 @@ main{margin:0 auto;padding:20px 14px}
           <div class="zone-grid" id="wandGrid">
             <div class="zone-item sel" data-v="ziegel-10" onclick="selWand('ziegel-10')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="holz-10" onclick="selWand('holz-10')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
-            <div class="zone-item" style="opacity:0;pointer-events:none" aria-hidden="true"><div class="zone-num">X</div><div class="zone-time">X</div></div>
+            <div class="zone-item" data-v="freistehend" onclick="selWand('freistehend')"><div class="zone-num">Freistehend</div><div class="zone-time">keine Wandbefestigung</div></div>
             <div class="zone-item" data-v="ziegel-18" onclick="selWand('ziegel-18')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="holz-18" onclick="selWand('holz-18')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
           </div>
@@ -377,7 +379,7 @@ main{margin:0 auto;padding:20px 14px}
     <div class="s5-wrap" id="s5content"></div>
   </div>
   <div class="btn-row">
-    <button class="btn btn-s" onclick="showView('viewStep4');setStep(4)">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-s" onclick="goToStep4()">&larr; Zur&uuml;ck</button>
     <button class="btn btn-p" onclick="goToStep6()">Weiter &rarr; Vorschau</button>
   </div>
 </div>
@@ -387,22 +389,31 @@ main{margin:0 auto;padding:20px 14px}
   <div class="view-scroll" id="s6content"></div>
   <div class="btn-row">
     <button class="btn btn-s" onclick="showView('viewStep5');setStep(5)">&larr; Zur&uuml;ck</button>
-    <button class="btn btn-p" onclick="goToStep7()">Weiter &rarr; Import</button>
+    <button class="btn btn-p" onclick="goToStep7()">Weiter &rarr; Runden</button>
   </div>
 </div>
 
-<!-- STEP 7 -->
-<div id="viewStep7" class="hidden">
+<!-- STEP 7: Rounding preview -->
+<div id="viewStep7" class="hidden view-pinned">
+  <div class="view-scroll" id="s7content"></div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="showView('viewStep6');setStep(6)">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-p" onclick="goToStep8()">Weiter &rarr; Import</button>
+  </div>
+</div>
+
+<!-- STEP 8 -->
+<div id="viewStep8" class="hidden">
   <div class="import-box">
     <div class="big-icon">&#128228;</div>
     <div class="big-title">Import in sevdesk</div>
     <div class="big-sub">Angebot wird als Entwurf in sevdesk angelegt.</div>
-    <div class="import-sum" id="s7summary"></div>
-    <div id="s7nokey" class="val-err hidden" style="margin-bottom:20px">Kein sevdesk API-Key gesetzt &mdash; bitte in der Konfiguration eintragen.</div>
+    <div class="import-sum" id="s8summary"></div>
+    <div id="s8nokey" class="val-err hidden" style="margin-bottom:20px">Kein sevdesk API-Key gesetzt &mdash; bitte in der Konfiguration eintragen.</div>
     <button class="btn btn-p" id="btnImport" onclick="importToSevdesk()" style="font-size:14px;padding:14px 32px">Jetzt in sevdesk importieren &rarr;</button>
   </div>
   <div class="btn-row">
-    <button class="btn btn-s" onclick="showView('viewStep6');setStep(6)">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-s" onclick="showView('viewStep7');setStep(7)">&larr; Zur&uuml;ck</button>
   </div>
 </div>
 
@@ -439,7 +450,7 @@ let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtE=n=>fmt(n)+' €';
-const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewDone','viewError'];
+const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError'];
 function fixViewPinnedHeight(){
   const hdr=document.querySelector('header');
   const sb=document.getElementById('stepsBar');
@@ -462,21 +473,22 @@ window.addEventListener('popstate',e=>{if(e.state?.view)showView(e.state.view,tr
 function setStep(n){
   if(n>maxStep)maxStep=n;
   document.getElementById('stepsBar').classList.remove('hidden');
-  for(let i=1;i<=7;i++){
+  for(let i=1;i<=8;i++){
     const el=document.getElementById('st'+i);
-    const reachable=i<=maxStep;
+    if(!el) continue;
     el.className='step'+(i===n?' active':i<n?' done':'');
     el.querySelector('.step-num').textContent=i<n?'✓':i;
   }
 }
 const STEP_NAV={
-  1:()=>{showView('viewUpload');document.getElementById('stepsBar').classList.remove('hidden');for(let i=1;i<=7;i++){const el=document.getElementById('st'+i);el.className='step'+(i===1?' active':i<1?' done':'');el.querySelector('.step-num').textContent=i;}},
+  1:()=>{showView('viewUpload');document.getElementById('stepsBar').classList.remove('hidden');for(let i=1;i<=8;i++){const el=document.getElementById('st'+i);if(!el)continue;el.className='step'+(i===1?' active':i<1?' done':'');el.querySelector('.step-num').textContent=i;}},
   2:()=>{if(soSeKuJSON){showView('viewStep2');setStep(2);}},
   3:()=>{if(transformedData){showView('viewStep3');setStep(3);}},
   4:()=>{if(transformedData){goToStep4();}},
   5:()=>{if(maxStep>=5){showView('viewStep5');setStep(5);}},
   6:()=>{if(maxStep>=6){showView('viewStep6');setStep(6);}},
-  7:()=>{if(maxStep>=7){showView('viewStep7');setStep(7);}}
+  7:()=>{if(maxStep>=7){showView('viewStep7');setStep(7);}},
+  8:()=>{if(maxStep>=8){showView('viewStep8');setStep(8);}}
 };
 function navigateToStep(n){if(n<=maxStep&&STEP_NAV[n])STEP_NAV[n]();}
 function showError(msg){document.getElementById('errMsg').textContent=msg;showView('viewError');}
@@ -870,8 +882,8 @@ function transformiere(json){
   });
   const map={segeltuch:[],segelsystem:[],masten:[],fundamente:[],wandbefestigungen:[],zubehoer:[],montage:[]};
   merged.forEach(p=>map[assignSek(p)].push(p));
-  // Segelsystem-Reihenfolge: Aufrollsystem → Kabel → Funkmotor → Handsender → Windsensor → Rest
-  const _SEGSYS_ORDER=['00E13000850','00E13002183','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002063'];
+  // Segelsystem-Reihenfolge: Aufrollsystem → Motor → Anschlussleitung → Handsender → Windsensor → Rest
+  const _SEGSYS_ORDER=['00E13002183','00E13000850','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002063'];
   map.segelsystem.sort((a,b)=>{
     const ai=isAufrollsystem(a.artikelnummer)?-1:_SEGSYS_ORDER.indexOf(a.artikelnummer)<0?999:_SEGSYS_ORDER.indexOf(a.artikelnummer);
     const bi=isAufrollsystem(b.artikelnummer)?-1:_SEGSYS_ORDER.indexOf(b.artikelnummer)<0?999:_SEGSYS_ORDER.indexOf(b.artikelnummer);
@@ -907,16 +919,21 @@ function transformiere(json){
     const bi=_FUND_ORDER.indexOf(b.artikelnummer)<0?999:_FUND_ORDER.indexOf(b.artikelnummer);
     return ai-bi;
   });
-  // Masten: nach Länge, dann Zuschnitt, dann Versteifung, dann Kappen, dann Höhenverstellung
-  const _MAST_G={'00E13000335':0,'00E13000338':0,'00E13000235':1,'00E13001650':1,'00E13000135':2,
-    '00E13000336':3,'00E13000347':3,'00E13000238':4,'00E13001652':4,
-    '00E13000337':5,'00E13000348':5,'00E13001766':6,
-    '00E13001135':7,'00E13000133':7,
-    '00E13000131':8,'00E13000096':8,
-    '00E13000217':9,'00E13001689':9,'00E13000216':9,
-    '00E13000052':10,'00E13000027':10,'00E13000204':10,'00E13000764':10,
-    '00E13000208':10,'00E13000988':10,'00E13001874':10,'00E13001875':10};
-  map.masten.sort((a,b)=>(_MAST_G[a.artikelnummer]??50)-(_MAST_G[b.artikelnummer]??50));
+  // Masten: Pylone zuerst, dann normale Masten, dann Versteifung, dann Kappen, dann Höhenverstellung
+  const _isPylon=nr=>(nr||'').toUpperCase().startsWith('PYLDP');
+  const _MAST_G={'00E13000335':10,'00E13000338':10,'00E13000235':11,'00E13001650':11,'00E13000135':12,
+    '00E13000336':13,'00E13000347':13,'00E13000238':14,'00E13001652':14,
+    '00E13000337':15,'00E13000348':15,'00E13001766':16,
+    '00E13001135':17,'00E13000133':17,
+    '00E13000131':20,'00E13000096':20,
+    '00E13000217':30,'00E13001689':30,'00E13000216':30,
+    '00E13000052':40,'00E13000027':40,'00E13000204':40,'00E13000764':40,
+    '00E13000208':40,'00E13000988':40,'00E13001874':40,'00E13001875':40};
+  map.masten.sort((a,b)=>{
+    const ag=_isPylon(a.artikelnummer)?0:(_MAST_G[a.artikelnummer]??50);
+    const bg=_isPylon(b.artikelnummer)?0:(_MAST_G[b.artikelnummer]??50);
+    return ag-bg;
+  });
   // Zubehör: Design-Adapter + Kreuzadapter zuerst
   const _ZUB_ORDER=['00E13001787','00E13001742','00E13001741'];
   map.zubehoer.sort((a,b)=>{
@@ -992,6 +1009,7 @@ function toggleMontage(v){
 }
 function goToStep4(){
   // Sync UI to current JS state (in case state changed while away)
+  document.querySelectorAll('#wandGrid .zone-item').forEach(el=>el.classList.toggle('sel',el.dataset.v===selWandart));
   document.getElementById('dachCard').classList[selDach?'add':'remove']('sel');
   document.getElementById('eigenCard').classList[selEigenleistung?'add':'remove']('sel');
   document.getElementById('mitMontCard').classList[selMontage?'add':'remove']('sel');
@@ -1296,20 +1314,21 @@ function calcInstPreis(){
   const sailCount=Math.max(1,(_sailPos||[]).length);
   const sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
 
-  // 2. Ankerpunkte
-  // Wandplatten: wandartspezifische Zeit; Bodenplatten: immer 10cm-Rate
+  // 2. Ankerpunkte (übersprungen wenn Freistehend)
   const uses18=(fragebogen.wandart||'').includes('18');
   let apH_total=0;
-  (_wandpl||[]).forEach(pl=>{
-    const ap=prices5.apAnzahl[pl.artikelnummer]||0;
-    const cnt=Math.max(1,Math.round(pl.menge));
-    apH_total+=ap*cnt*(uses18?mk.ap18:mk.ap10);
-  });
-  (_bodenpl||[]).forEach(pl=>{
-    const ap=prices5.apAnzahl[pl.artikelnummer]||0;
-    const cnt=Math.max(1,Math.round(pl.menge));
-    apH_total+=ap*cnt*mk.ap10; // Bodenplatten immer 10cm-Rate
-  });
+  if(fragebogen.wandart!=='freistehend'){
+    (_wandpl||[]).forEach(pl=>{
+      const ap=prices5.apAnzahl[pl.artikelnummer]||0;
+      const cnt=Math.max(1,Math.round(pl.menge));
+      apH_total+=ap*cnt*(uses18?mk.ap18:mk.ap10);
+    });
+    (_bodenpl||[]).forEach(pl=>{
+      const ap=prices5.apAnzahl[pl.artikelnummer]||0;
+      const cnt=Math.max(1,Math.round(pl.menge));
+      apH_total+=ap*cnt*mk.ap10; // Bodenplatten immer 10cm-Rate
+    });
+  }
 
   // 3. Schraubfundamente
   const fSek=transformedData?.sektionen.find(s=>s.id==='fundamente');
@@ -1384,9 +1403,12 @@ function renderStep5(){
   const sailCount2=Math.max(1,_sailPos.length||1);
   const sailH2=mk2?.ok?(mk2.grundpreis+Math.max(0,sailCount2-1)*mk2.weiteresSegel):0;
   const uses18=(fragebogen.wandart||'').includes('18');
+  const isFrei2=fragebogen.wandart==='freistehend';
   let apH2=0,apCnt2=0;
-  (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2+=a*n;});
-  (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(mk2?.ap10||0);apCnt2+=a*n;});
+  if(!isFrei2){
+    (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2+=a*n;});
+    (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(mk2?.ap10||0);apCnt2+=a*n;});
+  }
   const fSekD=transformedData?.sektionen.find(s=>s.id==='fundamente');
   const sfCnt2=fSekD?fSekD.positionen.filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0):0;
   const sysShort2=(sys||'').replace('SOLIDAY-','');
@@ -1453,47 +1475,74 @@ function renderStep5(){
 
   // ═══ COL 2: Wandbefestigungen ═══
   h+=`<div class="s5-col">`;
+  const isFrei=fragebogen.wandart==='freistehend';
   h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
-  if(_wandpl.length===0&&_bodenpl.length===0){
+  if(isFrei){
+    h+=`<p style="font-size:12px;color:var(--accent2);padding:6px 0">Freistehend — keine Ankerpunkt-Aufschläge.</p>`;
+    if(_wandpl.length>0){
+      h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Wandplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${_wandpl.length}&times;</span></div>`;
+      h+=`<div class="s5-card-body"><p style="font-size:11px;color:var(--muted)">Kein Ankerpunkt-Aufschlag (Freistehend).</p></div></div>`;
+    }
+    if(_bodenpl.length>0){
+      h+=`<div class="s5-card" style="margin-top:12px"><div class="s5-card-hdr"><strong>Bodenplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${_bodenpl.length}&times;</span></div>`;
+      h+=`<div class="s5-card-body"><p style="font-size:11px;color:var(--muted)">Kein Ankerpunkt-Aufschlag (Freistehend).</p></div></div>`;
+    }
+  } else if(_wandpl.length===0&&_bodenpl.length===0){
     h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
   } else {
-    _wandpl.forEach((pl,wi)=>{
-      const defAP=(prices5.apAnzahl[pl.artikelnummer]||WANDPL_AP[pl.artikelnummer]||4)*Math.max(1,Math.round(pl.menge));
-      h+=`<div class="s5-card">
-        <div class="s5-card-hdr"><strong>${pl.name}</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${Math.round(pl.menge)}&times;</span></div>
-        <div class="s5-card-body">
-          <div class="s5-irow">
-            <span class="s5-lbl">Ankerpunkte gesamt</span>
-            <input type="number" class="s5-inp s5-w70" id="wAP${wi}" value="${defAP}" min="0" oninput="updWand(${wi})">
-            <span class="s5-unit">Stk. &times;</span>
+    // WANDPLATTEN box
+    if(_wandpl.length>0){
+      const apPerUnitFirst=prices5.apAnzahl[_wandpl[0].artikelnummer]||4;
+      const totalMenge=_wandpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
+      h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Wandplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMenge}&times;</span></div>`;
+      h+=`<div class="s5-card-body">`;
+      _wandpl.forEach((pl,wi)=>{
+        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+        const cnt=Math.max(1,Math.round(pl.menge));
+        const defAP=apPerUnit*cnt;
+        h+=`<div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
+          <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
+            <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
+            <input type="number" class="s5-inp s5-w50" id="wAPU${wi}" value="${apPerUnit}" min="0" oninput="updWand(${wi})" title="Ankerpunkte pro Stk.">
+            <span class="s5-unit">AP/Stk. &times;</span>
             <input type="number" class="s5-inp s5-w90" id="wAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWand(${wi})">
             <span class="s5-unit">&euro;/AP</span>
+            <input type="hidden" id="wAP${wi}" value="${defAP}">
           </div>
           <div class="s5-calc">
-            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)} + <span id="wAuf${wi}">&ndash;</span> AP/Stk. =</span>
+            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wAuf${wi}">&ndash;</span> =</span>
             <strong id="wT${wi}">&ndash;</strong><span id="wTraw${wi}" class="s5-raw"></span>
           </div>
-        </div>
-      </div>`;
-    });
-    // Bodenplatten: Klebeanker-Anzahl aus Sheet, immer ziegel-10 Preis (nur wenn Mit Montage)
-    const bpPreis=withMontage?(prices5.apPreis['ziegel-10']||38):0;
-    _bodenpl.forEach((pl,bi)=>{
-      const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
-      const cnt=apPerUnit*Math.max(1,Math.round(pl.menge));
-      const auf=+(cnt*bpPreis).toFixed(2);
-      const total=+(pl.gesamt+auf).toFixed(2);
-      h+=`<div class="s5-card">
-        <div class="s5-card-hdr"><strong>${pl.name}</strong><span style="color:var(--accent2)">Bodenplatte</span></div>
-        <div class="s5-card-body">
-          <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${apPerUnit} Klebeanker/Stk. &times; ${fmtE(bpPreis)} &euro;/AP</div>
+        </div>`;
+      });
+      h+=`</div></div>`;
+    }
+    // BODENPLATTEN box
+    if(_bodenpl.length>0){
+      const bpPreis=withMontage?(prices5.apPreis['ziegel-10']||38):0;
+      const totalMengeB=_bodenpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
+      h+=`<div class="s5-card" style="margin-top:12px"><div class="s5-card-hdr"><strong>Bodenplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMengeB}&times;</span></div>`;
+      h+=`<div class="s5-card-body">`;
+      _bodenpl.forEach((pl,bi)=>{
+        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+        const cnt=Math.max(1,Math.round(pl.menge));
+        const totalAP=apPerUnit*cnt;
+        const auf=+(totalAP*bpPreis).toFixed(2);
+        const total=+(pl.gesamt+auf).toFixed(2);
+        h+=`<div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
+          <div style="font-size:11px;color:var(--muted);line-height:1.8">
+            ${cnt} Stk. &times; ${apPerUnit} AP/Stk. = ${totalAP} AP &times; ${fmtE(bpPreis)} &euro;/AP = <strong style="color:var(--accent2)">${fmtE(auf)}</strong>
+          </div>
           <div class="s5-calc">
-            <span style="color:var(--muted)">${fmtE(pl.gesamt)} + ${fmtE(auf)} AP =</span>
+            <span style="color:var(--muted)">${fmtE(pl.gesamt)} + ${fmtE(auf)} =</span>
             <strong id="bpT${bi}">${fmtE(total)}</strong>
           </div>
-        </div>
-      </div>`;
-    });
+        </div>`;
+      });
+      h+=`</div></div>`;
+    }
   }
   h+=`</div>`; // close s5-section Wandbefestigungen
   h+=`</div>`; // close col 2
@@ -1661,11 +1710,13 @@ function updSail(si){
 }
 function updWand(wi){
   const pl=_wandpl[wi];
-  const ap=parseInt(document.getElementById(`wAP${wi}`)?.value||'0')||0;
+  const apPerUnit=parseInt(document.getElementById(`wAPU${wi}`)?.value||'0')||0;
   const ap2=parseFloat(document.getElementById(`wAPP${wi}`)?.value||'0')||0;
-  const auf=(fragebogen.montage!==false)?ap*ap2:0;
-  const menge=pl.menge>0?pl.menge:1;
-  const aufPerUnit=auf/menge;
+  const cnt=Math.max(1,Math.round(pl.menge||1));
+  // update hidden total AP field
+  const hapEl=document.getElementById(`wAP${wi}`);
+  if(hapEl) hapEl.value=apPerUnit*cnt;
+  const aufPerUnit=(fragebogen.montage!==false&&fragebogen.wandart!=='freistehend')?apPerUnit*ap2:0;
   const unitPrice=pl.preis_einheit+aufPerUnit;
   const ea=document.getElementById(`wAuf${wi}`),et=document.getElementById(`wT${wi}`),er=document.getElementById(`wTraw${wi}`);
   if(ea)ea.textContent=fmtE(aufPerUnit);
@@ -1709,13 +1760,14 @@ function applyPrices5(){
     segSek.positionen=[...newSail,...nonSail];
   }
 
-  // 5B: Wandplatten (nur wenn Mit Montage)
+  // 5B: Wandplatten (nur wenn Mit Montage und nicht Freistehend)
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
-  if(wSek&&fragebogen.montage!==false){
+  if(wSek&&fragebogen.montage!==false&&fragebogen.wandart!=='freistehend'){
     _wandpl.forEach((pl,wi)=>{
-      const ap=parseInt(document.getElementById(`wAP${wi}`)?.value||'0')||0;
+      const apPerUnit=parseInt(document.getElementById(`wAPU${wi}`)?.value||'0')||0;
       const ap2=parseFloat(document.getElementById(`wAPP${wi}`)?.value||'0')||0;
-      const auf=ap*ap2;
+      const cnt=Math.max(1,Math.round(pl.menge||1));
+      const auf=apPerUnit*cnt*ap2;
       const pos=wSek.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
       if(pos){
         const ng=Math.ceil(pl.gesamt+auf);
@@ -1727,10 +1779,10 @@ function applyPrices5(){
       }
     });
   }
-  // 5B: Bodenplatten (nur wenn Mit Montage)
+  // 5B: Bodenplatten (nur wenn Mit Montage und nicht Freistehend)
   const fSek2=transformedData.sektionen.find(s=>s.id==='fundamente');
   if(fSek2){
-    if(fragebogen.montage!==false){
+    if(fragebogen.montage!==false&&fragebogen.wandart!=='freistehend'){
       const bpPreis=prices5.apPreis['ziegel-10']||38;
       _bodenpl.forEach(pl=>{
         const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
@@ -1868,24 +1920,60 @@ function renderStep6(){
   showView('viewStep6');setStep(6);
 }
 
-// === STEP 7 ===
+// === STEP 7: Rounding preview ===
 function goToStep7(){
+  // Round all prices to nearest whole number
+  sevdeskPositions.forEach(r=>{
+    if(r.type==='pos'){
+      r.preis_einheit=Math.round(r.preis_einheit);
+      r.gesamt=Math.round(r.gesamt);
+    }
+  });
+  renderStep7();
+}
+function renderStep7(){
+  const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
+  const netto=sevdeskPositions.filter(r=>r.type==='pos').reduce((s,r)=>s+(r.gesamt||0),0);
+  const nettoT=netto+teu;
+  const mwst=nettoT*0.19;
+  const brutto=nettoT+mwst;
+  const d=soSeKuJSON;
+  let h=`<div style="max-width:860px;margin:0 auto;padding:16px 0">`;
+  h+=`<div style="margin-bottom:12px;padding:10px 14px;background:rgba(56,217,169,.08);border:1px solid rgba(56,217,169,.2);border-radius:10px;font-size:12px;color:var(--accent2)">Alle Preise wurden auf ganze Euro gerundet. Die Positionen unten zeigen die finalen Import-Werte.</div>`;
+  h+=`<div class="info-chips" style="margin-bottom:12px">`+
+    `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`+
+    `<span>System: <strong>${d.system||'–'}</strong></span>`+
+    `<span>Datum: <strong>${d.datum||'–'}</strong></span></div>`;
+  h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line;line-height:1.5">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
+  h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
+  h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto Positionen</span><span>${fmtE(netto)}</span></div>`;
+  if(teu>0)h+=`<div class="s6-tr"><span style="color:var(--muted)">Temporäre Anpassung</span><span>${fmtE(teu)}</span></div>`;
+  h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto gesamt</span><span>${fmtE(nettoT)}</span></div>`;
+  h+=`<div class="s6-tr"><span style="color:var(--muted)">MwSt. 19 %</span><span>${fmtE(mwst)}</span></div>`;
+  h+=`<div class="s6-tr" style="font-size:15px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Brutto gesamt</span><span style="color:var(--accent)">${fmtE(brutto)}</span></div>`;
+  h+=`</div></div>`;
+  document.getElementById('s7content').innerHTML=h;
+  showView('viewStep7');setStep(7);
+}
+
+// === STEP 8: Import ===
+function goToStep8(){
   const{sevdesk}=getKeys();
   const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
   const netto=sevdeskPositions.filter(r=>r.type==='pos').reduce((s,r)=>s+(r.gesamt||0),0);
   const nettoT=netto+teu;
   const brutto=nettoT*1.19;
   const posCount=sevdeskPositions.filter(r=>r.type==='pos').length;
-  document.getElementById('s7summary').innerHTML=
+  document.getElementById('s8summary').innerHTML=
     `<div class="import-sum-row"><span style="color:var(--muted)">Kommission</span><span>${soSeKuJSON.kommission||'–'}</span></div>`+
     `<div class="import-sum-row"><span style="color:var(--muted)">System</span><span>${soSeKuJSON.system||'–'}</span></div>`+
     `<div class="import-sum-row"><span style="color:var(--muted)">Positionen</span><span>${posCount}</span></div>`+
     `<div class="import-sum-row"><span style="color:var(--muted)">Netto gesamt</span><span>${fmtE(nettoT)}</span></div>`+
     `<div class="import-sum-row"><span>Brutto gesamt</span><span><strong>${fmtE(brutto)}</strong></span></div>`;
   const noKey=!sevdesk;
-  document.getElementById('s7nokey').classList.toggle('hidden',!noKey);
+  document.getElementById('s8nokey').classList.toggle('hidden',!noKey);
   document.getElementById('btnImport').disabled=noKey;
-  showView('viewStep7');setStep(7);
+  showView('viewStep8');setStep(8);
 }
 
 // === SEVDESK ===
@@ -1959,7 +2047,7 @@ async function renderPDFPages(b64){
 async function importToSevdesk(){
   document.getElementById('btnImport').disabled=true;
   document.getElementById('btnImport').textContent='Wird importiert...';
-  showView('viewLoading');setStep(7);
+  showView('viewLoading');setStep(8);
   document.getElementById('loadTitle').textContent='Import in sevdesk...';
   const sub=document.getElementById('loadSub');
   const bar=document.getElementById('progBar');
