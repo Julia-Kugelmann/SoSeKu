@@ -15,7 +15,7 @@
 body{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(91,141,238,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(56,217,169,.06) 0%,transparent 60%);font-family:'DM Mono',monospace;color:var(--text)}
 header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
-.logo .s1{color:#f5a623}.logo .s2{color:#888}.logo .arr{color:var(--muted);margin:0 6px}
+.logo .s1{color:#f5a623}.logo .s2{color:var(--muted)}.logo .arr{color:var(--muted);margin:0 6px}
 .subtitle{font-size:11px;color:var(--muted);margin-top:2px}
 .btn-reset-hdr{font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border);border-radius:6px;padding:5px 10px;background:none}
 .btn-reset-hdr:hover{border-color:var(--accent);color:var(--text)}
@@ -191,7 +191,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 17:15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 18:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -400,7 +400,7 @@ main{margin:0 auto;padding:20px 14px}
   <div class="view-scroll" id="s7content"></div>
   <div class="btn-row">
     <button class="btn btn-s" onclick="showView('viewStep6');setStep(6)">&larr; Zur&uuml;ck</button>
-    <button class="btn btn-p" onclick="goToStep8()">&#128228; Jetzt importieren &rarr;</button>
+    <button class="btn btn-p" onclick="goToStep8()" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:8px;padding-bottom:8px"><span style="font-size:22px;line-height:1">&#128228;</span><span>Jetzt importieren &rarr;</span></button>
   </div>
 </div>
 
@@ -1589,7 +1589,7 @@ function renderStep5(){
     h+=`<div class="s5-card">
       <div class="s5-card-hdr" style="align-items:flex-start">
         <strong>${instPos.name}</strong>
-        <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7">${hdrChips}</span>
+        <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${hdrChips}</span>
       </div>
       <div class="s5-card-body">
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
@@ -1913,13 +1913,14 @@ function renderStep6(){
   const delta=nettoT-solidayTotal;
   const deltaSign=delta>=0?'+':'';
 
-  // Summenvergleich: nur Positionen die in Schritt 5 NICHT im Preis verändert wurden
-  // Segeltuch komplett ausschließen, _gs (Platzhalter) ausschließen
+  // Summenvergleich: nur Positionen die in Schritt 5 NICHT verändert wurden
+  // und deren Art.-Nr. auch im Original-SoSeKu-JSON existiert
+  const soSeKuArtNrs=new Set((soSeKuJSON.positionen||[]).map(p=>p.artikelnummer).filter(Boolean));
   const unmodArtNrs=new Set();
   for(const sek of transformedData.sektionen){
     if(sek.id==='segeltuch') continue;
     for(const p of sek.positionen){
-      if(!p._gs&&p.artikelnummer&&!modifiedArtNrsInStep5.has(p.artikelnummer)){
+      if(!p._gs&&p.artikelnummer&&!modifiedArtNrsInStep5.has(p.artikelnummer)&&soSeKuArtNrs.has(p.artikelnummer)){
         unmodArtNrs.add(p.artikelnummer);
       }
     }
