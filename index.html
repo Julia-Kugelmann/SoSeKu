@@ -1347,20 +1347,18 @@ function calcInstPreis(){
   const sailCount=Math.max(1,(_sailPos||[]).length);
   const sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
 
-  // 2. Ankerpunkte: Wandplatten übersprungen wenn Freistehend, Bodenplatten immer
+  // 2. Ankerpunkte: Wandplatten + Bodenplatten immer
   const uses18=(fragebogen.wandart||'').includes('18');
   let apH_total=0;
-  if(fragebogen.wandart!=='freistehend'){
-    (_wandpl||[]).forEach(pl=>{
-      const ap=prices5.apAnzahl[pl.artikelnummer]||0;
-      const cnt=Math.max(1,Math.round(pl.menge));
-      apH_total+=ap*cnt*(uses18?mk.ap18:mk.ap10);
-    });
-  }
+  (_wandpl||[]).forEach(pl=>{
+    const ap=prices5.apAnzahl[pl.artikelnummer]||0;
+    const cnt=Math.max(1,Math.round(pl.menge));
+    apH_total+=ap*cnt*(uses18?mk.ap18:mk.ap10);
+  });
   (_bodenpl||[]).forEach(pl=>{
     const ap=prices5.apAnzahl[pl.artikelnummer]||0;
     const cnt=Math.max(1,Math.round(pl.menge));
-    apH_total+=ap*cnt*mk.ap10; // Bodenplatten immer 10cm-Rate, auch freistehend
+    apH_total+=ap*cnt*mk.ap10;
   });
 
   // 3. Schraubfundamente
@@ -1409,7 +1407,8 @@ function renderStep5(){
   const sys=(soSeKuJSON.system||'').toUpperCase();
   const sysLabel2=sys.startsWith('SOLIDAY-')?'Soliday '+sys.replace('SOLIDAY-',''):sys.startsWith('SONNENSEGEL')?sys.replace('SONNENSEGEL-','Sonnensegel '):sys;
   const withMontage=fragebogen.montage!==false;
-  const apDef=withMontage?(prices5.apPreis[fragebogen.wandart||'ziegel-10']||0):0;
+  const wandartForAP=(fragebogen.wandart==='freistehend'||!fragebogen.wandart)?'ziegel-10':fragebogen.wandart;
+  const apDef=withMontage?(prices5.apPreis[wandartForAP]||0):0;
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
@@ -1436,12 +1435,8 @@ function renderStep5(){
   const sailCount2=Math.max(1,_sailPos.length||1);
   const sailH2=mk2?.ok?(mk2.grundpreis+Math.max(0,sailCount2-1)*mk2.weiteresSegel):0;
   const uses18=(fragebogen.wandart||'').includes('18');
-  const isFrei2=fragebogen.wandart==='freistehend';
   let apH2=0,apCnt2=0;
-  if(!isFrei2){
-    (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2+=a*n;});
-  }
-  // Bodenplatten immer — auch bei Freistehend
+  (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2+=a*n;});
   (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(mk2?.ap10||0);apCnt2+=a*n;});
   const fSekD=transformedData?.sektionen.find(s=>s.id==='fundamente');
   const sfCnt2=fSekD?fSekD.positionen.filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0):0;
@@ -1515,7 +1510,6 @@ function renderStep5(){
 
   // ═══ COL 2: Wandbefestigungen ═══
   h+=`<div class="s5-col">`;
-  const isFrei=fragebogen.wandart==='freistehend';
   h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
   if(_wandpl.length===0&&_bodenpl.length===0){
     h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
@@ -1525,30 +1519,26 @@ function renderStep5(){
       const totalMenge=_wandpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
       h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Wandplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMenge}&times;</span></div>`;
       h+=`<div class="s5-card-body">`;
-      if(isFrei){
-        h+=`<p style="font-size:11px;color:var(--muted);margin:0">Freistehend — kein Klebeanker-Aufschlag auf Wandplatten.</p>`;
-      } else {
-        _wandpl.forEach((pl,wi)=>{
-          const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
-          const cnt=Math.max(1,Math.round(pl.menge));
-          const defAP=apPerUnit*cnt;
-          h+=`<div style="margin-bottom:10px">
-            <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
-            <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
-              <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
-              <input type="number" class="s5-inp s5-w50" id="wAPU${wi}" value="${apPerUnit}" min="0" oninput="updWand(${wi})" title="Ankerpunkte pro Stk.">
-              <span class="s5-unit">AP/Stk. &times;</span>
-              <input type="number" class="s5-inp s5-w90" id="wAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWand(${wi})">
-              <span class="s5-unit">&euro;/AP</span>
-              <input type="hidden" id="wAP${wi}" value="${defAP}">
-            </div>
-            <div class="s5-calc">
-              <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wAuf${wi}">&ndash;</span> =</span>
-              <strong id="wT${wi}">&ndash;</strong><span id="wTraw${wi}" class="s5-raw"></span>
-            </div>
-          </div>`;
-        });
-      }
+      _wandpl.forEach((pl,wi)=>{
+        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+        const cnt=Math.max(1,Math.round(pl.menge));
+        const defAP=apPerUnit*cnt;
+        h+=`<div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
+          <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
+            <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
+            <input type="number" class="s5-inp s5-w50" id="wAPU${wi}" value="${apPerUnit}" min="0" oninput="updWand(${wi})" title="Ankerpunkte pro Stk.">
+            <span class="s5-unit">AP/Stk. &times;</span>
+            <input type="number" class="s5-inp s5-w90" id="wAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWand(${wi})">
+            <span class="s5-unit">&euro;/AP</span>
+            <input type="hidden" id="wAP${wi}" value="${defAP}">
+          </div>
+          <div class="s5-calc">
+            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wAuf${wi}">&ndash;</span> =</span>
+            <strong id="wT${wi}">&ndash;</strong><span id="wTraw${wi}" class="s5-raw"></span>
+          </div>
+        </div>`;
+      });
       h+=`</div></div>`;
     }
     // BODENPLATTEN box
@@ -1754,7 +1744,7 @@ function updWand(wi){
   // update hidden total AP field
   const hapEl=document.getElementById(`wAP${wi}`);
   if(hapEl) hapEl.value=apPerUnit*cnt;
-  const aufPerUnit=(fragebogen.montage!==false&&fragebogen.wandart!=='freistehend')?apPerUnit*ap2:0;
+  const aufPerUnit=(fragebogen.montage!==false)?apPerUnit*ap2:0;
   const unitPrice=pl.preis_einheit+aufPerUnit;
   const ea=document.getElementById(`wAuf${wi}`),et=document.getElementById(`wT${wi}`),er=document.getElementById(`wTraw${wi}`);
   if(ea)ea.textContent=fmtE(aufPerUnit);
@@ -1801,7 +1791,7 @@ function applyPrices5(){
 
   // 5B: Wandplatten (nur wenn Mit Montage und nicht Freistehend)
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
-  if(wSek&&fragebogen.montage!==false&&fragebogen.wandart!=='freistehend'){
+  if(wSek&&fragebogen.montage!==false){
     _wandpl.forEach((pl,wi)=>{
       const apPerUnit=parseInt(document.getElementById(`wAPU${wi}`)?.value||'0')||0;
       const ap2=parseFloat(document.getElementById(`wAPP${wi}`)?.value||'0')||0;
@@ -1813,7 +1803,8 @@ function applyPrices5(){
         pos.gesamt=ng;
         pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
         const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'inkl. Klebeanker an Holzbauweise (bis max. 10 cm Dämmung)','holz-18':'inkl. Klebeanker an Holzbauweise (bis max. 18 cm Dämmung)'};
-        pos.beschreibung=wdesc[fragebogen.wandart||'ziegel-10']||'';
+        const wa=fragebogen.wandart==='freistehend'?'ziegel-10':(fragebogen.wandart||'ziegel-10');
+        pos.beschreibung=wdesc[wa]||wdesc['ziegel-10'];
         pos._modified=true;
       }
     });
