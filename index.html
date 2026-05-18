@@ -191,7 +191,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 12:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 14:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -340,9 +340,11 @@ main{margin:0 auto;padding:20px 14px}
           <div class="zone-grid" id="wandGrid">
             <div class="zone-item sel" data-v="ziegel-10" onclick="selWand('ziegel-10')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="holz-10" onclick="selWand('holz-10')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 10 cm D&auml;mmung</div></div>
-            <div class="zone-item" data-v="freistehend" onclick="selWand('freistehend')"><div class="zone-num">Freistehend</div><div class="zone-time">keine Wandbefestigung</div></div>
+            <div class="zone-item" style="opacity:0;pointer-events:none" aria-hidden="true"><div class="zone-num">.</div></div>
             <div class="zone-item" data-v="ziegel-18" onclick="selWand('ziegel-18')"><div class="zone-num">Ziegel / Beton</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
             <div class="zone-item" data-v="holz-18" onclick="selWand('holz-18')"><div class="zone-num">Holzbauweise</div><div class="zone-time">bis 18 cm D&auml;mmung</div></div>
+            <div class="zone-item" style="opacity:0;pointer-events:none" aria-hidden="true"><div class="zone-num">.</div></div>
+            <div class="zone-item" data-v="freistehend" onclick="selWand('freistehend')"><div class="zone-num">Freistehend</div><div class="zone-time">keine Wandbefestigung</div></div>
           </div>
         </div>
         <div class="fg-col">
@@ -734,6 +736,16 @@ async function reextract(){
 
 // === STEP 3 ===
 const WEGLASS=['00E13000735','00E13000648','00E13000649','00E13002106'];
+function motorKabelName(name){
+  if(!name)return null;
+  const l=name.toLowerCase();
+  if(!(l.includes('anschl')||(l.includes('kabel')&&l.includes('becker')))&&!l.includes('anschlu'))return null;
+  if(!l.includes('becker')&&!l.includes('motor'))return null;
+  const lenM=name.match(/(\d+)\s*m/i);
+  const len=lenM?lenM[1]:'?';
+  const color=l.includes('schw')?'schwarz':'weiß';
+  return`Anschlussleitung Becker Motor ${len}m ${color}`;
+}
 const NAMEN={
   '00E13002183':'Aufpreis für Rohrmotor mit Funkempfänger',
   '00E13000850':'Anschlussleitung Becker Motor 2m weiß',
@@ -835,6 +847,7 @@ function aufrollName(nr,sys,welleM){
 function assignSek(p){
   const nr=p.artikelnummer;
   if(p.qm_segel>0)return'segeltuch';
+  if(p._isMotorKabel)return'segelsystem';
   if(NR2SEK[nr])return NR2SEK[nr];
   if(nr&&/^PYL/.test(nr))return'masten';
   if(nr&&isAufrollsystem(nr))return'segelsystem';
@@ -871,7 +884,21 @@ function transformiere(json){
     p2.beschreibung=BESCHREIBUNG[p2.artikelnummer]||'';
     if(WINTER_NR.includes(p2.artikelnummer)){const mm=Number(json.wellenlaenge_aufrollsystem_mm||0);const m=mm>0?Math.ceil(mm/1000):'?';const prem=['71004A011','70004A007'].includes(p2.artikelnummer);p2.name=`Winter-Schutzhülle${prem?' Premium':''} - ${m}m / Austrosail - stone`;p2.einheit='Stk.';}
     else if(NAMEN[p2.artikelnummer]){p2.name=NAMEN[p2.artikelnummer];}
-    else{const an=isAufrollsystem(p2.artikelnummer)?aufrollName(p2.artikelnummer,sys,welleM):null;if(an){p2.name=an;}else{const pn=pylonName(p2.artikelnummer);if(pn){p2.name=pn;}else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}}}
+    else{
+      const an=isAufrollsystem(p2.artikelnummer)?aufrollName(p2.artikelnummer,sys,welleM):null;
+      if(an){p2.name=an;}
+      else{
+        const pn=pylonName(p2.artikelnummer);
+        if(pn){p2.name=pn;}
+        else{
+          const kn=motorKabelName(p2.name);
+          if(kn){p2.name=kn;p2._isMotorKabel=true;}
+          else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}
+        }
+      }
+    }
+    // also flag known motor cable art-nr
+    if(p2.artikelnummer==='00E13000850')p2._isMotorKabel=true;
     return p2;});
   const merged=[];
   pos.forEach(p=>{
@@ -882,13 +909,16 @@ function transformiere(json){
   });
   const map={segeltuch:[],segelsystem:[],masten:[],fundamente:[],wandbefestigungen:[],zubehoer:[],montage:[]};
   merged.forEach(p=>map[assignSek(p)].push(p));
-  // Segelsystem-Reihenfolge: Aufrollsystem → Motor → Anschlussleitung → Handsender → Windsensor → Rest
-  const _SEGSYS_ORDER=['00E13002183','00E13000850','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002063'];
-  map.segelsystem.sort((a,b)=>{
-    const ai=isAufrollsystem(a.artikelnummer)?-1:_SEGSYS_ORDER.indexOf(a.artikelnummer)<0?999:_SEGSYS_ORDER.indexOf(a.artikelnummer);
-    const bi=isAufrollsystem(b.artikelnummer)?-1:_SEGSYS_ORDER.indexOf(b.artikelnummer)<0?999:_SEGSYS_ORDER.indexOf(b.artikelnummer);
-    return ai-bi;
-  });
+  // Segelsystem-Reihenfolge: Aufrollsystem → Motor → Anschlussleitung(en) → Handsender → Windsensor → Rest
+  const _SEGSYS_ORDER=['00E13002183','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002063'];
+  const _segsysSortKey=p=>{
+    if(isAufrollsystem(p.artikelnummer))return -2;
+    if(p.artikelnummer==='00E13002183')return -1; // motor
+    if(p._isMotorKabel)return 0; // Anschlussleitung direkt nach Motor
+    const idx=_SEGSYS_ORDER.indexOf(p.artikelnummer);
+    return idx<0?999:idx+1;
+  };
+  map.segelsystem.sort((a,b)=>_segsysSortKey(a)-_segsysSortKey(b));
   // Original Soliday-Segeltuch entfernen, Preis auf SoSeKu-Placeholder übertragen
   const sailOriginals=map.segeltuch.filter(p=>p.qm_segel>0);
   const sailTotal=sailOriginals.reduce((s,p)=>s+(p.gesamt||0),0);
@@ -919,8 +949,8 @@ function transformiere(json){
     const bi=_FUND_ORDER.indexOf(b.artikelnummer)<0?999:_FUND_ORDER.indexOf(b.artikelnummer);
     return ai-bi;
   });
-  // Masten: Pylone zuerst, dann normale Masten, dann Versteifung, dann Kappen, dann Höhenverstellung
-  const _isPylon=nr=>(nr||'').toUpperCase().startsWith('PYLDP');
+  // Masten: Pylone zuerst (kurz→lang), dann normale Masten, dann Versteifung, dann Kappen, dann Höhenverstellung
+  const _pylonLen=nr=>{const m=(nr||'').match(/^PYL(?:AL|NI|DP)[01](\d+)1000$/);return m?parseInt(m[1]):null;};
   const _MAST_G={'00E13000335':10,'00E13000338':10,'00E13000235':11,'00E13001650':11,'00E13000135':12,
     '00E13000336':13,'00E13000347':13,'00E13000238':14,'00E13001652':14,
     '00E13000337':15,'00E13000348':15,'00E13001766':16,
@@ -930,8 +960,11 @@ function transformiere(json){
     '00E13000052':40,'00E13000027':40,'00E13000204':40,'00E13000764':40,
     '00E13000208':40,'00E13000988':40,'00E13001874':40,'00E13001875':40};
   map.masten.sort((a,b)=>{
-    const ag=_isPylon(a.artikelnummer)?0:(_MAST_G[a.artikelnummer]??50);
-    const bg=_isPylon(b.artikelnummer)?0:(_MAST_G[b.artikelnummer]??50);
+    const aLen=_pylonLen(a.artikelnummer),bLen=_pylonLen(b.artikelnummer);
+    // Pylons first (100 + length so always before normal masts starting at 200)
+    // Normal masts: 200 + _MAST_G value (10–50 → 210–250)
+    const ag=aLen!==null?100+aLen:(200+(_MAST_G[a.artikelnummer]??50));
+    const bg=bLen!==null?100+bLen:(200+(_MAST_G[b.artikelnummer]??50));
     return ag-bg;
   });
   // Zubehör: Design-Adapter + Kreuzadapter zuerst
@@ -1314,7 +1347,7 @@ function calcInstPreis(){
   const sailCount=Math.max(1,(_sailPos||[]).length);
   const sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
 
-  // 2. Ankerpunkte (übersprungen wenn Freistehend)
+  // 2. Ankerpunkte: Wandplatten übersprungen wenn Freistehend, Bodenplatten immer
   const uses18=(fragebogen.wandart||'').includes('18');
   let apH_total=0;
   if(fragebogen.wandart!=='freistehend'){
@@ -1323,12 +1356,12 @@ function calcInstPreis(){
       const cnt=Math.max(1,Math.round(pl.menge));
       apH_total+=ap*cnt*(uses18?mk.ap18:mk.ap10);
     });
-    (_bodenpl||[]).forEach(pl=>{
-      const ap=prices5.apAnzahl[pl.artikelnummer]||0;
-      const cnt=Math.max(1,Math.round(pl.menge));
-      apH_total+=ap*cnt*mk.ap10; // Bodenplatten immer 10cm-Rate
-    });
   }
+  (_bodenpl||[]).forEach(pl=>{
+    const ap=prices5.apAnzahl[pl.artikelnummer]||0;
+    const cnt=Math.max(1,Math.round(pl.menge));
+    apH_total+=ap*cnt*mk.ap10; // Bodenplatten immer 10cm-Rate, auch freistehend
+  });
 
   // 3. Schraubfundamente
   const fSek=transformedData?.sektionen.find(s=>s.id==='fundamente');
@@ -1407,8 +1440,9 @@ function renderStep5(){
   let apH2=0,apCnt2=0;
   if(!isFrei2){
     (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2+=a*n;});
-    (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(mk2?.ap10||0);apCnt2+=a*n;});
   }
+  // Bodenplatten immer — auch bei Freistehend
+  (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2+=a*n*(mk2?.ap10||0);apCnt2+=a*n;});
   const fSekD=transformedData?.sektionen.find(s=>s.id==='fundamente');
   const sfCnt2=fSekD?fSekD.positionen.filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0):0;
   const sysShort2=(sys||'').replace('SOLIDAY-','');
@@ -1451,7 +1485,13 @@ function renderStep5(){
       const stoffe=getStoffeForSys(sys,bQm,qm);
       const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
       h+=`<div class="s5-card">
-        <div class="s5-card-hdr"><strong>Segeltuch &ndash; ${sysLabel2}</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${qm} m&sup2;</span></div>
+        <div class="s5-card-hdr" style="align-items:center">
+          <strong>Segeltuch &ndash; ${sysLabel2}</strong>
+          <div style="display:flex;align-items:center;gap:4px">
+            <input type="number" class="s5-inp s5-w70" id="sailQm${si}" value="${qm}" step="0.01" min="0.01" title="Segelgröße bearbeitbar" oninput="updSail(${si})" style="text-align:right">
+            <span style="font-size:12px;color:var(--accent2)">m&sup2;</span>
+          </div>
+        </div>
         <div class="s5-card-body">
           ${soltisFiltered?`<div style="font-size:10px;color:var(--warn);margin-bottom:6px">* Soltis 92 nicht verfügbar (Segelgröße > 55 m²)</div>`:''}
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Stoff &amp; Preis/m&sup2;</div>
@@ -1463,7 +1503,7 @@ function renderStep5(){
               <span class="s5-unit">&euro;/m&sup2;</span>
             </label>`).join('')}
           <div class="s5-calc">
-            <span style="color:var(--muted)">(${qm.toFixed(2)} + ${qmExtra(qm)}) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
+            <span style="color:var(--muted)">(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
             <strong id="sT${si}">&ndash;</strong><span id="sTraw${si}" class="s5-raw"></span>
           </div>
         </div>
@@ -1477,45 +1517,38 @@ function renderStep5(){
   h+=`<div class="s5-col">`;
   const isFrei=fragebogen.wandart==='freistehend';
   h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
-  if(isFrei){
-    h+=`<p style="font-size:12px;color:var(--accent2);padding:6px 0">Freistehend — keine Ankerpunkt-Aufschläge.</p>`;
-    if(_wandpl.length>0){
-      h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Wandplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${_wandpl.length}&times;</span></div>`;
-      h+=`<div class="s5-card-body"><p style="font-size:11px;color:var(--muted)">Kein Ankerpunkt-Aufschlag (Freistehend).</p></div></div>`;
-    }
-    if(_bodenpl.length>0){
-      h+=`<div class="s5-card" style="margin-top:12px"><div class="s5-card-hdr"><strong>Bodenplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${_bodenpl.length}&times;</span></div>`;
-      h+=`<div class="s5-card-body"><p style="font-size:11px;color:var(--muted)">Kein Ankerpunkt-Aufschlag (Freistehend).</p></div></div>`;
-    }
-  } else if(_wandpl.length===0&&_bodenpl.length===0){
+  if(_wandpl.length===0&&_bodenpl.length===0){
     h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
   } else {
     // WANDPLATTEN box
     if(_wandpl.length>0){
-      const apPerUnitFirst=prices5.apAnzahl[_wandpl[0].artikelnummer]||4;
       const totalMenge=_wandpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
       h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Wandplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMenge}&times;</span></div>`;
       h+=`<div class="s5-card-body">`;
-      _wandpl.forEach((pl,wi)=>{
-        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
-        const cnt=Math.max(1,Math.round(pl.menge));
-        const defAP=apPerUnit*cnt;
-        h+=`<div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
-          <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
-            <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
-            <input type="number" class="s5-inp s5-w50" id="wAPU${wi}" value="${apPerUnit}" min="0" oninput="updWand(${wi})" title="Ankerpunkte pro Stk.">
-            <span class="s5-unit">AP/Stk. &times;</span>
-            <input type="number" class="s5-inp s5-w90" id="wAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWand(${wi})">
-            <span class="s5-unit">&euro;/AP</span>
-            <input type="hidden" id="wAP${wi}" value="${defAP}">
-          </div>
-          <div class="s5-calc">
-            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wAuf${wi}">&ndash;</span> =</span>
-            <strong id="wT${wi}">&ndash;</strong><span id="wTraw${wi}" class="s5-raw"></span>
-          </div>
-        </div>`;
-      });
+      if(isFrei){
+        h+=`<p style="font-size:11px;color:var(--muted);margin:0">Freistehend — kein Klebeanker-Aufschlag auf Wandplatten.</p>`;
+      } else {
+        _wandpl.forEach((pl,wi)=>{
+          const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+          const cnt=Math.max(1,Math.round(pl.menge));
+          const defAP=apPerUnit*cnt;
+          h+=`<div style="margin-bottom:10px">
+            <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
+            <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
+              <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
+              <input type="number" class="s5-inp s5-w50" id="wAPU${wi}" value="${apPerUnit}" min="0" oninput="updWand(${wi})" title="Ankerpunkte pro Stk.">
+              <span class="s5-unit">AP/Stk. &times;</span>
+              <input type="number" class="s5-inp s5-w90" id="wAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWand(${wi})">
+              <span class="s5-unit">&euro;/AP</span>
+              <input type="hidden" id="wAP${wi}" value="${defAP}">
+            </div>
+            <div class="s5-calc">
+              <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wAuf${wi}">&ndash;</span> =</span>
+              <strong id="wT${wi}">&ndash;</strong><span id="wTraw${wi}" class="s5-raw"></span>
+            </div>
+          </div>`;
+        });
+      }
       h+=`</div></div>`;
     }
     // BODENPLATTEN box
@@ -1701,10 +1734,15 @@ function updMonSum(){
 function updSail(si){
   const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
   const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
-  const qm=_sailPos[si].qm_segel;
-  const t=billingQm(qm)*p;
+  const qmInput=document.getElementById(`sailQm${si}`);
+  const qm=qmInput?parseFloat(qmInput.value||'0')||_sailPos[si].qm_segel:_sailPos[si].qm_segel;
+  const bQm=billingQm(qm);
+  const t=bQm*p;
   const d=document.getElementById(`sPd${si}`),tv=document.getElementById(`sT${si}`),tr=document.getElementById(`sTraw${si}`);
+  const dDisp=document.getElementById(`sQmDisp${si}`),dEx=document.getElementById(`sQmEx${si}`);
   if(d)d.textContent=fmt(p);
+  if(dDisp)dDisp.textContent=qm.toFixed(2);
+  if(dEx)dEx.textContent=qmExtra(qm);
   if(tv)tv.textContent=fmtE(Math.ceil(t));
   if(tr)tr.textContent=Math.ceil(t)!==Math.round(t*100)/100?`(${fmt(t)})` : '';
 }
@@ -1742,7 +1780,8 @@ function applyPrices5(){
       newSail=_sailPos.map((sail,si)=>{
         const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
         const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
-        const qm=sail.qm_segel;
+        const qmInput=document.getElementById(`sailQm${si}`);
+        const qm=qmInput?parseFloat(qmInput.value||'0')||sail.qm_segel:sail.qm_segel;
         const bQm=billingQm(qm);
         const stoffe=getStoffeForSys(sys,bQm,qm);
         const t=Math.ceil(bQm*p);
@@ -1779,10 +1818,10 @@ function applyPrices5(){
       }
     });
   }
-  // 5B: Bodenplatten (nur wenn Mit Montage und nicht Freistehend)
+  // 5B: Bodenplatten (nur wenn Mit Montage; auch bei Freistehend)
   const fSek2=transformedData.sektionen.find(s=>s.id==='fundamente');
   if(fSek2){
-    if(fragebogen.montage!==false&&fragebogen.wandart!=='freistehend'){
+    if(fragebogen.montage!==false){
       const bpPreis=prices5.apPreis['ziegel-10']||38;
       _bodenpl.forEach(pl=>{
         const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
@@ -1922,11 +1961,11 @@ function renderStep6(){
 
 // === STEP 7: Rounding preview ===
 function goToStep7(){
-  // Round all prices to nearest whole number
+  // Always round up to next whole euro
   sevdeskPositions.forEach(r=>{
     if(r.type==='pos'){
-      r.preis_einheit=Math.round(r.preis_einheit);
-      r.gesamt=Math.round(r.gesamt);
+      r.preis_einheit=Math.ceil(r.preis_einheit);
+      r.gesamt=Math.ceil(r.gesamt);
     }
   });
   renderStep7();
