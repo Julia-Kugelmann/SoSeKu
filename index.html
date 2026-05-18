@@ -15,7 +15,7 @@
 body{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 20%,rgba(91,141,238,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 80%,rgba(56,217,169,.06) 0%,transparent 60%);font-family:'DM Mono',monospace;color:var(--text)}
 header{padding:18px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
 .logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
-.logo .s1{color:#f5a623}.logo .s2{color:#5b8dee}.logo .arr{color:var(--muted);margin:0 6px}
+.logo .s1{color:#f5a623}.logo .s2{color:#888}.logo .arr{color:var(--muted);margin:0 6px}
 .subtitle{font-size:11px;color:var(--muted);margin-top:2px}
 .btn-reset-hdr{font-size:11px;color:var(--muted);cursor:pointer;border:1px solid var(--border);border-radius:6px;padding:5px 10px;background:none}
 .btn-reset-hdr:hover{border-color:var(--accent);color:var(--text)}
@@ -191,7 +191,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 16:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 17:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -448,6 +448,7 @@ let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleist
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0};
 let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
+let modifiedArtNrsInStep5=new Set();
 
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -1483,12 +1484,14 @@ function renderStep5(){
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:center">
           <strong>Segeltuch &ndash; ${sysLabel2}</strong>
-          <div style="display:flex;align-items:center;gap:4px">
-            <input type="number" class="s5-inp s5-w70" id="sailQm${si}" value="${qm}" step="0.01" min="0.01" title="Segelgröße bearbeitbar" oninput="updSail(${si})" style="text-align:right">
-            <span style="font-size:12px;color:var(--accent2)">m&sup2;</span>
-          </div>
+          <span id="sailHdrQm${si}" style="font-size:14px;font-weight:700;color:var(--accent2)">${qm} m&sup2;</span>
         </div>
         <div class="s5-card-body">
+          <div class="s5-irow" style="margin-bottom:10px">
+            <span class="s5-lbl">Segelgröße</span>
+            <input type="number" class="s5-inp s5-w70" id="sailQm${si}" value="${qm}" step="0.01" min="0.01" oninput="updSail(${si})" style="text-align:right">
+            <span class="s5-unit">m&sup2;</span>
+          </div>
           ${soltisFiltered?`<div style="font-size:10px;color:var(--warn);margin-bottom:6px">* Soltis 92 nicht verfügbar (Segelgröße > 55 m²)</div>`:''}
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Stoff &amp; Preis/m&sup2;</div>
           ${stoffe.map((s,fi)=>`
@@ -1537,6 +1540,7 @@ function renderStep5(){
           <div class="s5-calc">
             <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wAuf${wi}">&ndash;</span> =</span>
             <strong id="wT${wi}">&ndash;</strong><span id="wTraw${wi}" class="s5-raw"></span>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Platte</span>
           </div>
         </div>`;
       });
@@ -1561,6 +1565,7 @@ function renderStep5(){
           <div class="s5-calc">
             <span style="color:var(--muted)">${fmtE(pl.preis_einheit)} + ${fmtE(aufPerUnit)} =</span>
             <strong id="bpT${bi}">${fmtE(Math.ceil(newUnitPrice))}</strong>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Platte</span>
             <span style="font-size:10px;color:var(--muted);margin-left:4px">&times; ${cnt} Stk.</span>
           </div>
         </div>`;
@@ -1578,7 +1583,7 @@ function renderStep5(){
     const gp=gsMonPreis(instPos.artikelnummer);
     const plParts=[];
     if(_wandpl.length>0)plParts.push(`${_wandpl.length}&times; Wand`);
-    if(_bodenpl.length>0)plParts.push(`${_bodenpl.length}&times; Boden`);
+    if(_bodenpl.length>0)plParts.push(`${_bodenpl.length}&times; Bodenplatten`);
     const sfHdr=sfCnt2>0?`${sfCnt2}&times; Erdschraube`:'';
     const hdrChips=[`${wellenM2}m Welle`,...plParts,sfHdr].filter(Boolean).join('<br>');
     h+=`<div class="s5-card">
@@ -1739,6 +1744,8 @@ function updSail(si){
   if(dEx)dEx.textContent=qmExtra(qm);
   if(tv)tv.textContent=fmtE(Math.ceil(t));
   if(tr)tr.textContent=Math.ceil(t)!==Math.round(t*100)/100?`(${fmt(t)})` : '';
+  const hdrQm=document.getElementById(`sailHdrQm${si}`);
+  if(hdrQm)hdrQm.textContent=`${qm.toFixed(2)} m²`;
 }
 function updWand(wi){
   const pl=_wandpl[wi];
@@ -1757,6 +1764,7 @@ function updWand(wi){
 }
 
 function applyPrices5(){
+  modifiedArtNrsInStep5=new Set();
   const sys=(soSeKuJSON.system||'').toUpperCase();
 
   // 5A: Segeltuch
@@ -1810,6 +1818,7 @@ function applyPrices5(){
         const wa=fragebogen.wandart==='freistehend'?'ziegel-10':(fragebogen.wandart||'ziegel-10');
         pos.beschreibung=wdesc[wa]||wdesc['ziegel-10'];
         pos._modified=true;
+        if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
       }
     });
   }
@@ -1828,6 +1837,7 @@ function applyPrices5(){
           pos.gesamt=pos.preis_einheit*Math.max(1,Math.round(pl.menge));
           pos.beschreibung=`inkl. ${apPerUnit} Klebeanker`;
           pos._modified=true;
+          if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
         }
       });
     }
@@ -1846,6 +1856,7 @@ function applyPrices5(){
       sfPos.preis_einheit=prices5.schraubfundament;
       sfPos.gesamt=sfG;
       sfPos._modified=true;
+      modifiedArtNrsInStep5.add('00E13000227');
     }
   }
 
@@ -1902,30 +1913,34 @@ function renderStep6(){
   const delta=nettoT-solidayTotal;
   const deltaSign=delta>=0?'+':'';
 
-  // Summenvergleich: nur unveränderte Positionen (ohne Segeltuch, ohne _modified, ohne _gs)
-  // Unverändert in transformedData = Positionen mit unverändertem Soliday-Preis
+  // Summenvergleich: nur Positionen die in Schritt 5 NICHT im Preis verändert wurden
+  // Segeltuch komplett ausschließen, _gs (Platzhalter) ausschließen
   const unmodArtNrs=new Set();
   for(const sek of transformedData.sektionen){
     if(sek.id==='segeltuch') continue;
     for(const p of sek.positionen){
-      if(!p._gs&&!p._modified&&p.artikelnummer) unmodArtNrs.add(p.artikelnummer);
+      if(!p._gs&&p.artikelnummer&&!modifiedArtNrsInStep5.has(p.artikelnummer)){
+        unmodArtNrs.add(p.artikelnummer);
+      }
     }
   }
-  // SoSeKu-Summe: Original-Positionen deren Art.-Nr. unverändert übernommen wurden
+  // SoSeKu-Summe: Original-Positionen für unveränderte Art.-Nrn.
   let unmodSoSeKu=0;
   const soSeKuByArtNr={};
   for(const p of (soSeKuJSON.positionen||[])){
+    if(!p.artikelnummer) continue;
     if(!soSeKuByArtNr[p.artikelnummer]) soSeKuByArtNr[p.artikelnummer]=0;
     soSeKuByArtNr[p.artikelnummer]+=Number(p.gesamt||0);
   }
-  for(const nr of unmodArtNrs) unmodSoSeKu+=soSeKuByArtNr[nr]||0;
-  // sevdesk-Summe: gleiche unveränderte Positionen im finalen JSON
+  for(const nr of unmodArtNrs) unmodSoSeKu=Math.round((unmodSoSeKu+(soSeKuByArtNr[nr]||0))*100)/100;
+  // sevdesk-Summe: gleiche unveränderte Art.-Nrn. im transformierten JSON
   let unmodSevdesk=0;
   for(const sek of transformedData.sektionen){
     if(sek.id==='segeltuch') continue;
     for(const p of sek.positionen){
-      if(!p._gs&&!p._modified&&p.artikelnummer&&unmodArtNrs.has(p.artikelnummer))
-        unmodSevdesk+=Number(p.gesamt||0);
+      if(!p._gs&&p.artikelnummer&&unmodArtNrs.has(p.artikelnummer)){
+        unmodSevdesk=Math.round((unmodSevdesk+Number(p.gesamt||0))*100)/100;
+      }
     }
   }
   const unmodDelta=Math.round((unmodSevdesk-unmodSoSeKu)*100)/100;
