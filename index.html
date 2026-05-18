@@ -191,7 +191,7 @@ main{margin:0 auto;padding:20px 14px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 18:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-18 18:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -398,9 +398,12 @@ main{margin:0 auto;padding:20px 14px}
 <!-- STEP 7: Rounding preview -->
 <div id="viewStep7" class="hidden view-pinned">
   <div class="view-scroll" id="s7content"></div>
-  <div class="btn-row">
+  <div class="btn-row" style="align-items:flex-end">
     <button class="btn btn-s" onclick="showView('viewStep6');setStep(6)">&larr; Zur&uuml;ck</button>
-    <button class="btn btn-p" onclick="goToStep8()" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding-top:8px;padding-bottom:8px"><span style="font-size:22px;line-height:1">&#128228;</span><span>Jetzt importieren &rarr;</span></button>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+      <span style="font-size:32px;line-height:1">&#128228;</span>
+      <button class="btn btn-p" onclick="goToStep8()">Jetzt importieren &rarr;</button>
+    </div>
   </div>
 </div>
 
@@ -745,11 +748,11 @@ function motorKabelName(name){
   const lenM=name.match(/(\d+)\s*m/i);
   const len=lenM?lenM[1]:'?';
   const color=l.includes('schw')?'schwarz':'weiß';
-  return`Anschlussleitung Becker Motor ${len}m ${color}`;
+  return`Anschlussleitung Motor ${len}m ${color}`;
 }
 const NAMEN={
   '00E13002183':'Aufpreis für Rohrmotor mit Funkempfänger',
-  '00E13000850':'Anschlussleitung Becker Motor 2m weiß',
+  '00E13000850':'Anschlussleitung Motor 2m weiß',
   '00E13001921':'Funk-Handsender 1-Kanal - SWC541+',
   '00E13001922':'Funk-Handsender 8-Kanal - SWC548+',
   '71003A045':'Sonnen- Windsensor mit Solarzelle - Funk - SC861+',
@@ -881,9 +884,11 @@ function transformiere(json){
   const removed=[];
   let pos=json.positionen.filter(p=>{if(WEGLASS.includes(p.artikelnummer)){removed.push({...p});return false;}return true;});
   const WINTER_NR=['73004A001','71004A010','71004A011','70004A007'];
+  const FRACHT_NR=['99FRACHT5','99FRACHT6'];
   pos=pos.map(p=>{const p2={...p};
     p2.beschreibung=BESCHREIBUNG[p2.artikelnummer]||'';
     if(WINTER_NR.includes(p2.artikelnummer)){const mm=Number(json.wellenlaenge_aufrollsystem_mm||0);const m=mm>0?Math.ceil(mm/1000):'?';const prem=['71004A011','70004A007'].includes(p2.artikelnummer);p2.name=`Winter-Schutzhülle${prem?' Premium':''} - ${m}m / Austrosail - stone`;p2.einheit='Stk.';}
+    else if(FRACHT_NR.includes(p2.artikelnummer)){if(NAMEN[p2.artikelnummer])p2.name=NAMEN[p2.artikelnummer];p2.einheit='pauschal';}
     else if(NAMEN[p2.artikelnummer]){p2.name=NAMEN[p2.artikelnummer];}
     else{
       const an=isAufrollsystem(p2.artikelnummer)?aufrollName(p2.artikelnummer,sys,welleM):null;
@@ -1863,10 +1868,16 @@ function applyPrices5(){
   // 5C: Montage
   const mSek=transformedData.sektionen.find(s=>s.id==='montage');
   if(mSek){
+    const isCCS=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys);
     _gsMonPos.forEach((orig,mi)=>{
       const p=parseFloat(document.getElementById(`mP${mi}`)?.value||'0')||0;
       const pos=mSek.positionen.find(pp=>pp.artikelnummer===orig.artikelnummer);
-      if(pos){pos.preis_einheit=p;pos.gesamt=p;pos._gs=false;}
+      if(pos){
+        pos.preis_einheit=p;pos.gesamt=p;pos._gs=false;
+        if(orig.artikelnummer==='VORFRACHT'&&fragebogen.montage!==false){
+          pos.beschreibung='Baustromgestellung bauseits: 230V - 16A'+(isCCS?'\nElektrische Anschlüsse sind bauseits vorzunehmen.':'');
+        }
+      }
     });
     if(fragebogen.dachterrasse&&!mSek.positionen.find(p=>p.artikelnummer==='DACH')){
       const dp=parseFloat(document.getElementById('mDach')?.value||'0')||0;
