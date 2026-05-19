@@ -91,8 +91,17 @@ main{margin:0 auto;padding:20px 14px 48px}
 .jtable col.col-nr{width:110px}.jtable col.col-qty{width:62px}.jtable col.col-unit{width:48px}.jtable col.col-pe{width:84px}.jtable col.col-tot{width:84px}
 .sum-compare{margin-bottom:18px}
 #viewStep3{display:flex;flex-direction:column}
-.s3-header{max-width:860px;margin:0 auto;width:100%;flex-shrink:0}
-.s3-content{max-width:860px;margin:0 auto;width:100%;padding-bottom:14px}
+.s3-header{width:100%;flex-shrink:0}
+.s3-content{width:100%;padding-bottom:14px}
+.s3-layout{display:flex;gap:16px;align-items:flex-start;width:100%}
+.s3-left{flex:1;min-width:0}
+.s3-right{width:205px;flex-shrink:0;position:sticky;top:16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;max-height:calc(100vh - 140px);overflow-y:auto}
+.s3-weg-hdr{font-size:9.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.s3-weg-row{display:flex;align-items:flex-start;gap:5px;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer;line-height:1.3}
+.s3-weg-row:last-child{border-bottom:none}
+.s3-weg-row.auto-weg{opacity:.38;cursor:default}
+.s3-weg-row input[type=checkbox]{flex-shrink:0;margin-top:2px}
+.s3-weg-name{font-size:10px;flex:1;color:var(--text)}
 .s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
 .s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
 .s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:flex-start}
@@ -193,7 +202,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 10:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 10:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -296,14 +305,18 @@ main{margin:0 auto;padding:20px 14px 48px}
     <div class="sum-compare" id="s3sum"></div>
   </div>
   <div class="s3-content">
-    <div id="s3sektionen"></div>
-    <div id="s3manualWeg" style="max-width:860px;margin:12px auto 0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px"></div>
-    <div class="chat-wrap">
-      <div class="chat-lbl">Korrektur-Hinweis (l&ouml;st Neuextraktion aus):</div>
-      <div class="chat-row">
-        <textarea id="chatStep3" placeholder="z.B. Wandplatte geh&ouml;rt zu Wandbefestigungen"></textarea>
-        <button class="btn btn-s" onclick="retransform()">&circlearrowleft; Nochmal</button>
+    <div class="s3-layout">
+      <div class="s3-left">
+        <div id="s3sektionen"></div>
+        <div class="chat-wrap">
+          <div class="chat-lbl">Korrektur-Hinweis (l&ouml;st Neuextraktion aus):</div>
+          <div class="chat-row">
+            <textarea id="chatStep3" placeholder="z.B. Wandplatte geh&ouml;rt zu Wandbefestigungen"></textarea>
+            <button class="btn btn-s" onclick="retransform()">&circlearrowleft; Nochmal</button>
+          </div>
+        </div>
       </div>
+      <div id="s3manualWeg" class="s3-right"></div>
     </div>
   </div>
   <div class="btn-row">
@@ -1027,14 +1040,13 @@ function renderStep3(){
     const isManWeg=manualWeglass.has(String(p.pos));
     const checked=!(isAutoWeg||isManWeg);
     const disabled=isAutoWeg?'disabled':'';
-    const lbl=isAutoWeg?'<span style="color:var(--muted);font-style:italic">automatisch entfernt</span>':'';
-    return `<label style="display:flex;align-items:flex-start;gap:6px;cursor:${isAutoWeg?'default':'pointer'};opacity:${isAutoWeg?.45:1}">
-      <input type="checkbox" ${checked?'checked':''} ${disabled} onchange="toggleManualWeglass(${p.pos},this.checked)" style="margin-top:2px;flex-shrink:0">
-      <span><span class="tag" style="font-size:9px">${p.pos}</span> <span style="font-size:10px;color:var(--muted)">${p.artikelnummer||'–'}</span> <span style="font-size:11px">${p.name}</span> ${lbl}</span>
+    return `<label class="s3-weg-row${isAutoWeg?' auto-weg':''}" title="${p.artikelnummer?p.artikelnummer+' – ':''} ${p.name}">
+      <input type="checkbox" ${checked?'checked':''} ${disabled} onchange="toggleManualWeglass(${p.pos},this.checked)">
+      <span class="s3-weg-name">${p.name}</span>
     </label>`;
   }).join('');
   document.getElementById('s3manualWeg').innerHTML=
-    `<div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Positionen manuell entfernen</div>`+wegRows;
+    `<div class="s3-weg-hdr">Positionen</div>`+wegRows;
   showView('viewStep3');setStep(3);
 }
 
