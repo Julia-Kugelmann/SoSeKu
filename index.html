@@ -196,7 +196,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 12:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 12:45</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -705,7 +705,9 @@ function renderStep2(){
     badge.innerHTML=`<div class="val-err">&#10005; Abweichung ${fmtE(v.diff)} – bitte manuell prüfen</div>`;
   }else{
     extractAttempts=0;
-    badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen</div>`;
+    const totalQm=d.positionen.reduce((s,p)=>s+(p.qm_segel||0),0);
+    const qmStr=totalQm>0?` &nbsp;·&nbsp; ${totalQm.toLocaleString('de-DE',{maximumFractionDigits:2})} m² Segel`:'';
+    badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen${qmStr}</div>`;
   }
   document.getElementById('s2info').innerHTML=
     `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:12px 12px 0 0;border-bottom:1px solid var(--border)">
@@ -1809,7 +1811,7 @@ function applyPrices5(){
       const si=parseInt(document.getElementById('sailStoffSel')?.value||'0');
       const p=parseFloat(document.getElementById('sailManPreis')?.value||'0')||0;
       const sn=stoffe0[si]?.name||stoffe0[0]?.name||'Austrosail Nano';
-      const altDesc='Alternativ:\n'+stoffe0.map((s,fi)=>{if(fi===si)return null;const t=+(2*s.preis).toFixed(2);return `${fmtE(t)} ${s.name}`;}).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
+      const altDesc='Alternativ:\n'+stoffe0.map((s,fi)=>{if(fi===si)return null;const t=Math.ceil(2*s.preis);return `${fmtE(t)} ${s.name}`;}).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
       newSail=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:altDesc,preis_einheit:p,menge:1,einheit:'Stk.',gesamt:p}];
     } else {
       newSail=_sailPos.map((sail,si)=>{
@@ -1824,7 +1826,7 @@ function applyPrices5(){
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
         const desc='Alternativ:\n'+stoffe.map((s,fi)=>{
           if(fi===sel)return null;
-          const tot=+(bQm*(allP[fi]||0)).toFixed(2);
+          const tot=Math.ceil(bQm*(allP[fi]||0));
           return `${fmtE(tot)} ${s.name}`;
         }).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
         return{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:t,menge:1,einheit:'Stk.',gesamt:t};
