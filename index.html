@@ -196,7 +196,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 11:45</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 12:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1469,9 +1469,9 @@ function renderStep5(){
   const sailCount2=Math.max(1,_sailPos.length||1);
   const sailH2=mk2?.ok?(mk2.grundpreis+Math.max(0,sailCount2-1)*mk2.weiteresSegel):0;
   const uses18=(fragebogen.wandart||'').includes('18');
-  let apH2Wand=0,apCnt2Wand=0,apH2Boden=0,apCnt2Boden=0;
-  (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Wand+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2Wand+=a*n;});
-  (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Boden+=a*n*(mk2?.ap10||0);apCnt2Boden+=a*n;});
+  let apH2Wand=0,apCnt2Wand=0,apH2Boden=0,apCnt2Boden=0,totalMengeWand2=0,totalMengeB2=0;
+  (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Wand+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2Wand+=a*n;totalMengeWand2+=n;});
+  (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Boden+=a*n*(mk2?.ap10||0);apCnt2Boden+=a*n;totalMengeB2+=n;});
   const apH2=apH2Wand+apH2Boden,apCnt2=apCnt2Wand+apCnt2Boden;
   const fSekD=transformedData?.sektionen.find(s=>s.id==='fundamente');
   const sfCnt2=fSekD?fSekD.positionen.filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0):0;
@@ -1615,8 +1615,8 @@ function renderStep5(){
     const mi=monPosIdx[instPos.artikelnummer];
     const gp=gsMonPreis(instPos.artikelnummer);
     const plateParts=[];
-    if(_wandpl.length>0)plateParts.push(`${_wandpl.length}x Wandplatte`);
-    if(_bodenpl.length>0)plateParts.push(`${_bodenpl.length}x Bodenplatte`);
+    if(totalMengeWand2>0)plateParts.push(`${totalMengeWand2}x Wandplatte`);
+    if(totalMengeB2>0)plateParts.push(`${totalMengeB2}x Bodenplatte`);
     const sfHdr=sfCnt2>0?`${sfCnt2}x Erdschraube`:'';
     const hdrChips=[`${wellenM2}m Welle`,plateParts.join(' '),sfHdr].filter(Boolean).join('<br>');
     h+=`<div class="s5-card">
@@ -1631,8 +1631,8 @@ function renderStep5(){
         </div>
         ${mk2?.ok?`<div class="s5-calc-detail">
           <div>Segel (${sailCount2}${sailCount2>1?` Stk. · GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
-          ${apCnt2Wand>0?`<div>${_wandpl.length} Wandplatten (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
-          ${apCnt2Boden>0?`<div>${_bodenpl.length} Bodenplatten (${apCnt2Boden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${apH2Boden.toFixed(2)}h</div>`:''}
+          ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
+          ${apCnt2Boden>0?`<div>${totalMengeB2}x Bodenplatte (${apCnt2Boden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${apH2Boden.toFixed(2)}h</div>`:''}
           ${sfCnt2>0?`<div>Schraubfundamente (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
           ${verbCnt2>0?`<div>Wellen-Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
         </div>
