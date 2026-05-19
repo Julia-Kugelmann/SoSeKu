@@ -87,6 +87,8 @@ main{margin:0 auto;padding:20px 14px 48px}
 .sektion-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:9px 14px;background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.15);border-radius:10px 10px 0 0;color:var(--accent)}
 .sektion-body{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:18px}
 .sek-hdr-row td{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;padding:8px 14px;background:rgba(91,141,238,.08);color:var(--accent);border-bottom:1px solid rgba(91,141,238,.15)}
+.sek-hdr-row.excl td{background:rgba(255,107,107,.08);color:var(--error);border-bottom:1px solid rgba(255,107,107,.15)}
+.s3-row-excl td{opacity:.5;text-decoration:line-through;background:rgba(255,107,107,.04)}
 .sek-hdr-row+tr td,.sek-hdr-row td{border-top:none}
 .jtable col.col-nr{width:110px}.jtable col.col-qty{width:62px}.jtable col.col-unit{width:48px}.jtable col.col-pe{width:84px}.jtable col.col-tot{width:84px}
 .sum-compare{margin-bottom:18px}
@@ -94,7 +96,6 @@ main{margin:0 auto;padding:20px 14px 48px}
 .s3-header{max-width:860px;margin:0 auto;width:100%;flex-shrink:0}
 .s3-content{max-width:860px;margin:0 auto;width:100%;padding-bottom:14px}
 .jtable col.col-cb{width:28px}
-.s3-row-excl td{opacity:.38;text-decoration:line-through}
 .s3-sum-wrap{display:flex;align-items:stretch;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:18px;flex-wrap:wrap}
 .s3-sum-left{padding:16px 20px;min-width:170px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:flex-start}
 .s3-sum-right{padding:16px 20px;flex:1;min-width:220px;display:flex;flex-direction:column;justify-content:flex-start}
@@ -195,7 +196,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 11:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 11:15</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1024,7 +1025,7 @@ function renderStep3(){
     :'';
   const _row=(p)=>`<tr><td>${_cb(p)}</td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td><div>${p.name}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td><td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
   const exclRows=manExcl.length
-    ?`<tr class="sek-hdr-row"><td colspan="7">Manuell entfernt</td></tr>`
+    ?`<tr class="sek-hdr-row excl"><td colspan="7">Manuell entfernt</td></tr>`
      +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked)" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
     :'';
   document.getElementById('s3sektionen').innerHTML=
