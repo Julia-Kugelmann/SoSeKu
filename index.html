@@ -211,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-20 23:55</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -2367,16 +2367,12 @@ function initAdresseMode(){
   else{setTimeout(()=>{const ta=document.getElementById('adrText');if(ta)ta.focus();},200);}
 }
 let _adrPasteTimer=null;
-function adrTryClose(delay=1800){
+function adrTryClose(){
   setTimeout(()=>{
     window.close();
-    setTimeout(()=>{
-      if(!window.closed){
-        const btn=document.getElementById('adrCloseBtn');
-        if(btn)btn.style.display='';
-      }
-    },400);
-  },delay);
+    const btn=document.getElementById('adrCloseBtn');
+    if(btn)btn.style.display='';
+  },600);
 }
 function adrReset(){
   ['adrStatus','adrForm','adrDone','adrDupWarn','adrList'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('hidden');el.innerHTML='';}});
