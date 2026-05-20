@@ -211,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 14:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 15:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -449,10 +449,13 @@ main{margin:0 auto;padding:20px 14px 48px}
       <div class="adr-title">Adresse importieren</div>
       <div class="adr-sub">Email-Text &rarr; Claude &rarr; sevdesk Kontakt</div>
     </div>
-    <div id="adrPaste" class="adr-paste">
-      <div class="adr-paste-icon">&#128203;</div>
-      <div style="font-size:13px;color:var(--muted)">Email-Text aus Zwischenablage einfügen</div>
-      <button class="btn btn-p" onclick="adrPaste()">Einfügen &amp; Extrahieren</button>
+    <div id="adrPaste">
+      <textarea id="adrText" placeholder="Email-Text hier einfügen (Cmd+V / Einf&uuml;gen)&#10;&#10;Extraktion startet automatisch beim Einf&uuml;gen."
+        style="width:100%;height:160px;box-sizing:border-box;background:var(--surface);border:2px dashed var(--border);border-radius:12px;padding:16px;font-size:13px;color:var(--text);resize:vertical;line-height:1.6"
+        oninput="adrOnInput(this.value)"></textarea>
+      <div class="btn-row" style="margin-top:10px;justify-content:flex-end">
+        <button class="btn btn-p" onclick="adrManual()">Extrahieren &rarr;</button>
+      </div>
     </div>
     <div id="adrStatus" class="adr-status hidden"></div>
     <div id="adrForm" class="hidden">
@@ -2356,19 +2359,26 @@ function initAdresseMode(){
   const params=new URLSearchParams(location.search);
   const text=params.get('text');
   if(text&&text.trim()){adrExtract(text.trim());}
+  else{setTimeout(()=>{const ta=document.getElementById('adrText');if(ta)ta.focus();},200);}
 }
+let _adrPasteTimer=null;
 function adrReset(){
   ['adrStatus','adrForm','adrDone'].forEach(id=>document.getElementById(id).classList.add('hidden'));
   document.getElementById('adrPaste').classList.remove('hidden');
+  const ta=document.getElementById('adrText');if(ta)ta.value='';
   ['aFirma','aVname','aNname','aStr','aPlz','aOrt','aTel','aMail'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('aLand').value='Deutschland';
+  if(ta)setTimeout(()=>ta.focus(),100);
 }
-async function adrPaste(){
-  try{
-    const text=await navigator.clipboard.readText();
-    if(!text.trim()){adrStatus('Zwischenablage ist leer','err');return;}
-    adrExtract(text.trim());
-  }catch(e){adrStatus('Clipboard-Zugriff verweigert – bitte Text manuell einfügen','err');}
+function adrOnInput(val){
+  // auto-fire 400ms after user stops typing/pasting
+  clearTimeout(_adrPasteTimer);
+  if(val.trim().length>30)_adrPasteTimer=setTimeout(()=>adrExtract(val.trim()),400);
+}
+function adrManual(){
+  const val=(document.getElementById('adrText')?.value||'').trim();
+  if(!val){adrStatus('Bitte zuerst Email-Text einfügen','err');return;}
+  adrExtract(val);
 }
 function adrStatus(msg,type){
   const el=document.getElementById('adrStatus');
@@ -2377,6 +2387,7 @@ function adrStatus(msg,type){
   el.textContent=msg;
 }
 async function adrExtract(text){
+  clearTimeout(_adrPasteTimer);
   document.getElementById('adrPaste').classList.add('hidden');
   adrStatus('Claude liest Adresse aus…','');
   const{anthropic}=getKeys();
@@ -2411,7 +2422,7 @@ ${text}`;
     document.getElementById('aMail').value=j.email||'';
     document.getElementById('adrStatus').classList.add('hidden');
     document.getElementById('adrForm').classList.remove('hidden');
-  }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrPaste').classList.remove('hidden');}
+  }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrPaste').classList.remove('hidden');document.getElementById('adrForm').classList.add('hidden');}
 }
 async function adrImport(){
   const{sevdesk}=getKeys();
