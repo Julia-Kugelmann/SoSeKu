@@ -211,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 16:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 16:15</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -2427,27 +2427,44 @@ ${text}`;
 }
 function adrContactLabel(c){
   const name=[c.firma,([c.vorname,c.nachname].filter(Boolean).join(' '))].filter(Boolean).join(' · ');
-  const details=[c.strasse,[c.plz,c.ort].filter(Boolean).join(' '),c.email,c.telefon].filter(Boolean).join(' · ');
-  return{name,details};
+  return{name};
+}
+const _adrF=['firma','vorname','nachname','strasse','plz','ort','land','telefon','email'];
+function adrReadCard(i){
+  const obj={};
+  _adrF.forEach(f=>{const el=document.getElementById(`ac_${i}_${f}`);obj[f]=el?el.value.trim():'';});
+  return obj;
 }
 function adrRenderList(){
   const el=document.getElementById('adrList');
-  el.innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+_adrContacts.length+' Kontakte erkannt — nicht benötigte entfernen:</div>';
+  el.innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+_adrContacts.length+' Kontakte — Felder direkt bearbeitbar, × zum Entfernen:</div>';
   _adrContacts.forEach((c,i)=>{
-    const{name,details}=adrContactLabel(c);
+    const inp=(f,placeholder,span)=>`<div style="flex:${span||1}"><input id="ac_${i}_${f}" value="${(c[f]||'').replace(/"/g,'&quot;')}" placeholder="${placeholder}" style="width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:12px;color:var(--text)"></div>`;
     const card=document.createElement('div');
-    card.style.cssText='display:flex;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px';
-    card.innerHTML=`<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${name||'(Unbekannt)'}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${details||'–'}</div></div><button onclick="adrRemoveContact(${i})" style="background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;flex-shrink:0;padding:0 4px" title="Entfernen">&times;</button>`;
+    card.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:8px';
+    card.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.06em">Kontakt ${i+1}</span>
+        <button onclick="adrRemoveContact(${i})" style="background:none;border:none;color:var(--muted);font-size:20px;line-height:1;cursor:pointer;padding:0 2px">&times;</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;gap:5px">${inp('firma','Firma',2)}${inp('vorname','Vorname')}${inp('nachname','Nachname')}</div>
+        <div style="display:flex;gap:5px">${inp('strasse','Straße',3)}${inp('plz','PLZ')}</div>
+        <div style="display:flex;gap:5px">${inp('ort','Ort',2)}${inp('land','Land')}</div>
+        <div style="display:flex;gap:5px">${inp('telefon','Telefon')}${inp('email','E-Mail',2)}</div>
+      </div>`;
     el.appendChild(card);
   });
   const btnRow=document.createElement('div');
   btnRow.className='btn-row';
   btnRow.style.marginTop='12px';
-  btnRow.innerHTML=`<button class="btn btn-s" onclick="adrReset()">&#8635; Neu</button><button class="btn btn-p" id="adrImportAllBtn" onclick="adrImportAll()">${_adrContacts.length} Kontakte importieren &rarr;</button>`;
+  btnRow.innerHTML=`<button class="btn btn-s" onclick="adrReset()">&#8635; Neu</button><button class="btn btn-p" onclick="adrImportAll()">${_adrContacts.length} Kontakte importieren &rarr;</button>`;
   el.appendChild(btnRow);
   el.classList.remove('hidden');
 }
 function adrRemoveContact(i){
+  // sync current input values back before removing
+  _adrContacts.forEach((_,j)=>{if(j!==i)_adrContacts[j]={..._adrContacts[j],...adrReadCard(j)};});
   _adrContacts.splice(i,1);
   if(_adrContacts.length===0){adrReset();return;}
   if(_adrContacts.length===1){
@@ -2459,6 +2476,8 @@ function adrRemoveContact(i){
   adrRenderList();
 }
 async function adrImportAll(){
+  // sync all card inputs into _adrContacts before importing
+  _adrContacts.forEach((_,i)=>_adrContacts[i]={..._adrContacts[i],...adrReadCard(i)});
   document.getElementById('adrList').classList.add('hidden');
   const results=[];
   for(let i=0;i<_adrContacts.length;i++){
