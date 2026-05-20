@@ -211,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 00:10</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -488,7 +488,6 @@ main{margin:0 auto;padding:20px 14px 48px}
     <div id="adrDone" class="adr-done hidden">
       <div class="adr-done-icon">&#9989;</div>
       <div id="adrDoneLinks" style="display:flex;flex-direction:column;gap:6px;width:100%;text-align:left"></div>
-      <button id="adrCloseBtn" class="btn btn-p" style="display:none;margin-top:4px" onclick="window.close()">Tab schließen ×</button>
       <button class="btn btn-s" style="margin-top:8px" onclick="adrReset()">Neue Adresse</button>
     </div>
   </div>
@@ -2367,27 +2366,6 @@ function initAdresseMode(){
   else{setTimeout(()=>{const ta=document.getElementById('adrText');if(ta)ta.focus();},200);}
 }
 let _adrPasteTimer=null;
-function adrTryClose(){
-  setTimeout(()=>{
-    // Trick 1: open self then close (less strictly checked on iOS)
-    try{window.open('','_self').close();}catch(e){}
-    // Trick 2: standard close
-    window.close();
-    // Trick 3: if still open, wipe history so back-navigation closes the tab
-    setTimeout(()=>{
-      if(!window.closed){
-        try{history.go(-(history.length+1));}catch(e){}
-      }
-    },200);
-    // Fallback: show close button
-    setTimeout(()=>{
-      if(!window.closed){
-        const btn=document.getElementById('adrCloseBtn');
-        if(btn)btn.style.display='';
-      }
-    },600);
-  },600);
-}
 function adrReset(){
   ['adrStatus','adrForm','adrDone','adrDupWarn','adrList'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('hidden');el.innerHTML='';}});
   document.getElementById('adrPaste').classList.remove('hidden');
@@ -2512,11 +2490,10 @@ async function adrImportAll(){
   const links=results.map(({c,res})=>{
     const{name}=adrContactLabel(c);
     if(res.err)return`<div style="color:var(--error);font-size:12px">✗ ${name||'?'}: ${res.err}</div>`;
-    return`<div style="font-size:13px">✓ <a href="https://my.sevdesk.de/#/contacts/detail/id/${res.id}" target="_blank" style="color:var(--accent2)">${name||res.id}</a></div>`;
+    return`<div style="font-size:13px;font-weight:600;color:var(--accent2)">✓ ${name||res.id}</div>`;
   }).join('');
   document.getElementById('adrDoneLinks').innerHTML=links;
   document.getElementById('adrDone').classList.remove('hidden');
-  adrTryClose();
 }
 let _adrContacts=[],_adrIdx=0;
 function adrFillForm(j){
@@ -2590,9 +2567,8 @@ async function adrDoCreate(batch=false){
     if(batch)return{id:cid};
     document.getElementById('adrStatus').classList.add('hidden');
     const dispName=firma||(vname+' '+nname).trim();
-    document.getElementById('adrDoneLinks').innerHTML=`<div style="font-size:14px;font-weight:600;color:var(--accent2)">✓ ${dispName}</div><a href="https://my.sevdesk.de/#/contacts/detail/id/${cid}" target="_blank" class="done-link">In sevdesk öffnen →</a>`;
+    document.getElementById('adrDoneLinks').innerHTML=`<div style="font-size:14px;font-weight:600;color:var(--accent2)">✓ ${dispName}</div>`;
     document.getElementById('adrDone').classList.remove('hidden');
-    adrTryClose();
     return{id:cid};
   }catch(e){
     if(batch)return{err:e.message};
