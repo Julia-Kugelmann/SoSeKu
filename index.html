@@ -211,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-20</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-20 23:42</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -2564,7 +2564,9 @@ async function adrDoCreate(batch=false){
     return d.objects||d;
   };
   try{
-    const contactBody={category:{id:'5',objectName:'Category'}};
+    const contactBody={};
+    const catR=await fetch(`https://my.sevdesk.de/api/v1/Category?objectType=Contact&limit=100`,{headers:{'Authorization':sevdesk}});
+    if(catR.ok){const catD=await catR.json();const interessent=(catD.objects||[]).find(c=>/interessent/i.test(c.name||''));if(interessent)contactBody.category={id:interessent.id,objectName:'Category'};}
     if(firma)contactBody.name=firma;
     if(vname)contactBody.surename=vname;
     if(nname)contactBody.familyname=nname;
