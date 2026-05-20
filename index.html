@@ -211,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 15:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 16:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -458,11 +458,10 @@ main{margin:0 auto;padding:20px 14px 48px}
       </div>
     </div>
     <div id="adrStatus" class="adr-status hidden"></div>
-    <div id="adrDupWarn" class="hidden" style="background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.3);border-radius:10px;padding:16px"></div>
+    <!-- multi-contact selection list -->
+    <div id="adrList" class="hidden"></div>
+    <!-- single-contact edit form -->
     <div id="adrForm" class="hidden">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:11px;color:var(--muted)" id="adrCounter"></span>
-      </div>
       <div class="adr-form">
         <div class="adr-row"><label>Firma</label><input id="aFirma" type="text"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -483,13 +482,13 @@ main{margin:0 auto;padding:20px 14px 48px}
         <button class="btn btn-p" onclick="adrImport()">In sevdesk anlegen &rarr;</button>
       </div>
     </div>
+    <!-- duplicate warning (injected dynamically) -->
+    <div id="adrDupWarn" class="hidden" style="background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.3);border-radius:10px;padding:16px"></div>
+    <!-- success -->
     <div id="adrDone" class="adr-done hidden">
       <div class="adr-done-icon">&#9989;</div>
-      <div style="font-size:16px;font-weight:700;color:var(--accent2)" id="adrDoneName"></div>
-      <div style="font-size:12px;color:var(--muted)">Interessent wurde in sevdesk angelegt</div>
-      <a id="adrDoneLink" href="#" target="_blank" class="done-link">In sevdesk öffnen &rarr;</a>
-      <button id="adrNextBtn" class="btn btn-p" style="display:none" onclick="adrNextContact()">Nächster Kontakt &rarr;</button>
-      <button class="btn btn-s" style="margin-top:4px" onclick="adrReset()">Neue Adresse</button>
+      <div id="adrDoneLinks" style="display:flex;flex-direction:column;gap:6px;width:100%;text-align:left"></div>
+      <button class="btn btn-s" style="margin-top:8px" onclick="adrReset()">Neue Adresse</button>
     </div>
   </div>
 </div>
@@ -2368,17 +2367,14 @@ function initAdresseMode(){
 }
 let _adrPasteTimer=null;
 function adrReset(){
-  ['adrStatus','adrForm','adrDone','adrDupWarn'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('hidden');el.innerHTML=id==='adrDupWarn'?'':el.innerHTML;}});
-  document.getElementById('adrDupWarn').innerHTML='';
+  ['adrStatus','adrForm','adrDone','adrDupWarn','adrList'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('hidden');el.innerHTML='';}});
   document.getElementById('adrPaste').classList.remove('hidden');
   const ta=document.getElementById('adrText');if(ta)ta.value='';
   ['aFirma','aVname','aNname','aStr','aPlz','aOrt','aTel','aMail','aLand'].forEach(id=>document.getElementById(id).value='');
-  const ctr=document.getElementById('adrCounter');if(ctr)ctr.textContent='';
   _adrContacts=[];_adrIdx=0;
   if(ta)setTimeout(()=>ta.focus(),100);
 }
 function adrOnInput(val){
-  // auto-fire 400ms after user stops typing/pasting
   clearTimeout(_adrPasteTimer);
   if(val.trim().length>30)_adrPasteTimer=setTimeout(()=>adrExtract(val.trim()),400);
 }
@@ -2420,10 +2416,65 @@ ${text}`;
     _adrContacts=JSON.parse(m[0]);
     if(!_adrContacts.length)throw new Error('Keine Kontakte erkannt');
     _adrIdx=0;
-    adrFillForm(_adrContacts[0]);
     document.getElementById('adrStatus').classList.add('hidden');
+    if(_adrContacts.length===1){
+      adrFillForm(_adrContacts[0]);
+      document.getElementById('adrForm').classList.remove('hidden');
+    } else {
+      adrRenderList();
+    }
+  }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrPaste').classList.remove('hidden');}
+}
+function adrContactLabel(c){
+  const name=[c.firma,([c.vorname,c.nachname].filter(Boolean).join(' '))].filter(Boolean).join(' · ');
+  const details=[c.strasse,[c.plz,c.ort].filter(Boolean).join(' '),c.email,c.telefon].filter(Boolean).join(' · ');
+  return{name,details};
+}
+function adrRenderList(){
+  const el=document.getElementById('adrList');
+  el.innerHTML='<div style="font-size:11px;color:var(--muted);margin-bottom:10px">'+_adrContacts.length+' Kontakte erkannt — nicht benötigte entfernen:</div>';
+  _adrContacts.forEach((c,i)=>{
+    const{name,details}=adrContactLabel(c);
+    const card=document.createElement('div');
+    card.style.cssText='display:flex;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px';
+    card.innerHTML=`<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:600">${name||'(Unbekannt)'}</div><div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${details||'–'}</div></div><button onclick="adrRemoveContact(${i})" style="background:none;border:none;color:var(--muted);font-size:18px;line-height:1;cursor:pointer;flex-shrink:0;padding:0 4px" title="Entfernen">&times;</button>`;
+    el.appendChild(card);
+  });
+  const btnRow=document.createElement('div');
+  btnRow.className='btn-row';
+  btnRow.style.marginTop='12px';
+  btnRow.innerHTML=`<button class="btn btn-s" onclick="adrReset()">&#8635; Neu</button><button class="btn btn-p" id="adrImportAllBtn" onclick="adrImportAll()">${_adrContacts.length} Kontakte importieren &rarr;</button>`;
+  el.appendChild(btnRow);
+  el.classList.remove('hidden');
+}
+function adrRemoveContact(i){
+  _adrContacts.splice(i,1);
+  if(_adrContacts.length===0){adrReset();return;}
+  if(_adrContacts.length===1){
+    document.getElementById('adrList').classList.add('hidden');
+    adrFillForm(_adrContacts[0]);
     document.getElementById('adrForm').classList.remove('hidden');
-  }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrPaste').classList.remove('hidden');document.getElementById('adrForm').classList.add('hidden');}
+    return;
+  }
+  adrRenderList();
+}
+async function adrImportAll(){
+  document.getElementById('adrList').classList.add('hidden');
+  const results=[];
+  for(let i=0;i<_adrContacts.length;i++){
+    adrStatus(`Importiere ${i+1} von ${_adrContacts.length}…`,'');
+    adrFillForm(_adrContacts[i]);
+    const res=await adrDoCreate(true);
+    results.push({c:_adrContacts[i],res});
+  }
+  document.getElementById('adrStatus').classList.add('hidden');
+  const links=results.map(({c,res})=>{
+    const{name}=adrContactLabel(c);
+    if(res.err)return`<div style="color:var(--error);font-size:12px">✗ ${name||'?'}: ${res.err}</div>`;
+    return`<div style="font-size:13px">✓ <a href="https://my.sevdesk.de/#/contacts/detail/id/${res.id}" target="_blank" style="color:var(--accent2)">${name||res.id}</a></div>`;
+  }).join('');
+  document.getElementById('adrDoneLinks').innerHTML=links;
+  document.getElementById('adrDone').classList.remove('hidden');
 }
 let _adrContacts=[],_adrIdx=0;
 function adrFillForm(j){
@@ -2436,31 +2487,19 @@ function adrFillForm(j){
   document.getElementById('aLand').value=j.land||'';
   document.getElementById('aTel').value=j.telefon||'';
   document.getElementById('aMail').value=j.email||'';
-  const total=_adrContacts.length;
-  const ctr=document.getElementById('adrCounter');
-  if(ctr)ctr.textContent=total>1?`Kontakt ${_adrIdx+1} von ${total}`:'';
 }
 async function adrImport(){
   const{sevdesk}=getKeys();
   if(!sevdesk){adrStatus('Kein sevdesk API-Key','err');return;}
   const firma=document.getElementById('aFirma').value.trim();
-  const vname=document.getElementById('aVname').value.trim();
   const nname=document.getElementById('aNname').value.trim();
   const mail=document.getElementById('aMail').value.trim();
   if(!firma&&!nname){adrStatus('Mindestens Firma oder Nachname erforderlich','err');return;}
-  // Duplicate check
   adrStatus('Prüfe auf bestehende Kontakte…','');
   const sevGet=async path=>{try{const r=await fetch(`https://my.sevdesk.de/api/v1/${path}`,{headers:{'Authorization':sevdesk}});const d=await r.json();return d.objects||[];}catch{return[];}};
   let dups=[];
-  if(mail){
-    const ways=await sevGet(`CommunicationWay?type=EMAIL&value=${encodeURIComponent(mail)}&embed=contact&limit=5`);
-    dups=ways.filter(w=>w.contact?.id).map(w=>w.contact);
-  }
-  if(!dups.length){
-    const searchName=firma||nname;
-    const found=await sevGet(`Contact?name=${encodeURIComponent(searchName)}&limit=5`);
-    dups=found;
-  }
+  if(mail){const ways=await sevGet(`CommunicationWay?type=EMAIL&value=${encodeURIComponent(mail)}&embed=contact&limit=5`);dups=ways.filter(w=>w.contact?.id).map(w=>w.contact);}
+  if(!dups.length){const found=await sevGet(`Contact?name=${encodeURIComponent(firma||nname)}&limit=5`);dups=found;}
   if(dups.length){
     document.getElementById('adrStatus').classList.add('hidden');
     document.getElementById('adrForm').classList.add('hidden');
@@ -2468,18 +2507,17 @@ async function adrImport(){
     document.getElementById('adrDupWarn').innerHTML=
       `<div style="font-size:13px;font-weight:600;color:var(--warn);margin-bottom:8px">⚠ Ähnlicher Kontakt bereits vorhanden</div>`+list+
       `<div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end">
-        <button class="btn btn-s" onclick="document.getElementById('adrDupWarn').innerHTML='';document.getElementById('adrForm').classList.remove('hidden');document.getElementById('adrStatus').classList.add('hidden')">← Zurück</button>
-        <button class="btn btn-p" onclick="document.getElementById('adrDupWarn').innerHTML='';adrDoCreate()">Trotzdem anlegen →</button>
+        <button class="btn btn-s" onclick="document.getElementById('adrDupWarn').classList.add('hidden');document.getElementById('adrForm').classList.remove('hidden');document.getElementById('adrStatus').classList.add('hidden')">← Zurück</button>
+        <button class="btn btn-p" onclick="document.getElementById('adrDupWarn').classList.add('hidden');adrDoCreate(false)">Trotzdem anlegen →</button>
       </div>`;
     document.getElementById('adrDupWarn').classList.remove('hidden');
     return;
   }
-  adrDoCreate();
+  adrDoCreate(false);
 }
-async function adrDoCreate(){
+async function adrDoCreate(batch=false){
   const{sevdesk}=getKeys();
-  adrStatus('Lege Kontakt in sevdesk an…','');
-  document.getElementById('adrForm').classList.add('hidden');
+  if(!batch){adrStatus('Lege Kontakt in sevdesk an…','');document.getElementById('adrForm').classList.add('hidden');}
   const firma=document.getElementById('aFirma').value.trim();
   const vname=document.getElementById('aVname').value.trim();
   const nname=document.getElementById('aNname').value.trim();
@@ -2496,40 +2534,25 @@ async function adrDoCreate(){
     return d.objects||d;
   };
   try{
-    const contactBody={category:{id:'5',objectName:'Category'}};  // 5 = Interessent
+    const contactBody={category:{id:'5',objectName:'Category'}};
     if(firma)contactBody.name=firma;
     if(vname)contactBody.surename=vname;
     if(nname)contactBody.familyname=nname;
     const contact=await sevApi('Contact',contactBody);
     const cid=contact.id;
-    if(strasse||ort||plz){
-      await sevApi('ContactAddress',{
-        contact:{id:cid,objectName:'Contact'},category:{id:'2',objectName:'Category'},
-        street:strasse,zip:plz,city:ort,
-        country:{id:'1',objectName:'StaticCountry'},
-        name:firma||(vname+' '+nname).trim()
-      });
-    }
+    if(strasse||ort||plz)await sevApi('ContactAddress',{contact:{id:cid,objectName:'Contact'},category:{id:'2',objectName:'Category'},street:strasse,zip:plz,city:ort,country:{id:'1',objectName:'StaticCountry'},name:firma||(vname+' '+nname).trim()});
     if(tel)await sevApi('CommunicationWay',{contact:{id:cid,objectName:'Contact'},type:'PHONE',value:tel,key:{id:'2',objectName:'CommunicationWayKey'}});
     if(mail)await sevApi('CommunicationWay',{contact:{id:cid,objectName:'Contact'},type:'EMAIL',value:mail,key:{id:'3',objectName:'CommunicationWayKey'}});
+    if(batch)return{id:cid};
     document.getElementById('adrStatus').classList.add('hidden');
     const dispName=firma||(vname+' '+nname).trim();
-    document.getElementById('adrDoneName').textContent=dispName;
-    document.getElementById('adrDoneLink').href=`https://my.sevdesk.de/#/contacts/detail/id/${cid}`;
-    // Next contact or done
-    const remaining=_adrContacts.length-(_adrIdx+1);
-    const nextBtn=document.getElementById('adrNextBtn');
-    if(nextBtn)nextBtn.style.display=remaining>0?'':'none';
-    if(nextBtn&&remaining>0)nextBtn.textContent=`Nächster Kontakt (${remaining} verbleibend)`;
+    document.getElementById('adrDoneLinks').innerHTML=`<div style="font-size:14px;font-weight:600;color:var(--accent2)">✓ ${dispName}</div><a href="https://my.sevdesk.de/#/contacts/detail/id/${cid}" target="_blank" class="done-link">In sevdesk öffnen →</a>`;
     document.getElementById('adrDone').classList.remove('hidden');
-  }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrForm').classList.remove('hidden');}
-}
-function adrNextContact(){
-  _adrIdx++;
-  if(_adrIdx>=_adrContacts.length)return;
-  document.getElementById('adrDone').classList.add('hidden');
-  adrFillForm(_adrContacts[_adrIdx]);
-  document.getElementById('adrForm').classList.remove('hidden');
+    return{id:cid};
+  }catch(e){
+    if(batch)return{err:e.message};
+    adrStatus('Fehler: '+e.message,'err');document.getElementById('adrForm').classList.remove('hidden');
+  }
 }
 </script>
 <div id="s5debugBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,24,.92);border-top:1px solid var(--border);padding:3px 14px;font-size:10px;color:var(--muted);z-index:999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none"></div>
