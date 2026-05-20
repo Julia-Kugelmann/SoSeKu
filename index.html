@@ -211,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 16:15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-20</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -488,6 +488,7 @@ main{margin:0 auto;padding:20px 14px 48px}
     <div id="adrDone" class="adr-done hidden">
       <div class="adr-done-icon">&#9989;</div>
       <div id="adrDoneLinks" style="display:flex;flex-direction:column;gap:6px;width:100%;text-align:left"></div>
+      <button id="adrCloseBtn" class="btn btn-p" style="display:none;margin-top:4px" onclick="window.close()">Tab schließen ×</button>
       <button class="btn btn-s" style="margin-top:8px" onclick="adrReset()">Neue Adresse</button>
     </div>
   </div>
@@ -2366,6 +2367,15 @@ function initAdresseMode(){
   else{setTimeout(()=>{const ta=document.getElementById('adrText');if(ta)ta.focus();},200);}
 }
 let _adrPasteTimer=null;
+function adrTryClose(){
+  window.close();
+  setTimeout(()=>{
+    if(!window.closed){
+      const btn=document.getElementById('adrCloseBtn');
+      if(btn)btn.style.display='';
+    }
+  },400);
+}
 function adrReset(){
   ['adrStatus','adrForm','adrDone','adrDupWarn','adrList'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('hidden');el.innerHTML='';}});
   document.getElementById('adrPaste').classList.remove('hidden');
@@ -2494,6 +2504,7 @@ async function adrImportAll(){
   }).join('');
   document.getElementById('adrDoneLinks').innerHTML=links;
   document.getElementById('adrDone').classList.remove('hidden');
+  adrTryClose();
 }
 let _adrContacts=[],_adrIdx=0;
 function adrFillForm(j){
@@ -2567,6 +2578,7 @@ async function adrDoCreate(batch=false){
     const dispName=firma||(vname+' '+nname).trim();
     document.getElementById('adrDoneLinks').innerHTML=`<div style="font-size:14px;font-weight:600;color:var(--accent2)">✓ ${dispName}</div><a href="https://my.sevdesk.de/#/contacts/detail/id/${cid}" target="_blank" class="done-link">In sevdesk öffnen →</a>`;
     document.getElementById('adrDone').classList.remove('hidden');
+    adrTryClose();
     return{id:cid};
   }catch(e){
     if(batch)return{err:e.message};
