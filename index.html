@@ -211,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 15:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 15:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -458,21 +458,25 @@ main{margin:0 auto;padding:20px 14px 48px}
       </div>
     </div>
     <div id="adrStatus" class="adr-status hidden"></div>
+    <div id="adrDupWarn" class="hidden" style="background:rgba(255,193,7,.06);border:1px solid rgba(255,193,7,.3);border-radius:10px;padding:16px"></div>
     <div id="adrForm" class="hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--muted)" id="adrCounter"></span>
+      </div>
       <div class="adr-form">
-        <div class="adr-row"><label>Firma</label><input id="aFirma" type="text" placeholder="Firma GmbH"></div>
+        <div class="adr-row"><label>Firma</label><input id="aFirma" type="text"></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="adr-row"><label>Vorname</label><input id="aVname" type="text" placeholder="Max"></div>
-          <div class="adr-row"><label>Nachname</label><input id="aNname" type="text" placeholder="Mustermann"></div>
+          <div class="adr-row"><label>Vorname</label><input id="aVname" type="text"></div>
+          <div class="adr-row"><label>Nachname</label><input id="aNname" type="text"></div>
         </div>
-        <div class="adr-row"><label>Straße &amp; Nr.</label><input id="aStr" type="text" placeholder="Hauptstraße 1"></div>
+        <div class="adr-row"><label>Straße &amp; Nr.</label><input id="aStr" type="text"></div>
         <div class="adr-2col">
-          <div class="adr-row"><label>PLZ</label><input id="aPlz" type="text" placeholder="80331"></div>
-          <div class="adr-row"><label>Ort</label><input id="aOrt" type="text" placeholder="München"></div>
+          <div class="adr-row"><label>PLZ</label><input id="aPlz" type="text"></div>
+          <div class="adr-row"><label>Ort</label><input id="aOrt" type="text"></div>
         </div>
-        <div class="adr-row"><label>Land</label><input id="aLand" type="text" placeholder="Deutschland" value="Deutschland"></div>
-        <div class="adr-row"><label>Telefon</label><input id="aTel" type="text" placeholder="+49 89 123456"></div>
-        <div class="adr-row"><label>E-Mail</label><input id="aMail" type="email" placeholder="max@firma.de"></div>
+        <div class="adr-row"><label>Land</label><input id="aLand" type="text"></div>
+        <div class="adr-row"><label>Telefon</label><input id="aTel" type="text"></div>
+        <div class="adr-row"><label>E-Mail</label><input id="aMail" type="email"></div>
       </div>
       <div class="btn-row" style="margin-top:16px">
         <button class="btn btn-s" onclick="adrReset()">&#8635; Neu</button>
@@ -482,9 +486,10 @@ main{margin:0 auto;padding:20px 14px 48px}
     <div id="adrDone" class="adr-done hidden">
       <div class="adr-done-icon">&#9989;</div>
       <div style="font-size:16px;font-weight:700;color:var(--accent2)" id="adrDoneName"></div>
-      <div style="font-size:12px;color:var(--muted)">Kontakt wurde in sevdesk angelegt</div>
+      <div style="font-size:12px;color:var(--muted)">Interessent wurde in sevdesk angelegt</div>
       <a id="adrDoneLink" href="#" target="_blank" class="done-link">In sevdesk öffnen &rarr;</a>
-      <button class="btn btn-s" style="margin-top:4px" onclick="adrReset()">Nächste Adresse</button>
+      <button id="adrNextBtn" class="btn btn-p" style="display:none" onclick="adrNextContact()">Nächster Kontakt &rarr;</button>
+      <button class="btn btn-s" style="margin-top:4px" onclick="adrReset()">Neue Adresse</button>
     </div>
   </div>
 </div>
@@ -2363,11 +2368,13 @@ function initAdresseMode(){
 }
 let _adrPasteTimer=null;
 function adrReset(){
-  ['adrStatus','adrForm','adrDone'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  ['adrStatus','adrForm','adrDone','adrDupWarn'].forEach(id=>{const el=document.getElementById(id);if(el){el.classList.add('hidden');el.innerHTML=id==='adrDupWarn'?'':el.innerHTML;}});
+  document.getElementById('adrDupWarn').innerHTML='';
   document.getElementById('adrPaste').classList.remove('hidden');
   const ta=document.getElementById('adrText');if(ta)ta.value='';
-  ['aFirma','aVname','aNname','aStr','aPlz','aOrt','aTel','aMail'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('aLand').value='Deutschland';
+  ['aFirma','aVname','aNname','aStr','aPlz','aOrt','aTel','aMail','aLand'].forEach(id=>document.getElementById(id).value='');
+  const ctr=document.getElementById('adrCounter');if(ctr)ctr.textContent='';
+  _adrContacts=[];_adrIdx=0;
   if(ta)setTimeout(()=>ta.focus(),100);
 }
 function adrOnInput(val){
@@ -2389,13 +2396,13 @@ function adrStatus(msg,type){
 async function adrExtract(text){
   clearTimeout(_adrPasteTimer);
   document.getElementById('adrPaste').classList.add('hidden');
-  adrStatus('Claude liest Adresse aus…','');
+  adrStatus('Claude liest Adressen aus…','');
   const{anthropic}=getKeys();
   if(!anthropic){adrStatus('Kein Anthropic API-Key – bitte Keys eingeben','err');showView('viewSetup');return;}
-  const prompt=`Lies aus folgendem Email-Text alle Kontaktdaten aus und gib sie als JSON zurück.
-Felder: vorname, nachname, firma, strasse, plz, ort, land, telefon, email
-Wenn ein Feld nicht vorhanden ist, gib leeren String zurück.
-Gib NUR das JSON zurück, kein Kommentar.
+  const prompt=`Lies aus folgendem Text ALLE Kontakte aus. Es können mehrere Personen/Firmen enthalten sein.
+Gib ein JSON-Array zurück. Jedes Element: {vorname, nachname, firma, strasse, plz, ort, land, telefon, email}
+Leere Felder als leerer String. Kein Land annehmen wenn nicht angegeben.
+Gib NUR das JSON-Array zurück, kein Kommentar.
 
 Text:
 ${text}`;
@@ -2403,30 +2410,74 @@ ${text}`;
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'x-api-key':anthropic,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:512,messages:[{role:'user',content:prompt}]})
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,messages:[{role:'user',content:prompt}]})
     });
     const data=await resp.json();
     if(!resp.ok)throw new Error(data.error?.message||resp.status);
     const raw=data.content?.[0]?.text||'';
-    const m=raw.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('Kein JSON in Antwort');
-    const j=JSON.parse(m[0]);
-    document.getElementById('aFirma').value=j.firma||'';
-    document.getElementById('aVname').value=j.vorname||'';
-    document.getElementById('aNname').value=j.nachname||'';
-    document.getElementById('aStr').value=j.strasse||'';
-    document.getElementById('aPlz').value=j.plz||'';
-    document.getElementById('aOrt').value=j.ort||'';
-    document.getElementById('aLand').value=j.land||'Deutschland';
-    document.getElementById('aTel').value=j.telefon||'';
-    document.getElementById('aMail').value=j.email||'';
+    const m=raw.match(/\[[\s\S]*\]/);
+    if(!m)throw new Error('Kein JSON-Array in Antwort');
+    _adrContacts=JSON.parse(m[0]);
+    if(!_adrContacts.length)throw new Error('Keine Kontakte erkannt');
+    _adrIdx=0;
+    adrFillForm(_adrContacts[0]);
     document.getElementById('adrStatus').classList.add('hidden');
     document.getElementById('adrForm').classList.remove('hidden');
   }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrPaste').classList.remove('hidden');document.getElementById('adrForm').classList.add('hidden');}
 }
+let _adrContacts=[],_adrIdx=0;
+function adrFillForm(j){
+  document.getElementById('aFirma').value=j.firma||'';
+  document.getElementById('aVname').value=j.vorname||'';
+  document.getElementById('aNname').value=j.nachname||'';
+  document.getElementById('aStr').value=j.strasse||'';
+  document.getElementById('aPlz').value=j.plz||'';
+  document.getElementById('aOrt').value=j.ort||'';
+  document.getElementById('aLand').value=j.land||'';
+  document.getElementById('aTel').value=j.telefon||'';
+  document.getElementById('aMail').value=j.email||'';
+  const total=_adrContacts.length;
+  const ctr=document.getElementById('adrCounter');
+  if(ctr)ctr.textContent=total>1?`Kontakt ${_adrIdx+1} von ${total}`:'';
+}
 async function adrImport(){
   const{sevdesk}=getKeys();
   if(!sevdesk){adrStatus('Kein sevdesk API-Key','err');return;}
+  const firma=document.getElementById('aFirma').value.trim();
+  const vname=document.getElementById('aVname').value.trim();
+  const nname=document.getElementById('aNname').value.trim();
+  const mail=document.getElementById('aMail').value.trim();
+  if(!firma&&!nname){adrStatus('Mindestens Firma oder Nachname erforderlich','err');return;}
+  // Duplicate check
+  adrStatus('Prüfe auf bestehende Kontakte…','');
+  const sevGet=async path=>{try{const r=await fetch(`https://my.sevdesk.de/api/v1/${path}`,{headers:{'Authorization':sevdesk}});const d=await r.json();return d.objects||[];}catch{return[];}};
+  let dups=[];
+  if(mail){
+    const ways=await sevGet(`CommunicationWay?type=EMAIL&value=${encodeURIComponent(mail)}&embed=contact&limit=5`);
+    dups=ways.filter(w=>w.contact?.id).map(w=>w.contact);
+  }
+  if(!dups.length){
+    const searchName=firma||nname;
+    const found=await sevGet(`Contact?name=${encodeURIComponent(searchName)}&limit=5`);
+    dups=found;
+  }
+  if(dups.length){
+    document.getElementById('adrStatus').classList.add('hidden');
+    document.getElementById('adrForm').classList.add('hidden');
+    const list=dups.slice(0,3).map(c=>`<a href="https://my.sevdesk.de/#/contacts/detail/id/${c.id}" target="_blank" style="color:var(--accent2);display:block;margin-top:4px">${c.name||((c.surename||'')+' '+(c.familyname||'')).trim()} →</a>`).join('');
+    document.getElementById('adrDupWarn').innerHTML=
+      `<div style="font-size:13px;font-weight:600;color:var(--warn);margin-bottom:8px">⚠ Ähnlicher Kontakt bereits vorhanden</div>`+list+
+      `<div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end">
+        <button class="btn btn-s" onclick="document.getElementById('adrDupWarn').innerHTML='';document.getElementById('adrForm').classList.remove('hidden');document.getElementById('adrStatus').classList.add('hidden')">← Zurück</button>
+        <button class="btn btn-p" onclick="document.getElementById('adrDupWarn').innerHTML='';adrDoCreate()">Trotzdem anlegen →</button>
+      </div>`;
+    document.getElementById('adrDupWarn').classList.remove('hidden');
+    return;
+  }
+  adrDoCreate();
+}
+async function adrDoCreate(){
+  const{sevdesk}=getKeys();
   adrStatus('Lege Kontakt in sevdesk an…','');
   document.getElementById('adrForm').classList.add('hidden');
   const firma=document.getElementById('aFirma').value.trim();
@@ -2435,47 +2486,50 @@ async function adrImport(){
   const strasse=document.getElementById('aStr').value.trim();
   const plz=document.getElementById('aPlz').value.trim();
   const ort=document.getElementById('aOrt').value.trim();
-  const land=document.getElementById('aLand').value.trim()||'Deutschland';
+  const land=document.getElementById('aLand').value.trim();
   const tel=document.getElementById('aTel').value.trim();
   const mail=document.getElementById('aMail').value.trim();
   const sevApi=async(path,body)=>{
-    const r=await fetch(`https://my.sevdesk.de/api/v1/${path}`,{
-      method:'POST',headers:{'Authorization':sevdesk,'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    });
+    const r=await fetch(`https://my.sevdesk.de/api/v1/${path}`,{method:'POST',headers:{'Authorization':sevdesk,'Content-Type':'application/json'},body:JSON.stringify(body)});
     const d=await r.json();
     if(!r.ok)throw new Error(`sevdesk ${path}: ${JSON.stringify(d).slice(0,200)}`);
     return d.objects||d;
   };
   try{
-    // Create contact
-    const contactBody={category:{id:'3',objectName:'Category'}};
+    const contactBody={category:{id:'5',objectName:'Category'}};  // 5 = Interessent
     if(firma)contactBody.name=firma;
     if(vname)contactBody.surename=vname;
     if(nname)contactBody.familyname=nname;
-    if(!firma&&!nname)throw new Error('Mindestens Firma oder Nachname erforderlich');
     const contact=await sevApi('Contact',contactBody);
     const cid=contact.id;
-    // Add address
     if(strasse||ort||plz){
       await sevApi('ContactAddress',{
-        contact:{id:cid,objectName:'Contact'},
-        category:{id:'2',objectName:'Category'},
+        contact:{id:cid,objectName:'Contact'},category:{id:'2',objectName:'Category'},
         street:strasse,zip:plz,city:ort,
         country:{id:'1',objectName:'StaticCountry'},
         name:firma||(vname+' '+nname).trim()
       });
     }
-    // Add communication ways
     if(tel)await sevApi('CommunicationWay',{contact:{id:cid,objectName:'Contact'},type:'PHONE',value:tel,key:{id:'2',objectName:'CommunicationWayKey'}});
     if(mail)await sevApi('CommunicationWay',{contact:{id:cid,objectName:'Contact'},type:'EMAIL',value:mail,key:{id:'3',objectName:'CommunicationWayKey'}});
-    // Show success
     document.getElementById('adrStatus').classList.add('hidden');
     const dispName=firma||(vname+' '+nname).trim();
     document.getElementById('adrDoneName').textContent=dispName;
     document.getElementById('adrDoneLink').href=`https://my.sevdesk.de/#/contacts/detail/id/${cid}`;
+    // Next contact or done
+    const remaining=_adrContacts.length-(_adrIdx+1);
+    const nextBtn=document.getElementById('adrNextBtn');
+    if(nextBtn)nextBtn.style.display=remaining>0?'':'none';
+    if(nextBtn&&remaining>0)nextBtn.textContent=`Nächster Kontakt (${remaining} verbleibend)`;
     document.getElementById('adrDone').classList.remove('hidden');
   }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrForm').classList.remove('hidden');}
+}
+function adrNextContact(){
+  _adrIdx++;
+  if(_adrIdx>=_adrContacts.length)return;
+  document.getElementById('adrDone').classList.add('hidden');
+  adrFillForm(_adrContacts[_adrIdx]);
+  document.getElementById('adrForm').classList.remove('hidden');
 }
 </script>
 <div id="s5debugBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,24,.92);border-top:1px solid var(--border);padding:3px 14px;font-size:10px;color:var(--muted);z-index:999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none"></div>
