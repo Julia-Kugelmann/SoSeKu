@@ -144,6 +144,21 @@ main{margin:0 auto;padding:20px 14px 48px}
 .view-pinned>.btn-row{flex-shrink:0}
 /* Sticky buttons — same distance from bottom on all step views */
 #viewStep2>.btn-row,#viewStep3>.btn-row,.view-pinned>.btn-row{margin-top:20px}
+/* Address import mode */
+.adr-wrap{max-width:480px;margin:40px auto 0;display:flex;flex-direction:column;gap:16px}
+.adr-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--accent);margin-bottom:4px}
+.adr-sub{font-size:12px;color:var(--muted);margin-bottom:8px}
+.adr-form{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.adr-row{display:flex;flex-direction:column;gap:4px}
+.adr-row label{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}
+.adr-row input{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-size:14px;color:var(--text);width:100%;box-sizing:border-box}
+.adr-row input:focus{outline:none;border-color:var(--accent)}
+.adr-2col{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.adr-paste{display:flex;flex-direction:column;align-items:center;gap:14px;padding:32px 20px;background:var(--surface);border:2px dashed var(--border);border-radius:12px;text-align:center}
+.adr-paste-icon{font-size:48px;line-height:1}
+.adr-status{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:12px;color:var(--muted);text-align:center}
+.adr-done{background:rgba(56,217,169,.07);border:1px solid rgba(56,217,169,.3);border-radius:12px;padding:24px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.adr-done-icon{font-size:52px;line-height:1}
 /* Step 5 */
 .s5-wrap{margin:0 auto;width:100%}
 .s5-section{margin-bottom:24px}
@@ -196,7 +211,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 12:45</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-19 14:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -230,7 +245,7 @@ main{margin:0 auto;padding:20px 14px 48px}
     <div class="field"><label>Anthropic API-Key *</label><input type="password" id="iAnt" placeholder="sk-ant-api03-..." autocomplete="off"></div>
     <div class="field"><label>sevdesk API-Key</label><input type="password" id="iSev" placeholder="32-stelliger Hex-Key (optional)" autocomplete="off"></div>
     <div class="field"><label>Google Sheet ID</label><input type="text" id="iSheet" placeholder="Sheet-ID aus der URL (optional)" autocomplete="off"></div>
-    <div class="setup-note"><strong>Sicherheit:</strong> Keys werden im <code>sessionStorage</code> gehalten und nie in den Code geschrieben.</div>
+    <div class="setup-note"><strong>Sicherheit:</strong> Keys werden im <code>localStorage</code> des Browsers gespeichert und nie in den Code geschrieben.</div>
     <div class="btn-row" style="justify-content:flex-start;margin-top:20px"><button class="btn btn-p" onclick="saveSetup()">Weiter &rarr;</button></div>
   </div>
 </div>
@@ -427,6 +442,50 @@ main{margin:0 auto;padding:20px 14px 48px}
   </div>
 </div>
 
+<!-- ADDRESS IMPORT -->
+<div id="viewAdresse" class="hidden">
+  <div class="adr-wrap">
+    <div>
+      <div class="adr-title">Adresse importieren</div>
+      <div class="adr-sub">Email-Text &rarr; Claude &rarr; sevdesk Kontakt</div>
+    </div>
+    <div id="adrPaste" class="adr-paste">
+      <div class="adr-paste-icon">&#128203;</div>
+      <div style="font-size:13px;color:var(--muted)">Email-Text aus Zwischenablage einfügen</div>
+      <button class="btn btn-p" onclick="adrPaste()">Einfügen &amp; Extrahieren</button>
+    </div>
+    <div id="adrStatus" class="adr-status hidden"></div>
+    <div id="adrForm" class="hidden">
+      <div class="adr-form">
+        <div class="adr-row"><label>Firma</label><input id="aFirma" type="text" placeholder="Firma GmbH"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="adr-row"><label>Vorname</label><input id="aVname" type="text" placeholder="Max"></div>
+          <div class="adr-row"><label>Nachname</label><input id="aNname" type="text" placeholder="Mustermann"></div>
+        </div>
+        <div class="adr-row"><label>Straße &amp; Nr.</label><input id="aStr" type="text" placeholder="Hauptstraße 1"></div>
+        <div class="adr-2col">
+          <div class="adr-row"><label>PLZ</label><input id="aPlz" type="text" placeholder="80331"></div>
+          <div class="adr-row"><label>Ort</label><input id="aOrt" type="text" placeholder="München"></div>
+        </div>
+        <div class="adr-row"><label>Land</label><input id="aLand" type="text" placeholder="Deutschland" value="Deutschland"></div>
+        <div class="adr-row"><label>Telefon</label><input id="aTel" type="text" placeholder="+49 89 123456"></div>
+        <div class="adr-row"><label>E-Mail</label><input id="aMail" type="email" placeholder="max@firma.de"></div>
+      </div>
+      <div class="btn-row" style="margin-top:16px">
+        <button class="btn btn-s" onclick="adrReset()">&#8635; Neu</button>
+        <button class="btn btn-p" onclick="adrImport()">In sevdesk anlegen &rarr;</button>
+      </div>
+    </div>
+    <div id="adrDone" class="adr-done hidden">
+      <div class="adr-done-icon">&#9989;</div>
+      <div style="font-size:16px;font-weight:700;color:var(--accent2)" id="adrDoneName"></div>
+      <div style="font-size:12px;color:var(--muted)">Kontakt wurde in sevdesk angelegt</div>
+      <a id="adrDoneLink" href="#" target="_blank" class="done-link">In sevdesk öffnen &rarr;</a>
+      <button class="btn btn-s" style="margin-top:4px" onclick="adrReset()">Nächste Adresse</button>
+    </div>
+  </div>
+</div>
+
 <!-- DONE -->
 <div id="viewDone" class="hidden">
   <div class="center-wrap">
@@ -462,7 +521,7 @@ let modifiedArtNrsInStep5=new Set();
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtE=n=>fmt(n)+' €';
-const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError'];
+const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse'];
 function fixViewPinnedHeight(){
   // Body-scroll layout — no fixed height needed
 }
@@ -509,24 +568,26 @@ function resetToUpload(){
 // === KEYS ===
 const DEF_SHEET_ID='1202ZpjG5241Z8E4wkABqpPRaTWH7BslM6qvNTump0Jw';
 function getKeys(){
-  const rawSid=sessionStorage.getItem('sid')||'';
+  const rawSid=localStorage.getItem('sid')||'';
   const sidM=rawSid.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  const sheetId=sidM?sidM[1]:rawSid; // no hardcoded fallback — must be entered
-  return{anthropic:sessionStorage.getItem('ant')||'',sevdesk:sessionStorage.getItem('sev')||'',sheetId};
+  const sheetId=sidM?sidM[1]:rawSid;
+  return{anthropic:localStorage.getItem('ant')||'',sevdesk:localStorage.getItem('sev')||'',sheetId};
 }
 function saveSetup(){
   const ant=document.getElementById('iAnt').value.trim();
   if(!ant){alert('Anthropic API-Key fehlt');return;}
-  sessionStorage.setItem('ant',ant);
-  sessionStorage.setItem('sev',document.getElementById('iSev').value.trim());
+  localStorage.setItem('ant',ant);
+  localStorage.setItem('sev',document.getElementById('iSev').value.trim());
   const rawSheet=document.getElementById('iSheet').value.trim();
   const sheetM=rawSheet.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  sessionStorage.setItem('sid',sheetM?sheetM[1]:rawSheet);
+  localStorage.setItem('sid',sheetM?sheetM[1]:rawSheet);
   document.getElementById('btnReset').style.display='';
-  showView('viewUpload');setStep(1);
+  const mode=new URLSearchParams(location.search).get('mode');
+  if(mode==='adresse'){showView('viewAdresse');initAdresseMode();}
+  else{showView('viewUpload');setStep(1);}
 }
 function resetKeys(){
-  ['ant','sev','sid'].forEach(k=>sessionStorage.removeItem(k));
+  ['ant','sev','sid'].forEach(k=>localStorage.removeItem(k));
   document.getElementById('btnReset').style.display='none';
   ['iAnt','iSev','iSheet'].forEach(id=>document.getElementById(id).value='');
   showView('viewSetup');
@@ -535,10 +596,16 @@ window.addEventListener('DOMContentLoaded',()=>{
   window.pdfjsLib=window['pdfjs-dist/build/pdf'];
   if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   const _ta=document.getElementById('chatStep2');if(_ta)_ta.value='Es sind nicht alle Positionen richtig erfasst, gehe das PDF nochmal sorgfältig durch';
-  // Pre-fill sheet ID if not already stored
   const _si=document.getElementById('iSheet');
-  if(_si&&!_si.value)_si.value=sessionStorage.getItem('sid')||DEF_SHEET_ID;
-  if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
+  if(_si&&!_si.value)_si.value=localStorage.getItem('sid')||DEF_SHEET_ID;
+  const mode=new URLSearchParams(location.search).get('mode');
+  if(mode==='adresse'){
+    const stepsBar=document.getElementById('stepsBar');if(stepsBar)stepsBar.style.display='none';
+    if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewAdresse');initAdresseMode();}
+    else{showView('viewSetup');}
+  } else {
+    if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
+  }
   fixViewPinnedHeight();
 });
 
@@ -2282,6 +2349,122 @@ async function importToSevdesk(){
     document.getElementById('btnImport').textContent='Nochmal versuchen →';
     showError(e.message);
   }
+}
+
+// === ADRESSE IMPORT ===
+function initAdresseMode(){
+  const params=new URLSearchParams(location.search);
+  const text=params.get('text');
+  if(text&&text.trim()){adrExtract(text.trim());}
+}
+function adrReset(){
+  ['adrStatus','adrForm','adrDone'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('adrPaste').classList.remove('hidden');
+  ['aFirma','aVname','aNname','aStr','aPlz','aOrt','aTel','aMail'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('aLand').value='Deutschland';
+}
+async function adrPaste(){
+  try{
+    const text=await navigator.clipboard.readText();
+    if(!text.trim()){adrStatus('Zwischenablage ist leer','err');return;}
+    adrExtract(text.trim());
+  }catch(e){adrStatus('Clipboard-Zugriff verweigert – bitte Text manuell einfügen','err');}
+}
+function adrStatus(msg,type){
+  const el=document.getElementById('adrStatus');
+  el.classList.remove('hidden');
+  el.style.color=type==='err'?'var(--error)':type==='ok'?'var(--accent2)':'var(--muted)';
+  el.textContent=msg;
+}
+async function adrExtract(text){
+  document.getElementById('adrPaste').classList.add('hidden');
+  adrStatus('Claude liest Adresse aus…','');
+  const{anthropic}=getKeys();
+  if(!anthropic){adrStatus('Kein Anthropic API-Key – bitte Keys eingeben','err');showView('viewSetup');return;}
+  const prompt=`Lies aus folgendem Email-Text alle Kontaktdaten aus und gib sie als JSON zurück.
+Felder: vorname, nachname, firma, strasse, plz, ort, land, telefon, email
+Wenn ein Feld nicht vorhanden ist, gib leeren String zurück.
+Gib NUR das JSON zurück, kein Kommentar.
+
+Text:
+${text}`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'x-api-key':anthropic,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:512,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await resp.json();
+    if(!resp.ok)throw new Error(data.error?.message||resp.status);
+    const raw=data.content?.[0]?.text||'';
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('Kein JSON in Antwort');
+    const j=JSON.parse(m[0]);
+    document.getElementById('aFirma').value=j.firma||'';
+    document.getElementById('aVname').value=j.vorname||'';
+    document.getElementById('aNname').value=j.nachname||'';
+    document.getElementById('aStr').value=j.strasse||'';
+    document.getElementById('aPlz').value=j.plz||'';
+    document.getElementById('aOrt').value=j.ort||'';
+    document.getElementById('aLand').value=j.land||'Deutschland';
+    document.getElementById('aTel').value=j.telefon||'';
+    document.getElementById('aMail').value=j.email||'';
+    document.getElementById('adrStatus').classList.add('hidden');
+    document.getElementById('adrForm').classList.remove('hidden');
+  }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrPaste').classList.remove('hidden');}
+}
+async function adrImport(){
+  const{sevdesk}=getKeys();
+  if(!sevdesk){adrStatus('Kein sevdesk API-Key','err');return;}
+  adrStatus('Lege Kontakt in sevdesk an…','');
+  document.getElementById('adrForm').classList.add('hidden');
+  const firma=document.getElementById('aFirma').value.trim();
+  const vname=document.getElementById('aVname').value.trim();
+  const nname=document.getElementById('aNname').value.trim();
+  const strasse=document.getElementById('aStr').value.trim();
+  const plz=document.getElementById('aPlz').value.trim();
+  const ort=document.getElementById('aOrt').value.trim();
+  const land=document.getElementById('aLand').value.trim()||'Deutschland';
+  const tel=document.getElementById('aTel').value.trim();
+  const mail=document.getElementById('aMail').value.trim();
+  const sevApi=async(path,body)=>{
+    const r=await fetch(`https://my.sevdesk.de/api/v1/${path}`,{
+      method:'POST',headers:{'Authorization':sevdesk,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    const d=await r.json();
+    if(!r.ok)throw new Error(`sevdesk ${path}: ${JSON.stringify(d).slice(0,200)}`);
+    return d.objects||d;
+  };
+  try{
+    // Create contact
+    const contactBody={category:{id:'3',objectName:'Category'}};
+    if(firma)contactBody.name=firma;
+    if(vname)contactBody.surename=vname;
+    if(nname)contactBody.familyname=nname;
+    if(!firma&&!nname)throw new Error('Mindestens Firma oder Nachname erforderlich');
+    const contact=await sevApi('Contact',contactBody);
+    const cid=contact.id;
+    // Add address
+    if(strasse||ort||plz){
+      await sevApi('ContactAddress',{
+        contact:{id:cid,objectName:'Contact'},
+        category:{id:'2',objectName:'Category'},
+        street:strasse,zip:plz,city:ort,
+        country:{id:'1',objectName:'StaticCountry'},
+        name:firma||(vname+' '+nname).trim()
+      });
+    }
+    // Add communication ways
+    if(tel)await sevApi('CommunicationWay',{contact:{id:cid,objectName:'Contact'},type:'PHONE',value:tel,key:{id:'2',objectName:'CommunicationWayKey'}});
+    if(mail)await sevApi('CommunicationWay',{contact:{id:cid,objectName:'Contact'},type:'EMAIL',value:mail,key:{id:'3',objectName:'CommunicationWayKey'}});
+    // Show success
+    document.getElementById('adrStatus').classList.add('hidden');
+    const dispName=firma||(vname+' '+nname).trim();
+    document.getElementById('adrDoneName').textContent=dispName;
+    document.getElementById('adrDoneLink').href=`https://my.sevdesk.de/#/contacts/detail/id/${cid}`;
+    document.getElementById('adrDone').classList.remove('hidden');
+  }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrForm').classList.remove('hidden');}
 }
 </script>
 <div id="s5debugBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,24,.92);border-top:1px solid var(--border);padding:3px 14px;font-size:10px;color:var(--muted);z-index:999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none"></div>
