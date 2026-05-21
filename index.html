@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 13:40</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 13:50</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -912,6 +912,8 @@ const NAMEN={
   '00E13001885':'Befestigungsset Segeltuch',
   '00E13000263':'SO-WI-Sensor Befestigungsplatte für Droppole',
   '00E13001959':'Adapterplatte für SoWi-Sensor inkl. Design-Mastschelle',
+  '00E13001866':'Höhenverstellung - Gleitschiene - Doppelrolle',
+  '00E13001865':'Höhenverstellung - Gleitschiene - Bügel',
   '00E13000208':'Höhenverstellung Droppole Mast mit Kurbel - silber',
   '00E13000988':'Höhenverstellung Droppole Mast mit Kurbel - schwarz',
   '00E13001874':'Höhenverstellung für Rund-Masten - Seilzug',
@@ -925,7 +927,7 @@ const NR2SEK={};
 ['00E13001787','00E13001742','00E13001741','00E13000206','00E13001937','00E13001735','00E13001734','00E13000843','00E13002149','00E13001965','00E13000042','00E13000026','00E13000066','00E13000127'].forEach(n=>NR2SEK[n]='zubehoer');
 ['00E13001416','00E13001325','00E13001321','73004A001','71004A010','71004A011','70004A007','71004A003','71004A020','00E13001929','00E13001885'].forEach(n=>NR2SEK[n]='segeltuch');
 ['00E13000263','00E13001959'].forEach(n=>NR2SEK[n]='segelsystem');
-['00E13000208','00E13000988','00E13001874','00E13001875'].forEach(n=>NR2SEK[n]='masten');
+['00E13000208','00E13000988','00E13001874','00E13001875','00E13001866','00E13001865'].forEach(n=>NR2SEK[n]='masten');
 ['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
 
 function isAufrollsystem(nr){
