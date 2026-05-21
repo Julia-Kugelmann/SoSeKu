@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 14:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 14:15</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1088,7 +1088,11 @@ function transformiere(json){
     map.fundamente.splice(idx>=0?idx+1:map.fundamente.length,0,{artikelnummer:'',name:'Beschwerung Base Cube',beschreibung:'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0});
   }
   const ORDER=[{id:'segeltuch',name:'Segeltuch'},{id:'segelsystem',name:'Segelsystem'},{id:'masten',name:'Masten'},{id:'fundamente',name:'Fundamente'},{id:'wandbefestigungen',name:'Wandbefestigungen'},{id:'zubehoer',name:'Zubehör'},{id:'montage',name:'Montage und Fracht'}];
-  return{sektionen:ORDER.map(s=>({...s,positionen:map[s.id]})).filter(s=>s.positionen.length),removedPositionen:removed};
+  const sektionen=ORDER.map(s=>({...s,positionen:map[s.id]})).filter(s=>s.positionen.length);
+  let effectiveSys=sys;
+  const _segSekT=sektionen.find(s=>s.id==='segelsystem');
+  if(_segSekT){const _ar=_segSekT.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_ar&&/3.?eck|dreieck/i.test(_ar.name||'')){if(['SOLIDAY-XS','SOLIDAY-CS'].includes(effectiveSys))effectiveSys+='-DREIECK';}}
+  return{sektionen,removedPositionen:removed,effectiveSys};
 }
 
 const escHtml=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1115,7 +1119,8 @@ async function retransform(){
 }
 
 function renderStep3(){
-  const{sektionen,removedPositionen}=transformedData;
+  const{sektionen,removedPositionen,effectiveSys}=transformedData;
+  const displaySys=effectiveSys||soSeKuJSON.system||'–';
   const solidayTotal=Number(soSeKuJSON.netto_gesamt);
   const teu=Number(soSeKuJSON.teuerungszuschlag_netto||0);
   const skSum=sektionen.reduce((s,sek)=>s+sek.positionen.reduce((ss,p)=>ss+(p.gesamt||0),0),0);
@@ -1144,7 +1149,7 @@ function renderStep3(){
      +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked)" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
     :'';
   document.getElementById('s3sektionen').innerHTML=
-    `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${soSeKuJSON.system||'–'} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen</span></div>`+
+    `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${displaySys} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen</span></div>`+
     `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sektionen.map(sek=>`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sek.id}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sek.id,i)).join('')}`).join('')}${exclRows}</tbody></table></div>`;
   showView('viewStep3');setStep(3);
 }
@@ -2342,13 +2347,11 @@ async function importToSevdesk(){
     const hasTeuerung=teu!==0;
     const _sys=(soSeKuJSON.system||'').toUpperCase();
     const _kom=soSeKuJSON.kommission||'';
-    // Detect Dreieck variant from actual segelsystem position name (e.g. "Soliday XS - 3-Eck Sonnensegelsystem…")
-    let _effectiveSys=_sys;
-    const _segSek=transformedData?.sektionen.find(s=>s.id==='segelsystem');
-    if(_segSek){const _aufroll=_segSek.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_aufroll&&/3.?eck|dreieck/i.test(_aufroll.name||'')){if(['SOLIDAY-XS','SOLIDAY-CS'].includes(_effectiveSys))_effectiveSys+='-DREIECK';}}
-    // Extract display label from aufrollsystem name or fallback map
+    const _effectiveSys=transformedData?.effectiveSys||_sys;
+    // Extract display label from aufrollsystem position name or fallback map
     const _sysLabelMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - 3-Eck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-XS-DREIECK':'XS - 3-Eck','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY','SONNENSEGEL-MAß':'Fix Segel','SONNENSEGEL-MAß-SNAP':'Fix Segel mit SNAP','SONNENSEGEL-MASS':'Fix Segel','SONNENSEGEL-MASS-SNAP':'Fix Segel mit SNAP','RAFF-M-DRAHTSEIL':'Raff-M','RAFF-M-FUEHRUNGSSCHIENE':'Raff-M'};
     let _sysLabel=_sysLabelMap[_effectiveSys]||_effectiveSys.replace('SOLIDAY-','');
+    const _segSek=transformedData?.sektionen.find(s=>s.id==='segelsystem');
     if(_segSek){const _aufroll=_segSek.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_aufroll){const _m=(_aufroll.name||'').match(/^Soliday\s+(.+?)\s+Sonnensegelsystem/i);if(_m)_sysLabel=_m[1];}}
     const _betreff=`Angebot - SOLIDAY ${_sysLabel}`+(_kom?' - '+_kom:'');
     const _kopfMap={
