@@ -90,9 +90,9 @@ main{margin:0 auto;padding:20px 14px 48px}
 .sek-hdr-row.drag-over td{background:rgba(91,141,238,.25)!important;border-top:2px solid var(--accent)}
 .s3-move-btn{cursor:pointer;color:var(--muted);font-size:13px;margin-right:5px;user-select:none;vertical-align:middle;opacity:.6}
 .s3-move-btn:hover,.s3-move-btn:active{color:var(--accent);opacity:1}
-.s3-mover-popup{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.5);min-width:160px}
-.s3-mover-popup button{display:block;width:100%;text-align:left;padding:6px 10px;background:none;border:none;color:var(--text);cursor:pointer;font-size:12px;border-radius:4px}
-.s3-mover-popup button:hover{background:rgba(91,141,238,.12);color:var(--accent)}
+.s3-mover-popup{position:fixed;background:#1e2740;border:1.5px solid rgba(91,141,238,.55);border-radius:10px;padding:4px;z-index:9999;box-shadow:0 6px 28px rgba(0,0,0,.7);min-width:170px}
+.s3-mover-popup button{display:block;width:100%;text-align:left;padding:7px 12px;background:none;border:none;color:#dde4f0;cursor:pointer;font-size:13px;border-radius:6px;font-weight:500}
+.s3-mover-popup button:hover{background:rgba(91,141,238,.2);color:#fff}
 .sek-hdr-row.excl td{background:rgba(255,107,107,.08);color:var(--error);border-bottom:1px solid rgba(255,107,107,.15)}
 .s3-row-excl td{opacity:.5;text-decoration:line-through;background:rgba(255,107,107,.04)}
 .sek-hdr-row+tr td,.sek-hdr-row td{border-top:none}
@@ -217,7 +217,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 11:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 11:45</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -991,7 +991,7 @@ function transformiere(json){
           if(kn){p2.name=kn;p2._isMotorKabel=true;}
           else{
             const snm=(p2.name||'').match(/soliday\s+system\s+(one|xs|x|cs|m|c|ma|flex|sandy)(\s+3[-\s]?eck|\s+dreieck|\s+twin)?\s+welle\s+(\d+(?:[.,]\d+)?)\s*m/i);
-            if(snm){const rawSys=snm[1].toUpperCase();const sfx=(snm[2]||'').toLowerCase();let fullSys='SOLIDAY-'+rawSys;if(/3.?eck|dreieck/.test(sfx))fullSys+='-DREIECK';else if(/twin/.test(sfx))fullSys+='-TWIN';p2.name=aufrollName(p2.artikelnummer,fullSys,parseFloat(snm[3]));p2._isAufroll=true;}
+            if(snm){const rawSys=snm[1].toUpperCase();const sfx=(snm[2]||'').toLowerCase();let fullSys='SOLIDAY-'+rawSys;if(/3.?eck|dreieck/.test(sfx))fullSys+='-DREIECK';else if(/twin/.test(sfx))fullSys+='-TWIN';const sysLblMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - 3-Eck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-XS-DREIECK':'XS - 3-Eck','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY'};const lbl=sysLblMap[fullSys]||rawSys;p2.name=`Soliday ${lbl} Sonnensegelsystem - bis ${parseFloat(snm[3])}m Welle`;p2._isAufroll=true;}
             else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}
           }
         }
