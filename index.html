@@ -87,6 +87,12 @@ main{margin:0 auto;padding:20px 14px 48px}
 .sektion-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;padding:9px 14px;background:rgba(91,141,238,.08);border:1px solid rgba(91,141,238,.15);border-radius:10px 10px 0 0;color:var(--accent)}
 .sektion-body{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:18px}
 .sek-hdr-row td{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;padding:8px 14px;background:rgba(91,141,238,.08);color:var(--accent);border-bottom:1px solid rgba(91,141,238,.15)}
+.sek-hdr-row.drag-over td{background:rgba(91,141,238,.25)!important;border-top:2px solid var(--accent)}
+.s3-move-btn{cursor:pointer;color:var(--muted);font-size:13px;margin-right:5px;user-select:none;vertical-align:middle;opacity:.6}
+.s3-move-btn:hover,.s3-move-btn:active{color:var(--accent);opacity:1}
+.s3-mover-popup{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.5);min-width:160px}
+.s3-mover-popup button{display:block;width:100%;text-align:left;padding:6px 10px;background:none;border:none;color:var(--text);cursor:pointer;font-size:12px;border-radius:4px}
+.s3-mover-popup button:hover{background:rgba(91,141,238,.12);color:var(--accent)}
 .sek-hdr-row.excl td{background:rgba(255,107,107,.08);color:var(--error);border-bottom:1px solid rgba(255,107,107,.15)}
 .s3-row-excl td{opacity:.5;text-decoration:line-through;background:rgba(255,107,107,.04)}
 .sek-hdr-row+tr td,.sek-hdr-row td{border-top:none}
@@ -211,7 +217,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 11:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -525,6 +531,7 @@ let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0};
 let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 let modifiedArtNrsInStep5=new Set();
+let _s3DragSrc=null;
 
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -923,7 +930,7 @@ function aufrollName(nr,sys,welleM){
   const wm=nr.match(/(\d+)$/);
   const fromNr=wm?parseInt(wm[1]):null;
   const welle=(fromNr&&fromNr>=1&&fromNr<=20)?fromNr:(welleM||'?');
-  const sysMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA'};
+  const sysMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - 3-Eck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-XS-DREIECK':'XS - 3-Eck','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY'};
   const label=sysMap[sys]||(sys||'').replace('SOLIDAY-','');
   return`Soliday ${label} Sonnensegelsystem - bis ${welle}m Welle`;
 }
@@ -931,6 +938,7 @@ function assignSek(p){
   const nr=p.artikelnummer;
   if(p.qm_segel>0)return'segeltuch';
   if(p._isMotorKabel)return'segelsystem';
+  if(p._isAufroll)return'segelsystem';
   if(NR2SEK[nr])return NR2SEK[nr];
   if(nr&&/^PYL/.test(nr))return'masten';
   if(nr&&isAufrollsystem(nr))return'segelsystem';
@@ -981,7 +989,11 @@ function transformiere(json){
         else{
           const kn=motorKabelName(p2.name);
           if(kn){p2.name=kn;p2._isMotorKabel=true;}
-          else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}
+          else{
+            const snm=(p2.name||'').match(/soliday\s+system\s+(one|xs|x|cs|m|c|ma|flex|sandy)(\s+3[-\s]?eck|\s+dreieck|\s+twin)?\s+welle\s+(\d+(?:[.,]\d+)?)\s*m/i);
+            if(snm){const rawSys=snm[1].toUpperCase();const sfx=(snm[2]||'').toLowerCase();let fullSys='SOLIDAY-'+rawSys;if(/3.?eck|dreieck/.test(sfx))fullSys+='-DREIECK';else if(/twin/.test(sfx))fullSys+='-TWIN';p2.name=aufrollName(p2.artikelnummer,fullSys,parseFloat(snm[3]));p2._isAufroll=true;}
+            else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}
+          }
         }
       }
     }
@@ -1000,7 +1012,7 @@ function transformiere(json){
   // Segelsystem-Reihenfolge: Aufrollsystem → Motor → Anschlussleitung(en) → Handsender → Windsensor → Rest
   const _SEGSYS_ORDER=['00E13002183','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002063'];
   const _segsysSortKey=p=>{
-    if(isAufrollsystem(p.artikelnummer))return -2;
+    if(p._isAufroll||isAufrollsystem(p.artikelnummer))return -2;
     if(p.artikelnummer==='00E13002183')return -1; // motor
     if(p._isMotorKabel)return 0; // Anschlussleitung direkt nach Motor
     const idx=_SEGSYS_ORDER.indexOf(p.artikelnummer);
@@ -1070,6 +1082,10 @@ function transformiere(json){
   return{sektionen:ORDER.map(s=>({...s,positionen:map[s.id]})).filter(s=>s.positionen.length),removedPositionen:removed};
 }
 
+function s3DragStart(event,sekId,pidx){_s3DragSrc={sekId,pidx};event.dataTransfer.effectAllowed='move';}
+function s3Drop(event,tgtSekId){event.preventDefault();document.querySelectorAll('.sek-hdr-row.drag-over').forEach(el=>el.classList.remove('drag-over'));if(!_s3DragSrc||_s3DragSrc.sekId===tgtSekId){_s3DragSrc=null;return;}s3MoveTo(_s3DragSrc.sekId,_s3DragSrc.pidx,tgtSekId);_s3DragSrc=null;}
+function s3MoveTo(srcSekId,pidx,tgtSekId){const srcSek=transformedData.sektionen.find(s=>s.id===srcSekId);const tgtSek=transformedData.sektionen.find(s=>s.id===tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(pidx,1);tgtSek.positionen.push(moved);document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
+function s3ShowMover(event,sekId,pidx){event.stopPropagation();document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());const opts=transformedData.sektionen.filter(s=>s.id!==sekId).map(s=>`<button onclick="s3MoveTo('${sekId}',${pidx},'${s.id}')">${s.name}</button>`).join('');const pop=document.createElement('div');pop.className='s3-mover-popup';const r=event.target.getBoundingClientRect();pop.style.left=Math.min(r.left,window.innerWidth-170)+'px';pop.style.top=(r.bottom+4)+'px';pop.innerHTML=`<div style="font-size:10px;color:var(--muted);padding:4px 10px 6px;border-bottom:1px solid var(--border);margin-bottom:4px">Verschieben nach:</div>${opts}`;document.body.appendChild(pop);setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),0);}
 function goToStep3(){transformedData=transformiere(soSeKuJSON);renderStep3();}
 function toggleManualWeglass(posNr,checked){
   if(checked) manualWeglass.delete(String(posNr));
@@ -1100,14 +1116,21 @@ function renderStep3(){
   const _cb=(p)=>p.pos!=null&&!p._gs
     ?`<input type="checkbox" checked onchange="toggleManualWeglass(${p.pos},this.checked)" style="cursor:pointer">`
     :'';
-  const _row=(p)=>`<tr><td>${_cb(p)}</td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td><div>${p.name}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td><td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
+  const _row=(p,sekId='',pidx=0)=>`<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''}>` +
+    `<td>${_cb(p)}</td>` +
+    `<td>${!p._gs?`<span class="s3-move-btn" onclick="s3ShowMover(event,'${sekId}',${pidx})" title="Verschieben">⇅</span>`:''}${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
+    `<td><div>${p.name}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td>` +
+    `<td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td>` +
+    `<td style="color:var(--muted)">${p.einheit||'–'}</td>` +
+    `<td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td>` +
+    `<td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
   const exclRows=manExcl.length
     ?`<tr class="sek-hdr-row excl"><td colspan="7">Manuell entfernt</td></tr>`
      +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked)" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
     :'';
   document.getElementById('s3sektionen').innerHTML=
     `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${soSeKuJSON.system||'–'} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen</span></div>`+
-    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sektionen.map(sek=>`<tr class="sek-hdr-row"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map(_row).join('')}`).join('')}${exclRows}</tbody></table></div>`;
+    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sektionen.map(sek=>`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sek.id}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sek.id,i)).join('')}`).join('')}${exclRows}</tbody></table></div>`;
   showView('viewStep3');setStep(3);
 }
 
