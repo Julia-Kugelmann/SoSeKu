@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 13:50</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 14:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -2342,14 +2342,15 @@ async function importToSevdesk(){
     const hasTeuerung=teu!==0;
     const _sys=(soSeKuJSON.system||'').toUpperCase();
     const _kom=soSeKuJSON.kommission||'';
-    const _betreffMap={
-      'SOLIDAY-C':'Angebot SOLIDAY C','SOLIDAY-CS':'Angebot SOLIDAY CS',
-      'SOLIDAY-CS-DREIECK':'Angebot SOLIDAY CS','SOLIDAY-CS-TWIN':'Angebot SOLIDAY CS-Twin',
-      'SOLIDAY-ONE':'Angebot SOLIDAY ONE','SOLIDAY-M':'Angebot SOLIDAY M',
-      'SOLIDAY-MA':'Angebot SOLIDAY MA','SOLIDAY-FLEX':'Angebot SOLIDAY FLEX',
-      'SOLIDAY-SANDY':'Angebot SOLIDAY SANDY','SONNENSEGEL-MAß':'Angebot SOLIDAY Fix Segel',
-    };
-    const _betreff=(_betreffMap[_sys]||('Angebot '+_sys))+(_kom?' - '+_kom:'');
+    // Detect Dreieck variant from actual segelsystem position name (e.g. "Soliday XS - 3-Eck Sonnensegelsystem…")
+    let _effectiveSys=_sys;
+    const _segSek=transformedData?.sektionen.find(s=>s.id==='segelsystem');
+    if(_segSek){const _aufroll=_segSek.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_aufroll&&/3.?eck|dreieck/i.test(_aufroll.name||'')){if(['SOLIDAY-XS','SOLIDAY-CS'].includes(_effectiveSys))_effectiveSys+='-DREIECK';}}
+    // Extract display label from aufrollsystem name or fallback map
+    const _sysLabelMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - 3-Eck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-XS-DREIECK':'XS - 3-Eck','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY','SONNENSEGEL-MAß':'Fix Segel','SONNENSEGEL-MAß-SNAP':'Fix Segel mit SNAP','SONNENSEGEL-MASS':'Fix Segel','SONNENSEGEL-MASS-SNAP':'Fix Segel mit SNAP','RAFF-M-DRAHTSEIL':'Raff-M','RAFF-M-FUEHRUNGSSCHIENE':'Raff-M'};
+    let _sysLabel=_sysLabelMap[_effectiveSys]||_effectiveSys.replace('SOLIDAY-','');
+    if(_segSek){const _aufroll=_segSek.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_aufroll){const _m=(_aufroll.name||'').match(/^Soliday\s+(.+?)\s+Sonnensegelsystem/i);if(_m)_sysLabel=_m[1];}}
+    const _betreff=`Angebot - SOLIDAY ${_sysLabel}`+(_kom?' - '+_kom:'');
     const _kopfMap={
       'SOLIDAY-C':   'Elektrisch aufrollbares Sonnensegel',
       'SOLIDAY-CS':  'Elektrisch aufrollbares Markisensegel',
@@ -2370,9 +2371,9 @@ async function importToSevdesk(){
       'RAFF-M-DRAHTSEIL':         'Manuell raffbares Sonnensegel mit Drahtseil Aufhängung',
       'RAFF-M-FUEHRUNGSSCHIENE':  'Manuell raffbares Sonnensegel mit Drahtseil Aufhängung',
     };
-    const _kopfBase=_kopfMap[_sys]||'';
+    const _kopfBase=_kopfMap[_effectiveSys]||'';
     const _eigenSys=new Set(['SOLIDAY-SANDY','SONNENSEGEL-MAß','SONNENSEGEL-MAß-SNAP','SONNENSEGEL-MASS','SONNENSEGEL-MASS-SNAP','RAFF-M-DRAHTSEIL','RAFF-M-FUEHRUNGSSCHIENE']);
-    const _kopf=_kopfBase+((_kopfBase&&fragebogen.montage===false&&_eigenSys.has(_sys))?' zur Eigenmontage':'');
+    const _kopf=_kopfBase+((_kopfBase&&fragebogen.montage===false&&_eigenSys.has(_effectiveSys))?' zur Eigenmontage':'');
 
     const payload={
       order:{
