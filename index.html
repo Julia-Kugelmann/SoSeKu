@@ -88,6 +88,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 .sektion-body{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow-x:auto;margin-bottom:18px}
 .sek-hdr-row td{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;padding:8px 14px;background:rgba(91,141,238,.08);color:var(--accent);border-bottom:1px solid rgba(91,141,238,.15)}
 .sek-hdr-row.drag-over td{background:rgba(91,141,238,.25)!important;border-top:2px solid var(--accent)}
+tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91,141,238,.06)!important}
 .s3-editable{outline:none;border-radius:4px;padding:1px 4px;margin:-1px -4px;cursor:text;min-width:20px;display:inline-block}
 .s3-editable:hover{background:rgba(255,255,255,.05)}
 .s3-editable:focus{background:rgba(91,141,238,.1);box-shadow:0 0 0 1px rgba(91,141,238,.3)}
@@ -220,7 +221,7 @@ main{margin:0 auto;padding:20px 14px 48px}
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 12:15</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 12:45</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1088,11 +1089,14 @@ function transformiere(json){
 
 const escHtml=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 function s3SaveName(el,sekId,pidx){el.style.background='';const sek=transformedData.sektionen.find(s=>s.id===sekId);if(sek&&sek.positionen[pidx])sek.positionen[pidx].name=el.innerText.trim();}
-function s3DragStart(event,sekId,pidx){_s3DragSrc={sekId,pidx};event.dataTransfer.effectAllowed='move';}
-function s3Drop(event,tgtSekId){event.preventDefault();document.querySelectorAll('.sek-hdr-row.drag-over').forEach(el=>el.classList.remove('drag-over'));if(!_s3DragSrc||_s3DragSrc.sekId===tgtSekId){_s3DragSrc=null;return;}s3MoveTo(_s3DragSrc.sekId,_s3DragSrc.pidx,tgtSekId);_s3DragSrc=null;}
+function s3ClearDragUI(){document.querySelectorAll('tr.drag-above,.sek-hdr-row.drag-over').forEach(el=>el.classList.remove('drag-above','drag-over'));}
+function s3DragStart(event,sekId,pidx){_s3DragSrc={sekId,pidx};event.dataTransfer.effectAllowed='move';event.target.addEventListener('dragend',()=>{s3ClearDragUI();_s3DragSrc=null;},{once:true});}
+function s3RowDragOver(event,tr){if(!_s3DragSrc)return;event.preventDefault();event.stopPropagation();s3ClearDragUI();tr.classList.add('drag-above');}
+function s3RowDrop(event,tgtSekId,tgtPidx){event.preventDefault();event.stopPropagation();s3ClearDragUI();if(!_s3DragSrc)return;const{sekId:srcSekId,pidx:srcPidx}=_s3DragSrc;_s3DragSrc=null;if(srcSekId===tgtSekId&&srcPidx===tgtPidx)return;const srcSek=transformedData.sektionen.find(s=>s.id===srcSekId);const tgtSek=transformedData.sektionen.find(s=>s.id===tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(srcPidx,1);let ti=tgtPidx;if(srcSekId===tgtSekId&&srcPidx<tgtPidx)ti--;tgtSek.positionen.splice(ti,0,moved);renderStep3();}
+function s3Drop(event,tgtSekId){event.preventDefault();s3ClearDragUI();if(!_s3DragSrc)return;const{sekId:srcSekId,pidx:srcPidx}=_s3DragSrc;_s3DragSrc=null;const srcSek=transformedData.sektionen.find(s=>s.id===srcSekId);const tgtSek=transformedData.sektionen.find(s=>s.id===tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(srcPidx,1);tgtSek.positionen.push(moved);renderStep3();}
 function s3MoveTo(srcSekId,pidx,tgtSekId){const srcSek=transformedData.sektionen.find(s=>s.id===srcSekId);const tgtSek=transformedData.sektionen.find(s=>s.id===tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(pidx,1);tgtSek.positionen.push(moved);document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
 function s3MoveInSek(sekId,pidx,dir){const sek=transformedData.sektionen.find(s=>s.id===sekId);if(!sek)return;const ni=pidx+dir;if(ni<0||ni>=sek.positionen.length)return;[sek.positionen[pidx],sek.positionen[ni]]=[sek.positionen[ni],sek.positionen[pidx]];document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
-function s3ShowMover(event,sekId,pidx){event.stopPropagation();document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());const sek=transformedData.sektionen.find(s=>s.id===sekId);const canUp=pidx>0&&sek&&!sek.positionen[pidx-1]?._gs;const canDown=sek&&pidx<sek.positionen.length-1;const orderHtml=(canUp||canDown)?`<div style="border-bottom:1px solid rgba(91,141,238,.2);margin-bottom:4px;padding-bottom:4px">${canUp?`<button onclick="s3MoveInSek('${sekId}',${pidx},-1)">▲ Nach oben</button>`:''}${canDown?`<button onclick="s3MoveInSek('${sekId}',${pidx},1)">▼ Nach unten</button>`:''}</div>`:'';const sectHtml=transformedData.sektionen.filter(s=>s.id!==sekId).map(s=>`<button onclick="s3MoveTo('${sekId}',${pidx},'${s.id}')">${s.name}</button>`).join('');const pop=document.createElement('div');pop.className='s3-mover-popup';const r=event.target.getBoundingClientRect();pop.style.left=Math.min(r.left,window.innerWidth-175)+'px';pop.style.top=(r.bottom+4)+'px';pop.innerHTML=orderHtml+`<div style="font-size:10px;color:#8899bb;padding:4px 10px 6px;border-bottom:1px solid rgba(91,141,238,.2);margin-bottom:4px">Verschieben nach:</div>`+sectHtml;document.body.appendChild(pop);setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),0);}
+function s3ShowMover(event,sekId,pidx){event.stopPropagation();document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());const sek=transformedData.sektionen.find(s=>s.id===sekId);const canUp=pidx>0;const canDown=sek&&pidx<sek.positionen.length-1;const upDown=(canUp||canDown)?`<div style="border-bottom:1px solid rgba(91,141,238,.2);padding-bottom:4px;margin-bottom:4px">${canUp?`<button onclick="s3MoveInSek('${sekId}',${pidx},-1)">▲ Eine nach oben</button>`:''}${canDown?`<button onclick="s3MoveInSek('${sekId}',${pidx},1)">▼ Eine nach unten</button>`:''}</div>`:'';const sects=transformedData.sektionen.filter(s=>s.id!==sekId).map(s=>`<button onclick="s3MoveTo('${sekId}',${pidx},'${s.id}')">→ ${s.name}</button>`).join('');const pop=document.createElement('div');pop.className='s3-mover-popup';const r=event.target.getBoundingClientRect();pop.style.left=Math.min(r.left,window.innerWidth-180)+'px';pop.style.top=(r.bottom+4)+'px';pop.innerHTML=upDown+sects;document.body.appendChild(pop);setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),0);}
 function goToStep3(){transformedData=transformiere(soSeKuJSON);renderStep3();}
 function toggleManualWeglass(posNr,checked){
   if(checked) manualWeglass.delete(String(posNr));
@@ -1123,7 +1127,7 @@ function renderStep3(){
   const _cb=(p)=>p.pos!=null&&!p._gs
     ?`<input type="checkbox" checked onchange="toggleManualWeglass(${p.pos},this.checked)" style="cursor:pointer">`
     :'';
-  const _row=(p,sekId='',pidx=0)=>`<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''}>` +
+  const _row=(p,sekId='',pidx=0)=>`<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''} ondragover="s3RowDragOver(event,this)" ondrop="s3RowDrop(event,'${sekId}',${pidx})">` +
     `<td>${_cb(p)}</td>` +
     `<td>${!p._gs?`<span class="s3-move-btn" onclick="s3ShowMover(event,'${sekId}',${pidx})" title="Verschieben">⇅</span>`:''}${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
     `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td>` +
