@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 13:20</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 13:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -2348,9 +2348,9 @@ async function importToSevdesk(){
     const _betreff=(_betreffMap[_sys]||('Angebot '+_sys))+(_kom?' - '+_kom:'');
     const _kopfMap={
       'SOLIDAY-C':   'Elektrisch aufrollbares Sonnensegel',
-      'SOLIDAY-CS':  'Elektrisch aufrollbares Sonnensegel',
+      'SOLIDAY-CS':  'Elektrisch aufrollbares Markisensegel',
       'SOLIDAY-CS-DREIECK': 'Elektrisch aufrollbares Sonnensegel',
-      'SOLIDAY-CS-TWIN':    'Elektrisch aufrollbares Sonnensegel',
+      'SOLIDAY-CS-TWIN':    'Elektrisch aufrollbares Markisensegel',
       'SOLIDAY-XS':  'Semi-automatisch aufrollbares Markisensegel',
       'SOLIDAY-XS-DREIECK': 'Semi-automatisch aufrollbares Sonnensegel',
       'SOLIDAY-X':   'Semi-automatisch aufrollbares Markisensegel',
@@ -2367,7 +2367,8 @@ async function importToSevdesk(){
       'RAFF-M-FUEHRUNGSSCHIENE':  'Manuell raffbares Sonnensegel mit Drahtseil Aufhängung',
     };
     const _kopfBase=_kopfMap[_sys]||'';
-    const _kopf=_kopfBase+((_kopfBase&&fragebogen.montage===false)?' zur Eigenmontage':'');
+    const _eigenSys=new Set(['SOLIDAY-SANDY','SONNENSEGEL-MAß','SONNENSEGEL-MAß-SNAP','SONNENSEGEL-MASS','SONNENSEGEL-MASS-SNAP','RAFF-M-DRAHTSEIL','RAFF-M-FUEHRUNGSSCHIENE']);
+    const _kopf=_kopfBase+((_kopfBase&&fragebogen.montage===false&&_eigenSys.has(_sys))?' zur Eigenmontage':'');
 
     const payload={
       order:{
