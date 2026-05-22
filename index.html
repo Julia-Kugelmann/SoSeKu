@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-21 14:25</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-22</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -2466,28 +2466,40 @@ Gib NUR das JSON-Array zurück, kein Kommentar.
 
 Text:
 ${text}`;
-  try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'x-api-key':anthropic,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,messages:[{role:'user',content:prompt}]})
-    });
-    const data=await resp.json();
-    if(!resp.ok)throw new Error(data.error?.message||resp.status);
-    const raw=data.content?.[0]?.text||'';
-    const m=raw.match(/\[[\s\S]*\]/);
-    if(!m)throw new Error('Kein JSON-Array in Antwort');
-    _adrContacts=JSON.parse(m[0]);
-    if(!_adrContacts.length)throw new Error('Keine Kontakte erkannt');
-    _adrIdx=0;
-    document.getElementById('adrStatus').classList.add('hidden');
-    if(_adrContacts.length===1){
-      adrFillForm(_adrContacts[0]);
-      document.getElementById('adrForm').classList.remove('hidden');
-    } else {
-      adrRenderList();
+  const delays=[0,3000,7000,15000];
+  let lastErr='';
+  for(let attempt=0;attempt<delays.length;attempt++){
+    if(delays[attempt]>0){adrStatus(`API überlastet – Retry ${attempt}/${delays.length-1}…`,'');await new Promise(r=>setTimeout(r,delays[attempt]));}
+    try{
+      const resp=await fetch('https://api.anthropic.com/v1/messages',{
+        method:'POST',
+        headers:{'x-api-key':anthropic,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+        body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:800,messages:[{role:'user',content:prompt}]})
+      });
+      const data=await resp.json();
+      if(resp.status===529||data.error?.type==='overloaded_error'){lastErr='Überladung (529)';continue;}
+      if(!resp.ok)throw new Error(data.error?.message||resp.status);
+      const raw=data.content?.[0]?.text||'';
+      const m=raw.match(/\[[\s\S]*\]/);
+      if(!m)throw new Error('Kein JSON-Array in Antwort');
+      _adrContacts=JSON.parse(m[0]);
+      if(!_adrContacts.length)throw new Error('Keine Kontakte erkannt');
+      _adrIdx=0;
+      document.getElementById('adrStatus').classList.add('hidden');
+      if(_adrContacts.length===1){
+        adrFillForm(_adrContacts[0]);
+        document.getElementById('adrForm').classList.remove('hidden');
+      } else {
+        adrRenderList();
+      }
+      return;
+    }catch(e){
+      if(/529|overload/i.test(e.message)){lastErr=e.message;continue;}
+      adrStatus('Fehler: '+e.message,'err');document.getElementById('adrPaste').classList.remove('hidden');return;
     }
-  }catch(e){adrStatus('Fehler: '+e.message,'err');document.getElementById('adrPaste').classList.remove('hidden');}
+  }
+  adrStatus('API überlastet – bitte in einer Minute erneut versuchen','err');
+  document.getElementById('adrPaste').classList.remove('hidden');
 }
 function adrContactLabel(c){
   const name=[c.firma,([c.vorname,c.nachname].filter(Boolean).join(' '))].filter(Boolean).join(' · ');
