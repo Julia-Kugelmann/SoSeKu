@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 10:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 10:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1061,24 +1061,20 @@ function transformiere(json){
     const bi=_FUND_ORDER.indexOf(b.artikelnummer)<0?999:_FUND_ORDER.indexOf(b.artikelnummer);
     return ai-bi;
   });
-  // Masten: Pylone zuerst (kurz→lang), dann normale Masten, dann Versteifung, dann Kappen, dann Höhenverstellung
+  // Masten: 1. Pylone (kurz→lang), 2. Masten (kurz→lang), 3. Biegungen, 4. Versteifungen, 5. Kappen, 6. Höhenverstellung
   const _pylonLen=nr=>{const m=(nr||'').match(/^PYL(?:AL|NI|DP)[01](\d+)1000$/);return m?parseInt(m[1]):null;};
-  const _MAST_G={'00E13000335':10,'00E13000338':10,'00E13000235':11,'00E13001650':11,'00E13000135':12,
-    '00E13000336':13,'00E13000347':13,'00E13000238':14,'00E13001652':14,
-    '00E13000337':15,'00E13000348':15,'00E13001766':16,
-    '00E13001135':17,'00E13000133':17,
-    '00E13000131':20,'00E13000096':20,
-    '00E13000217':30,'00E13001689':30,'00E13000216':30,
-    '00E13000052':40,'00E13000027':40,'00E13000204':40,'00E13000764':40,
-    '00E13000208':40,'00E13000988':40,'00E13001874':40,'00E13001875':40};
-  map.masten.sort((a,b)=>{
-    const aLen=_pylonLen(a.artikelnummer),bLen=_pylonLen(b.artikelnummer);
-    // Pylons first (100 + length so always before normal masts starting at 200)
-    // Normal masts: 200 + _MAST_G value (10–50 → 210–250)
-    const ag=aLen!==null?100+aLen:(200+(_MAST_G[a.artikelnummer]??50));
-    const bg=bLen!==null?100+bLen:(200+(_MAST_G[b.artikelnummer]??50));
-    return ag-bg;
-  });
+  const _mastLenFromName=name=>{const m=(name||'').match(/l=(?:bis\s*)?(\d+)m/i);return m?parseInt(m[1]):99;};
+  const _mastSortKey=p=>{
+    const nr=p.artikelnummer||'';const nm=(p.name||'').toLowerCase();
+    const pl=_pylonLen(nr);if(pl!==null)return 1000+pl;
+    if(/versteifung/i.test(p.name||'')||nr==='00E13000131'||nr==='00E13000096')return 6000;
+    if(/biegung/.test(nm)&&/mast/.test(nm))return 5000;
+    if(/kappe/i.test(p.name||''))return 7000;
+    if(/gleitschiene|höhenverstellung/i.test(p.name||''))return 8000;
+    if(/zuschnitt/.test(nm))return 4000;
+    return 2000+_mastLenFromName(p.name);
+  };
+  map.masten.sort((a,b)=>_mastSortKey(a)-_mastSortKey(b));
   // Zubehör: Design-Adapter + Kreuzadapter zuerst
   const _ZUB_ORDER=['00E13001787','00E13001742','00E13001741'];
   map.zubehoer.sort((a,b)=>{
