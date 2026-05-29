@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 13:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 13:30</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -2041,7 +2041,7 @@ function applyPrices5(){
         const ng=Math.ceil(pl.gesamt+auf);
         pos.gesamt=ng;
         pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
-        const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'inkl. Klebeanker an Holzbauweise (bis max. 10 cm Dämmung)','holz-18':'inkl. Klebeanker an Holzbauweise (bis max. 18 cm Dämmung)'};
+        const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'an Holzbauweise\nbis max. 10 cm Dämmung','holz-18':'an Holzbauweise\nbis max. 18 cm Dämmung'};
         const wa=fragebogen.wandart==='freistehend'?'ziegel-10':(fragebogen.wandart||'ziegel-10');
         pos.beschreibung=wdesc[wa]||wdesc['ziegel-10'];
         pos._modified=true;
@@ -2061,7 +2061,7 @@ function applyPrices5(){
         const ng=Math.ceil(pl.gesamt+auf);
         pos.gesamt=ng;
         pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
-        const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'inkl. Klebeanker an Holzbauweise (bis max. 10 cm Dämmung)','holz-18':'inkl. Klebeanker an Holzbauweise (bis max. 18 cm Dämmung)'};
+        const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'an Holzbauweise\nbis max. 10 cm Dämmung','holz-18':'an Holzbauweise\nbis max. 18 cm Dämmung'};
         const wa=fragebogen.wandart==='freistehend'?'ziegel-10':(fragebogen.wandart||'ziegel-10');
         pos.beschreibung=wdesc[wa]||wdesc['ziegel-10'];
         pos._modified=true;
