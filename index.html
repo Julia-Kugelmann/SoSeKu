@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 13:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 14:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -865,7 +865,7 @@ const NAMEN={
   '00E13000336':'Droppole Mast l=4m - silber eloxiert','00E13000337':'Droppole Mast l=5m - silber eloxiert',
   '00E13000235':'Aluminium Rund-Mast l=bis 3m - silber eloxiert','00E13000238':'Aluminium Rund-Mast l=bis 6m - silber eloxiert',
   '00E13001650':'Aluminium Rund-Mast l=bis 3m - anthrazit','00E13001652':'Aluminium Rund-Mast l=bis 6m - anthrazit',
-  '00E13000135':'Edelstahl Rund-Mast l=3m - geschliffen','00E13001766':'Edelstahl Rund-Mast l=bis 6m - V4A geschliffen',
+  '00E13000135':'Edelstahl Rund-Mast l=bis 3m - V2A geschliffen','00E13001766':'Edelstahl Rund-Mast l=bis 6m - V4A geschliffen',
   '00E13000131':'Versteifungsrohr für Aluminium Rund-Mast','00E13000096':'Versteifungsrohr für Edelstahl Rund-Mast',
   '00E13001135':'Zuschnitt auf Maß - Droppole Mast','00E13000133':'Biegung Aluminium-Mast ohne Versteifungsrohr',
   '00E13000217':'Abdeckkappe Design für Aluminium Rund-Mast','00E13000216':'Abdeckkappe Design für Edelstahl Rund-Mast',
@@ -911,7 +911,7 @@ const NAMEN={
   '00E13001929':'Befestigungsset Segeltuch',
   '00E13001885':'Befestigungsset Segeltuch',
   '00E13000263':'SO-WI-Sensor Befestigungsplatte für Droppole',
-  '00E13001959':'Adapterplatte für SoWi-Sensor inkl. Design-Mastschelle',
+  '00E13001959':'Adapterplatte für SoWi-Sensor inkl. Design-Mastschelle für Aluminium Rund-Mast',
   '00E13001866':'Höhenverstellung - Gleitschiene - Doppelrolle',
   '00E13001865':'Höhenverstellung - Gleitschiene - Bügel',
   '00E13000208':'Höhenverstellung Droppole Mast mit Kurbel - silber',
@@ -967,7 +967,7 @@ function pylonName(nr){
   const m=nr.match(/^PYL(AL|NI|DP)([01])(\d+)1000$/);
   if(!m)return null;
   const[,t,v,len]=m;
-  const farbe={AL0:'silber eloxiert',AL1:'schwarz eloxiert',NI0:'geschliffen (V2A)',NI1:'geschliffen (V4A)',DP0:'silber eloxiert',DP1:'schwarz eloxiert'};
+  const farbe={AL0:'silber eloxiert',AL1:'schwarz eloxiert',NI0:'V2A geschliffen',NI1:'V4A geschliffen',DP0:'silber eloxiert',DP1:'schwarz eloxiert'};
   const pre={AL:'Aluminium Rund-Mast Zugpylon',NI:'Edelstahl Rund-Mast Zugpylon',DP:'Droppole Zugpylon'};
   return`${pre[t]||'Zugpylon'} l=bis ${parseInt(len)}m - ${farbe[t+v]||'eloxiert'}`;
 }
