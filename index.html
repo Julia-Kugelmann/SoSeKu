@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-22 10:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 10:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -951,6 +951,9 @@ function assignSek(p){
   if(nr&&isAufrollsystem(nr))return'segelsystem';
   if(nr==='00E13000417')return(p.soliday_sektion||'').toLowerCase().includes('hardware')?'zubehoer':'segeltuch';
   if(nr==='00E13000107')return'zubehoer';
+  const nm=(p.name||'').toLowerCase();
+  if(/biegung/.test(nm)&&/mast/.test(nm))return'masten';
+  if(/wandschelle/.test(nm))return'wandbefestigungen';
   const s=(p.soliday_sektion||'').toLowerCase();
   if(s.includes('hardware'))return'zubehoer';
   if(s.includes('punkt')||s.includes('point')||s.includes('aufroll')||s.includes('welle'))return'segelsystem';
@@ -1186,7 +1189,7 @@ function toggleMontage(v){
     if(selEigenleistung){selEigenleistung=false;document.getElementById('eigenCard').classList.remove('sel');}
   }
 }
-const WANDPLATTEN_NR=new Set(['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910']);
+const WANDPLATTEN_NR=new Set(['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110']);
 function hasWandplatten(){
   if(!transformedData) return false;
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
@@ -1566,7 +1569,7 @@ function renderStep5(){
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
-  _wandpl=wSek?wSek.positionen.filter(p=>p.artikelnummer&&prices5.apAnzahl[p.artikelnummer]>0):[];
+  _wandpl=wSek?wSek.positionen.filter(p=>p.artikelnummer&&(prices5.apAnzahl[p.artikelnummer]>0||WANDPLATTEN_NR.has(p.artikelnummer))):[];
   const fSek=transformedData.sektionen.find(s=>s.id==='fundamente');
   _bodenpl=fSek?fSek.positionen.filter(p=>p.artikelnummer&&prices5.apAnzahl[p.artikelnummer]>0&&!p._gs):[];
   _gsFundPos=fSek?fSek.positionen.filter(p=>p._gs):[];
