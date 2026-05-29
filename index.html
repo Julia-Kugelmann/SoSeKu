@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 10:30</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 11:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -1082,6 +1082,22 @@ function transformiere(json){
     const bi=_ZUB_ORDER.indexOf(b.artikelnummer)<0?999:_ZUB_ORDER.indexOf(b.artikelnummer);
     return ai-bi;
   });
+  // Wandbefestigungen: Wandplatten → Wandschellen → Gegenplatten → Design-Wandhalterungen → Sonstiges
+  const _WAND_KEY={'00E13000709':10,'00E13000711':10,'00E13000046':10,'00E13002080':10,
+    '00E13001855':10,'00E13001857':10,'00E13001856':10,'00E13001910':10,
+    '00E13000243':20,
+    '00E13000110':30,
+    '00E13001940':40,'00E13000248':40,'00E13000320':40,'00E13000321':40,'00E13000322':40,
+    '00E13000112':50,'00E13001025':50,'00E13000603':50};
+  const _wandSortKey=p=>{
+    const nr=p.artikelnummer||'';const nm=(p.name||'').toLowerCase();
+    if(_WAND_KEY[nr])return _WAND_KEY[nr];
+    if(/gegenplatte|abstandshalter/i.test(p.name||''))return 30;
+    if(/wandschelle/i.test(p.name||''))return 20;
+    if(/design.?wand|wandhalter/i.test(p.name||''))return 40;
+    return 50;
+  };
+  map.wandbefestigungen.sort((a,b)=>_wandSortKey(a)-_wandSortKey(b));
   if(map.fundamente.some(p=>p.artikelnummer==='00E13000302')){
     const idx=map.fundamente.findIndex(p=>p.artikelnummer==='00E13000304');
     map.fundamente.splice(idx>=0?idx+1:map.fundamente.length,0,{artikelnummer:'',name:'Beschwerung Base Cube',beschreibung:'',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0});
