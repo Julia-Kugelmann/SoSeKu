@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 11:00</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-05-29 12:00</div>
   </div>
   <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
 </header>
@@ -533,7 +533,7 @@ let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selTermine=2,selMontage=true,extractAttempts=0,maxStep=0;
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0};
-let _sailPos=[],_wandpl=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
+let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
 
@@ -1581,7 +1581,11 @@ function renderStep5(){
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
-  _wandpl=wSek?wSek.positionen.filter(p=>p.artikelnummer&&(prices5.apAnzahl[p.artikelnummer]>0||WANDPLATTEN_NR.has(p.artikelnummer))):[];
+  const _isWandSchelle=p=>!!(p.artikelnummer==='00E13000243'||(/wandschelle/i.test(p.name||'')&&!/gegenplatte/i.test(p.name||'')));
+  const _isWandGegenpl=p=>!!(p.artikelnummer==='00E13000110'||/gegenplatte|abstandshalter/i.test(p.name||''));
+  _wandpl=wSek?wSek.positionen.filter(p=>p.artikelnummer&&!_isWandSchelle(p)&&!_isWandGegenpl(p)&&(prices5.apAnzahl[p.artikelnummer]>0||WANDPLATTEN_NR.has(p.artikelnummer))):[];
+  _wandschellen=wSek?wSek.positionen.filter(p=>p.artikelnummer&&_isWandSchelle(p)):[];
+  _wandSchGegen=wSek?wSek.positionen.filter(p=>p.artikelnummer&&_isWandGegenpl(p)):[];
   const fSek=transformedData.sektionen.find(s=>s.id==='fundamente');
   _bodenpl=fSek?fSek.positionen.filter(p=>p.artikelnummer&&prices5.apAnzahl[p.artikelnummer]>0&&!p._gs):[];
   _gsFundPos=fSek?fSek.positionen.filter(p=>p._gs):[];
@@ -1606,6 +1610,7 @@ function renderStep5(){
   const uses18=(fragebogen.wandart||'').includes('18');
   let apH2Wand=0,apCnt2Wand=0,apH2Boden=0,apCnt2Boden=0,totalMengeWand2=0,totalMengeB2=0;
   (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Wand+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2Wand+=a*n;totalMengeWand2+=n;});
+  (_wandschellen||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Wand+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2Wand+=a*n;totalMengeWand2+=n;});
   (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Boden+=a*n*(mk2?.ap10||0);apCnt2Boden+=a*n;totalMengeB2+=n;});
   const apH2=apH2Wand+apH2Boden,apCnt2=apCnt2Wand+apCnt2Boden;
   const fSekD=transformedData?.sektionen.find(s=>s.id==='fundamente');
@@ -1712,6 +1717,43 @@ function renderStep5(){
           </div>
         </div>`;
       });
+      h+=`</div></div>`;
+    }
+    // WANDSCHELLEN box
+    if(_wandschellen.length>0){
+      const totalMengeWS=_wandschellen.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
+      h+=`<div class="s5-card" style="margin-top:12px"><div class="s5-card-hdr"><strong>Wandschellen</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMengeWS}&times;</span></div>`;
+      h+=`<div class="s5-card-body">`;
+      _wandschellen.forEach((pl,wi)=>{
+        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||2;
+        const cnt=Math.max(1,Math.round(pl.menge));
+        const defAP=apPerUnit*cnt;
+        h+=`<div style="margin-bottom:10px">
+          <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
+          <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
+            <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
+            <input type="number" class="s5-inp s5-w50" id="wsAPU${wi}" value="${apPerUnit}" min="0" oninput="updWandS(${wi})" title="Ankerpunkte pro Stk.">
+            <span class="s5-unit">AP/Stk. &times;</span>
+            <input type="number" class="s5-inp s5-w90" id="wsAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWandS(${wi})">
+            <span class="s5-unit">&euro;/AP</span>
+            <input type="hidden" id="wsAP${wi}" value="${defAP}">
+          </div>
+          <div class="s5-calc">
+            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wsAuf${wi}">&ndash;</span> =</span>
+            <strong id="wsT${wi}">&ndash;</strong><span id="wsTraw${wi}" class="s5-raw"></span>
+            <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Schelle</span>
+          </div>
+        </div>`;
+      });
+      if(_wandSchGegen.length>0){
+        _wandSchGegen.forEach(pl=>{
+          const cnt=Math.max(1,Math.round(pl.menge));
+          h+=`<div style="padding-top:8px;border-top:1px solid var(--border);margin-bottom:6px">
+            <div style="font-size:11px;font-weight:600;color:var(--fg)">${pl.name}</div>
+            <div style="font-size:11px;color:var(--muted)">${cnt} Stk. &times; ${fmtE(pl.preis_einheit)} &euro; &mdash; wird zwischengelegt (keine Ankerpunkte)</div>
+          </div>`;
+        });
+      }
       h+=`</div></div>`;
     }
     // BODENPLATTEN box
@@ -1878,6 +1920,7 @@ function renderStep5(){
   document.getElementById('s5content').innerHTML=h;
   _sailPos.forEach((_,si)=>updSail(si));
   _wandpl.forEach((_,wi)=>updWand(wi));
+  _wandschellen.forEach((_,wi)=>updWandS(wi));
   updMonSum();
 }
 
@@ -1931,6 +1974,22 @@ function updWand(wi){
   if(er)er.textContent=Math.ceil(unitPrice)!==Math.round(unitPrice*100)/100?`(${fmt(unitPrice)})` : '';
 }
 
+function updWandS(wi){
+  const pl=_wandschellen[wi];
+  if(!pl)return;
+  const apPerUnit=parseInt(document.getElementById(`wsAPU${wi}`)?.value||'0')||0;
+  const ap2=parseFloat(document.getElementById(`wsAPP${wi}`)?.value||'0')||0;
+  const cnt=Math.max(1,Math.round(pl.menge||1));
+  const hapEl=document.getElementById(`wsAP${wi}`);
+  if(hapEl) hapEl.value=apPerUnit*cnt;
+  const aufPerUnit=(fragebogen.montage!==false)?apPerUnit*ap2:0;
+  const unitPrice=pl.preis_einheit+aufPerUnit;
+  const ea=document.getElementById(`wsAuf${wi}`),et=document.getElementById(`wsT${wi}`),er=document.getElementById(`wsTraw${wi}`);
+  if(ea)ea.textContent=fmtE(aufPerUnit);
+  if(et)et.textContent=fmtE(Math.ceil(unitPrice));
+  if(er)er.textContent=Math.ceil(unitPrice)!==Math.round(unitPrice*100)/100?`(${fmtE(unitPrice)})`:'';
+}
+
 function applyPrices5(){
   modifiedArtNrsInStep5=new Set();
   const sys=(soSeKuJSON.system||'').toUpperCase();
@@ -1975,6 +2034,26 @@ function applyPrices5(){
     _wandpl.forEach((pl,wi)=>{
       const apPerUnit=parseInt(document.getElementById(`wAPU${wi}`)?.value||'0')||0;
       const ap2=parseFloat(document.getElementById(`wAPP${wi}`)?.value||'0')||0;
+      const cnt=Math.max(1,Math.round(pl.menge||1));
+      const auf=apPerUnit*cnt*ap2;
+      const pos=wSek.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
+      if(pos){
+        const ng=Math.ceil(pl.gesamt+auf);
+        pos.gesamt=ng;
+        pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
+        const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'inkl. Klebeanker an Holzbauweise (bis max. 10 cm Dämmung)','holz-18':'inkl. Klebeanker an Holzbauweise (bis max. 18 cm Dämmung)'};
+        const wa=fragebogen.wandart==='freistehend'?'ziegel-10':(fragebogen.wandart||'ziegel-10');
+        pos.beschreibung=wdesc[wa]||wdesc['ziegel-10'];
+        pos._modified=true;
+        if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
+      }
+    });
+  }
+  // 5B: Wandschellen (nur wenn Mit Montage und nicht Freistehend)
+  if(wSek&&fragebogen.montage!==false){
+    _wandschellen.forEach((pl,wi)=>{
+      const apPerUnit=parseInt(document.getElementById(`wsAPU${wi}`)?.value||'0')||0;
+      const ap2=parseFloat(document.getElementById(`wsAPP${wi}`)?.value||'0')||0;
       const cnt=Math.max(1,Math.round(pl.menge||1));
       const auf=apPerUnit*cnt*ap2;
       const pos=wSek.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
