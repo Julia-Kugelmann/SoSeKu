@@ -1,0 +1,58 @@
+name: Update dev link
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  update-dev-link:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set dev link in README
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          python3 - <<'PYEOF'
+          import re, os, sys
+
+          branch = os.environ['BRANCH']
+          dev_url = f"https://raw.githack.com/julia-kugelmann/SoSeKu/{branch}/index.html"
+
+          with open('README.md', 'r') as f:
+              content = f.read()
+
+          if f'[dev]({dev_url})' in content:
+              print("Dev link already up to date")
+              sys.exit(0)
+
+          # Replace existing dev link or append after main link
+          pattern = r'(\*\*→ \[Tool öffnen\]\([^)]+\)\*\*)( · \[dev\]\([^)]+\))?'
+          replacement = rf'\1 · [dev]({dev_url})'
+          new_content = re.sub(pattern, replacement, content)
+
+          if new_content == content:
+              print("Main link pattern not found, nothing changed")
+              sys.exit(0)
+
+          with open('README.md', 'w') as f:
+              f.write(new_content)
+          print(f"Updated dev link → {dev_url}")
+          PYEOF
+
+      - name: Commit if changed
+        env:
+          BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet && exit 0
+          git add README.md
+          git commit -m "dev link → ${BRANCH} [skip ci]"
+          git push

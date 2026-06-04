@@ -2,6 +2,6 @@
 
 Converts Soliday solar sail offer PDFs into structured sevdesk quotes, applying Sonnensegel Kugelmann’s internal naming and restructuring rules.
 
-**→ [Tool öffnen](https://julia-kugelmann.github.io/SoSeKu/)**
+**→ [Tool öffnen](https://julia-kugelmann.github.io/SoSeKu/)** · [dev](https://raw.githack.com/julia-kugelmann/SoSeKu/claude/status-report-UHU8F/index.html)
 
 See `CLAUDE.md` for full project documentation.
