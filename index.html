@@ -949,7 +949,7 @@ function aufrollName(nr,sys,welleM){
   const welle=(fromNr&&fromNr>=1&&fromNr<=20)?fromNr:(welleM||'?');
   const sysMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-XS-DREIECK':'XS - Dreieck','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY'};
   const label=sysMap[sys]||(sys||'').replace('SOLIDAY-','');
-  return`Soliday ${label} Sonnensegelsystem - bis ${welle}m Welle`;
+  return`SOLIDAY - ${label} Segelsystem - bis ${welle}m Welle`;
 }
 function assignSek(p){
   const nr=p.artikelnummer;
@@ -1055,7 +1055,8 @@ function transformiere(json){
     return (_SEG_KEY[a.artikelnummer]||55)-(_SEG_KEY[b.artikelnummer]||55);
   });
   const instNr={'SOLIDAY-C':'INST-C','SOLIDAY-CS':'INST-CS','SOLIDAY-ONE':'INST-ONE','SOLIDAY-M':'INST-M'}[sys]||'INST-X';
-  const sysLabel=sys.replace('SOLIDAY-','Soliday ');
+  const _slMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY'};
+  const sysLabel='SOLIDAY - '+(_slMap[sys]||sys.replace('SOLIDAY-',''));
   const hasMasten=map.masten.length>0;
   const isRaff=(soSeKuJSON.system||'').toUpperCase().startsWith('RAFF');
   const useVorfracht=hasMasten||isRaff;
@@ -1219,7 +1220,7 @@ function toggleMontage(v){
     if(selEigenleistung){selEigenleistung=false;document.getElementById('eigenCard').classList.remove('sel');}
   }
 }
-const WANDPLATTEN_NR=new Set(['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110']);
+const WANDPLATTEN_NR=new Set(['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13002077']);
 function hasWandplatten(){
   if(!transformedData) return false;
   const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
@@ -2464,8 +2465,8 @@ async function importToSevdesk(){
     const _sysLabelMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-XS-DREIECK':'XS - Dreieck','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY','SONNENSEGEL-MAß':'Fix Segel','SONNENSEGEL-MAß-SNAP':'Fix Segel mit SNAP','SONNENSEGEL-MASS':'Fix Segel','SONNENSEGEL-MASS-SNAP':'Fix Segel mit SNAP','RAFF-M-DRAHTSEIL':'Raff-M','RAFF-M-FUEHRUNGSSCHIENE':'Raff-M'};
     let _sysLabel=_sysLabelMap[_effectiveSys]||_effectiveSys.replace('SOLIDAY-','');
     const _segSek=transformedData?.sektionen.find(s=>s.id==='segelsystem');
-    if(_segSek){const _aufroll=_segSek.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_aufroll){const _m=(_aufroll.name||'').match(/^Soliday\s+(.+?)\s+Sonnensegelsystem/i);if(_m)_sysLabel=_m[1];}}
-    const _betreff=`Angebot - SOLIDAY ${_sysLabel}`+(_kom?' - '+_kom:'');
+    if(_segSek){const _aufroll=_segSek.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_aufroll){const _m=(_aufroll.name||'').match(/^SOLIDAY\s+-\s+(.+?)\s+Segelsystem/i);if(_m)_sysLabel=_m[1];}}
+    const _betreff=`Angebot - SOLIDAY - ${_sysLabel}`+(_kom?' - '+_kom:'');
     const _kopfMap={
       'SOLIDAY-C':   'Elektrisch aufrollbares Sonnensegel',
       'SOLIDAY-CS':  'Elektrisch aufrollbares Markisensegel',
