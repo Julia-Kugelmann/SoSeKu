@@ -224,7 +224,10 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
     <div class="subtitle">Angebot Import Tool &middot; 2026-06-04 12:37 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
-    <a href="?mode=adresse" style="font-size:12px;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:5px 10px;white-space:nowrap" title="Adresse importieren">&#128100; Adresse</a>
+    <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
+      <a id="modeAngebot" href="?" style="font-size:11px;font-weight:600;text-decoration:none;border-radius:5px;padding:4px 10px;white-space:nowrap;transition:background .15s,color .15s">&#128196; Angebot</a>
+      <a id="modeAdresse" href="?mode=adresse" style="font-size:11px;font-weight:600;text-decoration:none;border-radius:5px;padding:4px 10px;white-space:nowrap;transition:background .15s,color .15s">&#128100; Adresse</a>
+    </div>
     <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
   </div>
 </header>
@@ -621,11 +624,15 @@ window.addEventListener('DOMContentLoaded',()=>{
   const _si=document.getElementById('iSheet');
   if(_si&&!_si.value)_si.value=localStorage.getItem('sid')||DEF_SHEET_ID;
   const mode=new URLSearchParams(location.search).get('mode');
+  const mA=document.getElementById('modeAngebot'),mAd=document.getElementById('modeAdresse');
+  const activeStyle='background:var(--accent);color:#fff';const inactiveStyle='color:var(--muted)';
   if(mode==='adresse'){
+    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+activeStyle;
     const stepsBar=document.getElementById('stepsBar');if(stepsBar)stepsBar.style.display='none';
     if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewAdresse');initAdresseMode();}
     else{showView('viewSetup');}
   } else {
+    if(mA)mA.style.cssText+=';'+activeStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;
     if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
   }
   fixViewPinnedHeight();
