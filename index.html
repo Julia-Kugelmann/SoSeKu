@@ -1048,6 +1048,12 @@ function transformiere(json){
   map.segeltuch=map.segeltuch.filter(p=>!(p.qm_segel>0));
   const stName=['SOLIDAY-M','SOLIDAY-MA'].includes(sys)?'Segeltuch - Austronet 960':'Segeltuch - Austrosail Nano';
   map.segeltuch.unshift({artikelnummer:'',name:stName,beschreibung:'',preis_einheit:sailTotal,menge:1,einheit:'Stk.',gesamt:sailTotal,_gs:true});
+  // Segeltuch: Segel → Segelplatten → Schutzhülle → Schutzabdeckung → Befestigungsset → Schnappschäkel (wenn Segelzubehör) → Pflegeset
+  const _SEG_KEY={'00E13001416':20,'73004A001':30,'71004A011':30,'70004A007':30,'71004A003':40,'71004A020':40,'00E13001929':50,'00E13001885':50,'00E13000417':60,'00E13001325':70,'00E13001321':70};
+  map.segeltuch.sort((a,b)=>{
+    if(a._gs&&!b._gs)return -1;if(!a._gs&&b._gs)return 1;
+    return (_SEG_KEY[a.artikelnummer]||55)-(_SEG_KEY[b.artikelnummer]||55);
+  });
   const instNr={'SOLIDAY-C':'INST-C','SOLIDAY-CS':'INST-CS','SOLIDAY-ONE':'INST-ONE','SOLIDAY-M':'INST-M'}[sys]||'INST-X';
   const sysLabel=sys.replace('SOLIDAY-','Soliday ');
   const hasMasten=map.masten.length>0;
