@@ -1085,13 +1085,15 @@ function transformiere(json){
     return 2000+_mastLenFromName(p.name);
   };
   map.masten.sort((a,b)=>_mastSortKey(a)-_mastSortKey(b));
-  // Zubehör: Design-Adapter + Kreuzadapter zuerst
-  const _ZUB_ORDER=['00E13001787','00E13001742','00E13001741'];
-  map.zubehoer.sort((a,b)=>{
-    const ai=_ZUB_ORDER.indexOf(a.artikelnummer)<0?999:_ZUB_ORDER.indexOf(a.artikelnummer);
-    const bi=_ZUB_ORDER.indexOf(b.artikelnummer)<0?999:_ZUB_ORDER.indexOf(b.artikelnummer);
-    return ai-bi;
-  });
+  // Zubehör: Adapter+Mastschellen → Seile → Pulleys → Rest
+  const _ZUB_KEY={
+    '00E13001787':10,'00E13001742':10,'00E13001741':10,'00E13000206':10,'00E13001937':10, // Adapter
+    '00E13001735':20,'00E13001734':20, // Mastschellen
+    '00E13000843':30,'00E13000107':30, // Seile
+    '00E13002149':40,'00E13001965':40,'00E13000042':40, // Pulleys
+    '00E13000417':50,'00E13000026':50,'00E13000066':50,'00E13000127':50 // Rest
+  };
+  map.zubehoer.sort((a,b)=>(_ZUB_KEY[a.artikelnummer]||99)-(_ZUB_KEY[b.artikelnummer]||99));
   // Wandbefestigungen: Wandplatten → Wandschellen → Gegenplatten → Design-Wandhalterungen → Sonstiges
   const _WAND_KEY={'00E13000709':10,'00E13000711':10,'00E13000046':10,'00E13002080':10,
     '00E13001855':10,'00E13001857':10,'00E13001856':10,'00E13001910':10,
