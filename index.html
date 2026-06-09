@@ -770,7 +770,7 @@ async function processFile(file,correctionHint){
       if(!usedSonnet){data=await trySonnet('Antwort unvollständig');prog.style.width='75%';}
       const text2=(data.content||[]).find(b=>b.type==='text')?.text||'';
       const clean2=text2.replace(/```json\n?|```\n?/g,'').trim();
-      if(!clean2.endsWith('}'))throw new Error('Claude-Antwort konnte nicht vollständig geladen werden. Bitte PDF erneut hochladen.');
+      if(!clean2.endsWith('}'))throw new Error('Claude-Antwort konnte nicht vollständig geladen werden. Mögliche Ursache: Das PDF enthält mehrere Soliday-Systeme (z.B. SOLIDAY-ONE + SOLIDAY-C). Das Tool unterstützt aktuell ein System pro Angebot — bitte trenne die Systeme in Soliday in separate Angebote auf.');
       const parsed2=JSON.parse(clean2);soSeKuJSON=parsed2;prog.style.width='100%';setTimeout(renderStep2,300);return;
     }
     soSeKuJSON=JSON.parse(clean);
@@ -805,8 +805,15 @@ function renderStep2(){
     const qmStr=totalQm>0?` &nbsp;·&nbsp; ${totalQm.toLocaleString('de-DE',{maximumFractionDigits:2})} m² Segel`:'';
     badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen${qmStr}</div>`;
   }
+  // Warn if multiple aufrollsystems detected (multi-system PDF)
+  const _aufrollPos=d.positionen.filter(p=>isAufrollsystem(p.artikelnummer||''));
+  const _multiSysWarn=_aufrollPos.length>=2;
   document.getElementById('s2info').innerHTML=
-    `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:12px 12px 0 0;border-bottom:1px solid var(--border)">
+    (_multiSysWarn?`<div style="background:rgba(255,160,0,.15);border:1px solid rgba(255,160,0,.5);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#ffb300">
+      <strong>⚠ Mehrere Systeme erkannt</strong> — Dieses PDF enthält ${_aufrollPos.length} Aufrollsysteme (${_aufrollPos.map(p=>p.name||p.artikelnummer).join(' + ')}).<br>
+      Das Tool unterstützt aktuell <strong>ein System pro Angebot</strong>. Bitte trenne die Systeme in Soliday in separate Angebote auf und importiere sie einzeln.
+    </div>`:'')
+    +`<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:12px 12px 0 0;border-bottom:1px solid var(--border)">
       <strong>SoSeKu-JSON</strong>
       <span>${d.system||'–'} &middot; ${d.kommission||'–'} &middot; ${d.positionen.length} Pos.</span>
     </div>`;
