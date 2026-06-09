@@ -221,7 +221,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-05 08:57 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-09 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1046,8 +1046,10 @@ function transformiere(json){
   const sailTotal=sailOriginals.reduce((s,p)=>s+(p.gesamt||0),0);
   sailOriginals.forEach(p=>removed.push({...p,_transferred:true}));
   map.segeltuch=map.segeltuch.filter(p=>!(p.qm_segel>0));
-  const stName=['SOLIDAY-M','SOLIDAY-MA'].includes(sys)?'Segeltuch - Austronet 960':'Segeltuch - Austrosail Nano';
+  const _stNmMap={'SOLIDAY-M':'Austronet 950','SOLIDAY-MA':'Austronet 950','SOLIDAY-FLEX':'Austronet 960','SOLIDAY-X':'Austrosail Lotus Linear','SOLIDAY-XS':'Austrosail Lotus Linear'};
+  const stName='Segeltuch - '+(_stNmMap[sys]||'Austrosail Nano');
   map.segeltuch.unshift({artikelnummer:'',name:stName,beschreibung:'',preis_einheit:sailTotal,menge:1,einheit:'Stk.',gesamt:sailTotal,_gs:true});
+  if(sys==='SOLIDAY-ONE'){const sp=map.segeltuch.find(p=>p.artikelnummer==='00E13001416');if(sp)sp.beschreibung='* nur beim Austrosail Nano Stoff möglich';}
   // Segeltuch: Segel → Segelplatten → Schutzhülle → Schutzabdeckung → Befestigungsset → Schnappschäkel (wenn Segelzubehör) → Pflegeset
   const _SEG_KEY={'00E13001416':20,'73004A001':30,'71004A011':30,'70004A007':30,'71004A003':40,'71004A020':40,'00E13001929':50,'00E13001885':50,'00E13000417':60,'00E13001325':70,'00E13001321':70};
   map.segeltuch.sort((a,b)=>{
@@ -1242,7 +1244,7 @@ function goToStep4(){
 // === STEP 5 ===
 // Klebeanker nur wenn Art.-Nr. im Ankerpunkt Verzeichnis (prices5.apAnzahl)
 const DEF_STOFFE_C=[{name:'Austrosail Nano',preis:0},{name:'Austrosail Nano Sonderfarben',preis:0},{name:'Soltis 92',preis:0},{name:'Soltis 92 Sonderfarben',preis:0}];
-const DEF_STOFFE_M=[{name:'Austronet 960',preis:0},{name:'Austronet 960 Sonderfarben',preis:0}];
+const DEF_STOFFE_M=[{name:'Austronet 950',preis:0},{name:'Austronet 950 Sonderfarben',preis:0}];
 
 async function initStep5(){
   fragebogen={
@@ -1282,17 +1284,23 @@ function parseDE(s){
   return parseFloat(c)||0;
 }
 // System shortcode for Stoffe matrix columns
-const SYS2COL={'SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-ONE':'One','SOLIDAY-FLEX':'Flex','SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS','SOLIDAY-CS-TWIN':'CS'};
+const SYS2COL={'SOLIDAY-M':['M'],'SOLIDAY-MA':['MA'],'SOLIDAY-X':['X'],'SOLIDAY-XS':['XS'],'SOLIDAY-ONE':['One','ONE'],'SOLIDAY-FLEX':['Flex','FLEX'],'SOLIDAY-C':['C','C/CS'],'SOLIDAY-CS':['CS','C/CS'],'SOLIDAY-CS-DREIECK':['CS','C/CS'],'SOLIDAY-CS-TWIN':['CS','C/CS']};
+function findStoffeCol(hdr,variants){for(const v of variants){const ci=hdr.findIndex(h=>h.trim().toLowerCase()===v.toLowerCase());if(ci>=0)return ci;}return -1;}
 function parseStoffeMatrix(rows,sys){
   if(!rows||rows.length<2)return[];
-  const hdr=rows[0];
-  const key=SYS2COL[sys]||'';
-  const ci=key?hdr.findIndex(h=>h.trim()===key):-1;
+  const hdr=rows[0];const variants=SYS2COL[sys]||[];
+  const ci=findStoffeCol(hdr,variants);
   if(ci<0)return[];
-  return rows.slice(1)
-    .filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm')
-    .map(r=>({name:r[0].trim(),preis:parseDE(r[ci])}))
-    .filter(s=>s.preis>0);
+  return rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm').map(r=>({name:r[0].trim(),preis:parseDE(r[ci])})).filter(s=>s.preis>0);
+}
+function parseStoffeMatrixAll(rows){
+  if(!rows||rows.length<2)return{};const hdr=rows[0];const result={};
+  Object.entries(SYS2COL).forEach(([sys,variants])=>{
+    const ci=findStoffeCol(hdr,variants);if(ci<0)return;
+    const st=rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm').map(r=>({name:r[0].trim(),preis:parseDE(r[ci])})).filter(s=>s.preis>0);
+    if(st.length>0)result[sys]=st;
+  });
+  return result;
 }
 // Parse size-tier tabs (Feste Segel, Sandy): returns [{name, tierPrices:[p0,p1,...], tierLabels:[l0,...]}]
 function parseSizeTierMatrix(rows){
@@ -1326,11 +1334,14 @@ function qmExtra(qm){return qm<6?1:2;}
 function billingQm(qm){return qm+qmExtra(qm);}
 // Select correct stoffe list based on system and original sail qm
 // qmOrig: original qm_segel from Soliday (before billing adjustment)
+const DEF_STOFF_KEY={'SOLIDAY-ONE':'nano','SOLIDAY-C':'nano','SOLIDAY-CS':'nano','SOLIDAY-CS-DREIECK':'nano','SOLIDAY-CS-TWIN':'nano','SOLIDAY-X':'lotus','SOLIDAY-XS':'lotus','SOLIDAY-M':'950','SOLIDAY-MA':'950','SOLIDAY-FLEX':'960'};
+function defaultStoffIdx(sys,stoffe){const key=(DEF_STOFF_KEY[sys.toUpperCase()]||'nano').toLowerCase();const i=stoffe.findIndex(s=>s.name.toLowerCase().includes(key));return i>=0?i:0;}
 function getStoffeForSys(sys,bQm,qmOrig){
   const upper=sys.toUpperCase();
   if(upper==='SOLIDAY-SANDY') return getTierPrices(prices5.stofSandy,bQm)||DEF_STOFFE_C;
   if(upper.startsWith('SONNENSEGEL')) return getTierPrices(prices5.stofFeste,bQm)||DEF_STOFFE_C;
-  let m=prices5.stoffe.length>0?prices5.stoffe:(['SOLIDAY-M','SOLIDAY-MA'].includes(upper)?DEF_STOFFE_M:DEF_STOFFE_C);
+  const fromMap=prices5.stofBySys?.[upper];
+  let m=fromMap?.length?fromMap:prices5.stoffe.length>0?prices5.stoffe:(['SOLIDAY-M','SOLIDAY-MA'].includes(upper)?DEF_STOFFE_M:DEF_STOFFE_C);
   // Soltis 92 only available up to 55 m² on C/CS systems
   const isCS=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(upper);
   if(isCS&&(qmOrig||0)>55) m=m.filter(s=>!s.name.toLowerCase().includes('soltis'));
@@ -1367,7 +1378,7 @@ async function loadPrices5(){
   if(mR.length<=1) mR=await fetchSheetTabAll('Montage Zeitbausteine');
   if(mR.length<=1) mR=await fetchSheetTabAll('Montage');
 
-  if(sAR.length>1) prices5.stoffe=parseStoffeMatrix(sAR,sys);
+  if(sAR.length>1){prices5.stofBySys=parseStoffeMatrixAll(sAR);prices5.stoffe=prices5.stofBySys[sys]||parseStoffeMatrix(sAR,sys);}
   if(sFR.length>1) prices5.stofFeste=parseSizeTierMatrix(sFR);
   if(sSnR.length>1) prices5.stofSandy=parseSizeTierMatrix(sSnR);
 
@@ -1688,7 +1699,7 @@ function renderStep5(){
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Stoff &amp; Preis/m&sup2;</div>
           ${stoffe.map((s,fi)=>`
             <label class="s5-radio-row">
-              <input type="radio" name="sail${si}st" value="${fi}" ${fi===0?'checked':''} onchange="updSail(${si})">
+              <input type="radio" name="sail${si}st" value="${fi}" ${fi===defaultStoffIdx(sys,stoffe)?'checked':''} onchange="updSail(${si})">
               <span class="s5-radio-name">${s.name}</span>
               <input type="number" class="s5-inp s5-w90" id="sP${si}_${fi}" value="${s.preis.toFixed(2)}" step="0.01" min="0" oninput="updSail(${si})">
               <span class="s5-unit">&euro;/m&sup2;</span>
@@ -2499,7 +2510,7 @@ async function importToSevdesk(){
         orderDate:offerDate,
         status:100,
         header:_betreff,
-        headText:_kopf,footText:'Das Angebot ist gültig innerhalb 30 Tage ab Angebotslegung, bzw. bis zum Erscheinen einer neuen Preisliste oder deren Aktualisierungen.\n\nSchraubfundamente sind nur bei gesetztem Boden bis Bodenklasse III möglich. Bei der Verwendung von Schraubfundamenten müssen alle Pläne von evtl. Leitungen im Boden vorliegen. Ein Schraubfundament wird ausnahmslos nur mit der ausdrücklichen Einwilligung des Grundstück bzw. Hausbesitzers gesetzt. Für evtl. Folgeschäden trifft Sonnensegel Kugelmann keine Schuld und Haftung.\nSoliday Sonnensegel sind nicht für außergewöhnliche Umwelteinflüsse konstruiert und sollten bei Unwettern & im Winter abgebaut werden bzw. aufrollbare Systeme eingerollt werden. Beschädigungen aufgrund von Überlast durch Umwelteinflüsse liegen außerhalb der Garantie.',
+        headText:_kopf,footText:'Das Angebot ist gültig innerhalb 30 Tage ab Angebotslegung, bzw. bis zum Erscheinen einer neuen Preisliste oder deren Aktualisierungen.\n\nSchraubfundamente sind nur bei gesetztem Boden bis Bodenklasse III möglich. Bei der Verwendung von Schraubfundamenten müssen alle Pläne von evtl. Leitungen im Boden vorliegen. Ein Schraubfundament wird ausnahmslos nur mit der ausdrücklichen Einwilligung des Grundstück bzw. Hausbesitzers gesetzt. Für evtl. Folgeschäden trifft Sonnensegel Kugelmann keine Schuld und Haftung.\n\nSoliday Sonnensegel sind nicht für außergewöhnliche Umwelteinflüsse konstruiert und sollten bei Unwettern & im Winter abgebaut werden bzw. aufrollbare Systeme eingerollt werden. Beschädigungen aufgrund von Überlast durch Umwelteinflüsse liegen außerhalb der Garantie.',
         address:address,
         addressCountry:{id:'1',objectName:'StaticCountry'},
         version:0,smallSettlement:0,
