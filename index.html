@@ -221,12 +221,13 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-09 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-23 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
       <a id="modeAngebot" href="?" style="font-size:11px;font-weight:600;text-decoration:none;border-radius:5px;padding:4px 10px;white-space:nowrap;transition:background .15s,color .15s">&#128196; Angebot</a>
       <a id="modeAdresse" href="?mode=adresse" style="font-size:11px;font-weight:600;text-decoration:none;border-radius:5px;padding:4px 10px;white-space:nowrap;transition:background .15s,color .15s">&#128100; Adresse</a>
+      <a id="modeMontage" href="?mode=montage" style="font-size:11px;font-weight:600;text-decoration:none;border-radius:5px;padding:4px 10px;white-space:nowrap;transition:background .15s,color .15s">&#128295; Montage</a>
     </div>
     <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
   </div>
@@ -510,6 +511,86 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
   </div>
 </div>
 
+<!-- MONTAGEKOSTEN KALKULATOR -->
+<div id="viewMontage" class="hidden">
+  <div class="adr-wrap" style="max-width:760px">
+    <div>
+      <div class="adr-title">Montagekosten Kalkulator</div>
+      <div class="adr-sub">Manuelle Berechnung f&uuml;r komplexe Sonderf&auml;lle &middot; alle Werte aus dem Google Sheet</div>
+    </div>
+
+    <div class="s5-card">
+      <div class="s5-card-hdr"><strong>Systeme</strong><span>Grundpreis pro System + weiteres Segeltuch</span></div>
+      <div class="s5-card-body" id="mcRows"></div>
+      <div class="s5-card-body" style="padding-top:0">
+        <button class="btn btn-s" onclick="mcAddRow()">+ System hinzuf&uuml;gen</button>
+      </div>
+    </div>
+
+    <div class="s5-card">
+      <div class="s5-card-hdr"><strong>Wandbefestigungen</strong><span>Wandplatten &rarr; Ankerpunkte</span></div>
+      <div class="s5-card-body">
+        <div class="s5-irow">
+          <span class="s5-lbl">Anzahl Wandplatten</span>
+          <input type="number" class="s5-inp s5-w70" id="mcWandplatten" value="0" min="0" oninput="mcCalc()">
+          <span class="s5-unit">Stk.</span>
+        </div>
+        <div class="s5-irow">
+          <span class="s5-lbl">Ankerpunkte / Platte</span>
+          <input type="number" class="s5-inp s5-w70" id="mcApProPlatte" value="4" min="0" oninput="mcCalc()">
+          <span class="s5-unit">AP/Stk.</span>
+        </div>
+        <div class="s5-irow">
+          <span class="s5-lbl">D&auml;mmung</span>
+          <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcDaemmung" value="10" checked onchange="mcCalc()"> bis 10cm</label>
+          <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcDaemmung" value="18" onchange="mcCalc()"> bis 18cm</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="s5-card">
+      <div class="s5-card-hdr"><strong>Schraubfundamente</strong><span>manuelle Anzahl</span></div>
+      <div class="s5-card-body">
+        <div class="s5-irow">
+          <span class="s5-lbl">Anzahl Schraubfundamente</span>
+          <input type="number" class="s5-inp s5-w70" id="mcSchraubfund" value="0" min="0" oninput="mcCalc()">
+          <span class="s5-unit">Stk.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="s5-card">
+      <div class="s5-card-hdr"><strong>Service &amp; Logistik</strong><span>Zone &middot; Termine &middot; Dachterrasse</span></div>
+      <div class="s5-card-body">
+        <div class="s5-irow">
+          <span class="s5-lbl">Anfahrtszone</span>
+          <select class="s5-inp" id="mcZone" style="text-align:left" onchange="mcCalc()">
+            <option value="1">Zone 1 &ndash; bis 15 min</option>
+            <option value="2" selected>Zone 2 &ndash; bis 30 min</option>
+            <option value="3">Zone 3 &ndash; bis 45 min</option>
+            <option value="4">Zone 4 &ndash; bis 60 min</option>
+            <option value="5">Zone 5 &ndash; bis 75 min</option>
+            <option value="6">Zone 6 &ndash; bis 90 min</option>
+          </select>
+        </div>
+        <div class="s5-irow">
+          <span class="s5-lbl">Termine</span>
+          <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcTermine" value="2" checked onchange="mcCalc()"> 2 Termine</label>
+          <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcTermine" value="3" onchange="mcCalc()"> 3 Termine</label>
+        </div>
+        <div class="s5-irow">
+          <label class="s5-radio-row" style="margin-bottom:0"><input type="checkbox" id="mcDachterrasse" onchange="mcCalc()"> Dachterrasse</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="s5-card">
+      <div class="s5-card-hdr"><strong>Ergebnis</strong><span id="mcStatus"></span></div>
+      <div class="s5-card-body" id="mcResult"></div>
+    </div>
+  </div>
+</div>
+
 <!-- DONE -->
 <div id="viewDone" class="hidden">
   <div class="center-wrap">
@@ -546,7 +627,7 @@ let _s3DragSrc=null;
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtE=n=>fmt(n)+' €';
-const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse'];
+const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse','viewMontage'];
 function fixViewPinnedHeight(){
   // Body-scroll layout — no fixed height needed
 }
@@ -609,6 +690,7 @@ function saveSetup(){
   document.getElementById('btnReset').style.display='';
   const mode=new URLSearchParams(location.search).get('mode');
   if(mode==='adresse'){showView('viewAdresse');initAdresseMode();}
+  else if(mode==='montage'){showView('viewMontage');initMontageMode();}
   else{showView('viewUpload');setStep(1);}
 }
 function resetKeys(){
@@ -624,15 +706,20 @@ window.addEventListener('DOMContentLoaded',()=>{
   const _si=document.getElementById('iSheet');
   if(_si&&!_si.value)_si.value=localStorage.getItem('sid')||DEF_SHEET_ID;
   const mode=new URLSearchParams(location.search).get('mode');
-  const mA=document.getElementById('modeAngebot'),mAd=document.getElementById('modeAdresse');
+  const mA=document.getElementById('modeAngebot'),mAd=document.getElementById('modeAdresse'),mM=document.getElementById('modeMontage');
   const activeStyle='background:var(--accent);color:#fff';const inactiveStyle='color:var(--muted)';
   if(mode==='adresse'){
-    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+activeStyle;
+    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+activeStyle;if(mM)mM.style.cssText+=';'+inactiveStyle;
     const stepsBar=document.getElementById('stepsBar');if(stepsBar)stepsBar.style.display='none';
     if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewAdresse');initAdresseMode();}
     else{showView('viewSetup');}
+  } else if(mode==='montage'){
+    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;if(mM)mM.style.cssText+=';'+activeStyle;
+    const stepsBar=document.getElementById('stepsBar');if(stepsBar)stepsBar.style.display='none';
+    if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewMontage');initMontageMode();}
+    else{showView('viewSetup');}
   } else {
-    if(mA)mA.style.cssText+=';'+activeStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;
+    if(mA)mA.style.cssText+=';'+activeStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;if(mM)mM.style.cssText+=';'+inactiveStyle;
     if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
   }
   fixViewPinnedHeight();
@@ -1607,6 +1694,150 @@ function gsMonPreis(key){
   if(key==='EINWEIS-FUND') return prices5.eigenleistung||0;
   if(key.startsWith('INST-')) return calcInstPreis();
   return 0;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// MONTAGEKOSTEN KALKULATOR (Standalone-Modus, ?mode=montage)
+// Isolierter State `mc` — fasst `prices5` (Haupt-Importflow) nicht an.
+// ══════════════════════════════════════════════════════════════════════
+let mc={loaded:false,rows:[],montRowsRaw:null,verbRowsRaw:null,stundensatz:0,zonePreis:{},dachterrasse:0};
+const MC_SYS_LIST=['SOLIDAY-M','SOLIDAY-MA','SOLIDAY-X','SOLIDAY-XS','SOLIDAY-ONE','SOLIDAY-FLEX','SOLIDAY-C','SOLIDAY-CS','SONNENSEGEL-MAß','SONNENSEGEL-MAß-SNAP'];
+const MC_SYS_LABEL={'SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-ONE':'ONE','SOLIDAY-FLEX':'FLEX','SOLIDAY-C':'C','SOLIDAY-CS':'CS','SONNENSEGEL-MAß':'Fix Segel','SONNENSEGEL-MAß-SNAP':'Fix Segel SNAP'};
+
+async function initMontageMode(){
+  if(!mc.loaded){
+    document.getElementById('mcStatus').textContent='Lade Preisdaten...';
+    const[pR,vR]=await Promise.all([
+      fetchSheetTabAll('SoSeKu - Preisliste'),
+      fetchSheetTabAll('Wellenverbinder Verzeichnis')
+    ]);
+    let mR=await fetchSheetTabAll('Montage Kalkulation');
+    if(mR.length<=1) mR=await fetchSheetTabAll('Montage Zeitbausteine');
+    if(mR.length<=1) mR=await fetchSheetTabAll('Montage');
+    mc.montRowsRaw=mR;
+    mc.verbRowsRaw=vR;
+    if(pR.length>1) pR.forEach(r=>{
+      const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s./\\]+/g,'')).join('|');
+      if(!mc.stundensatz&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
+        for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){mc.stundensatz=v;break;}}
+      }
+      if(!mc.dachterrasse&&rowStr.includes('dach')){
+        for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>0&&v<5000){mc.dachterrasse=v;break;}}
+      }
+      const keyRaw=(r[0]||'').trim();
+      const key=keyRaw.toLowerCase().replace(/\s+/g,'');
+      const preis=sheetNum(r,2,1,3,4);
+      if(key&&preis&&key.startsWith('zone')) mc.zonePreis[key]=preis;
+    });
+    mc.loaded=true;
+    document.getElementById('mcStatus').textContent='';
+  }
+  if(mc.rows.length===0) mcAddRow();
+  mcRenderRows();
+  mcCalc();
+}
+
+function mcAddRow(){
+  mc.rows.push({sys:'SOLIDAY-ONE',segel:1,welle:9});
+  mcRenderRows();
+  mcCalc();
+}
+function mcRemoveRow(i){
+  mc.rows.splice(i,1);
+  mcRenderRows();
+  mcCalc();
+}
+function mcRowSys(i,v){mc.rows[i].sys=v;mcCalc();}
+function mcRowSegel(i,v){mc.rows[i].segel=Math.max(1,parseInt(v)||1);mcCalc();}
+function mcRowWelle(i,v){mc.rows[i].welle=Math.max(0,parseFloat(v)||0);mcCalc();}
+
+function mcRowHtml(row,i){
+  const opts=MC_SYS_LIST.map(s=>`<option value="${s}"${row.sys===s?' selected':''}>${MC_SYS_LABEL[s]}</option>`).join('');
+  return`<div class="s5-irow" style="flex-wrap:wrap">
+    <select class="s5-inp" style="text-align:left" onchange="mcRowSys(${i},this.value)">${opts}</select>
+    <input type="number" class="s5-inp s5-w50" value="${row.segel}" min="1" oninput="mcRowSegel(${i},this.value)" title="Anzahl Segel">
+    <span class="s5-unit">Segel &times;</span>
+    <input type="number" class="s5-inp s5-w50" value="${row.welle}" min="0" step="0.1" oninput="mcRowWelle(${i},this.value)" title="Wellenlänge">
+    <span class="s5-unit">m Welle</span>
+    <button class="btn btn-s" style="padding:4px 10px;font-size:11px" onclick="mcRemoveRow(${i})">&times; entfernen</button>
+  </div>`;
+}
+function mcRenderRows(){
+  document.getElementById('mcRows').innerHTML=mc.rows.map((r,i)=>mcRowHtml(r,i)).join('');
+}
+
+function mcFindZonePrice(zoneNum,want3t){
+  const d2='zone'+zoneNum, d3='zone'+zoneNum+'-3t';
+  if(want3t&&mc.zonePreis[d3]) return mc.zonePreis[d3];
+  if(!want3t&&mc.zonePreis[d2]) return mc.zonePreis[d2];
+  for(const[k,v]of Object.entries(mc.zonePreis)){
+    const m=k.match(/zone.?(\d+)/i);
+    if(!m||parseInt(m[1])!==zoneNum) continue;
+    const has3t=/3t/i.test(k);
+    if(want3t===has3t) return v;
+  }
+  if(want3t) return mcFindZonePrice(zoneNum,false);
+  return 0;
+}
+
+function mcCalc(){
+  if(!mc.loaded) return;
+  const uses18=(document.querySelector('input[name="mcDaemmung"]:checked')||{}).value==='18';
+  const ap10=parseFloat((document.getElementById('mcApProPlatte')||{}).value)||4;
+  const wandplatten=Math.max(0,parseInt((document.getElementById('mcWandplatten')||{}).value)||0);
+  const schraubfund=Math.max(0,parseInt((document.getElementById('mcSchraubfund')||{}).value)||0);
+  const zone=parseInt((document.getElementById('mcZone')||{}).value)||2;
+  const termine=parseInt((document.querySelector('input[name="mcTermine"]:checked')||{}).value)||2;
+  const dach=(document.getElementById('mcDachterrasse')||{}).checked;
+
+  let totalH=0,sailHTotal=0,apHTotal=0,sfHTotal=0,verbHTotal=0;
+  const rowDetails=[];
+  let mkUniversal=null;
+
+  mc.rows.forEach(row=>{
+    const mk=parseMontKalkMatrix(mc.montRowsRaw,row.sys);
+    if(!mkUniversal&&mk.ok) mkUniversal=mk;
+    const sailH=mk.grundpreis+Math.max(0,row.segel-1)*mk.weiteresSegel;
+    sailHTotal+=sailH;
+    const sysShort=MC_SYS_LABEL[row.sys]||row.sys;
+    const noVerbinder=['M','FLEX'].includes(sysShort)||row.sys.startsWith('SONNENSEGEL');
+    const wellenM=Math.ceil(row.welle||0);
+    const verbByWelle=noVerbinder?{}:parseVerbinderMatrix(mc.verbRowsRaw,row.sys);
+    const verbCount=noVerbinder?0:(verbByWelle[wellenM]||0);
+    const verbH=verbCount*(mk.verbZuschlag||0);
+    verbHTotal+=verbH;
+    rowDetails.push({row,sailH,verbH,ok:mk.ok});
+  });
+
+  const apH=mkUniversal?(uses18?mkUniversal.ap18:mkUniversal.ap10):0;
+  apHTotal=wandplatten*ap10*apH;
+  const sfH=mkUniversal?mkUniversal.schraubfund:0;
+  sfHTotal=schraubfund*sfH;
+
+  totalH=sailHTotal+apHTotal+sfHTotal+verbHTotal;
+  const raw=totalH*mc.stundensatz;
+  const instPreis=mc.stundensatz?Math.ceil(raw/10)*10:0;
+  const servLogPreis=mcFindZonePrice(zone,termine===3);
+  const dachPreis=dach?mc.dachterrasse:0;
+  const gesamt=instPreis+servLogPreis+dachPreis;
+
+  const ok=mkUniversal&&mc.stundensatz;
+  document.getElementById('mcStatus').textContent=ok?'':'⚠ Preisdaten unvollständig — Google Sheet prüfen';
+
+  let h=`<div class="s5-calc-detail">`;
+  rowDetails.forEach((rd,i)=>{
+    h+=`${MC_SYS_LABEL[rd.row.sys]||rd.row.sys} &times;${rd.row.segel} Segel, ${rd.row.welle}m Welle: ${fmt(rd.sailH)} Std. Grundpreis`+(rd.verbH?` + ${fmt(rd.verbH)} Std. Wellenverbinder`:'')+`<br>`;
+  });
+  h+=`Ankerpunkte: ${wandplatten} Platten &times; ${ap10} AP/Stk. &times; ${fmt(apH)} Std. = ${fmt(apHTotal)} Std.<br>`;
+  h+=`Schraubfundamente: ${schraubfund} &times; ${fmt(sfH)} Std. = ${fmt(sfHTotal)} Std.<br>`;
+  h+=`Gesamt-Stunden: ${fmt(totalH)} Std. &times; ${fmt(mc.stundensatz)} &euro;/Std. = ${fmt(raw)} &euro;</div>`;
+
+  h+=`<div class="s5-calc"><span>System Installation</span><strong>${fmtE(instPreis)}</strong></div>`;
+  h+=`<div class="s5-calc"><span>Service &amp; Logistik (Zone ${zone}, ${termine} Termine)</span><strong>${fmtE(servLogPreis)}</strong></div>`;
+  if(dach) h+=`<div class="s5-calc"><span>Dachterrassen-Aufschlag</span><strong>${fmtE(dachPreis)}</strong></div>`;
+  h+=`<div class="s5-calc" style="border-top:2px solid var(--accent);margin-top:6px;padding-top:10px"><span style="font-weight:700">Gesamt</span><strong style="font-size:18px">${fmtE(gesamt)}</strong></div>`;
+
+  document.getElementById('mcResult').innerHTML=h;
 }
 
 function renderStep5(){
