@@ -197,8 +197,12 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .s5-irow{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
 .s5-lbl{font-size:11px;color:var(--muted);min-width:130px}
 /* Montage Kalkulator: multi-column, alles ohne Scrollen sichtbar */
-.mc-grid{display:grid;gap:14px;align-items:start;grid-template-columns:1.3fr 1fr 1fr;grid-template-areas:"sys wand serv" "sys fund erg"}
-@media(max-width:1000px){.mc-grid{grid-template-columns:1fr;grid-template-areas:"sys" "wand" "fund" "serv" "erg"}.s5-card[style*="grid-area:erg"]{position:static!important}}
+.mc-grid{display:grid;gap:14px;align-items:start;grid-template-columns:1.3fr 1fr 1fr;grid-template-areas:"sys wand serv" "sys fund serv"}
+@media(max-width:1000px){.mc-grid{grid-template-columns:1fr;grid-template-areas:"sys" "wand" "fund" "serv"}}
+.mc-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:900px){.mc-tiles{grid-template-columns:1fr}}
+.mc-tile{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.mc-tile h4{font-size:11px;color:var(--muted);margin:0 0 8px;text-transform:uppercase;letter-spacing:.03em}
 /* Step 6 */
 .s6-totals{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:18px 0}
 .s6-tr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
@@ -224,7 +228,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 14:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -535,19 +539,22 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
         <div class="s5-card-hdr"><strong>Wandbefestigungen</strong><span>Wandplatten &rarr; Ankerpunkte</span></div>
         <div class="s5-card-body">
           <div class="s5-irow">
-            <span class="s5-lbl">Anzahl Wandplatten</span>
-            <input type="number" class="s5-inp s5-w70" id="mcWandplatten" value="0" min="0" oninput="mcCalc()">
-            <span class="s5-unit">Stk.</span>
-          </div>
-          <div class="s5-irow">
-            <span class="s5-lbl">Ankerpunkte / Platte</span>
-            <input type="number" class="s5-inp s5-w70" id="mcApProPlatte" value="4" min="0" oninput="mcCalc()">
+            <span class="s5-lbl">Wandplatte (2 AP)</span>
+            <input type="number" class="s5-inp s5-w50" id="mcWand2Anzahl" value="0" min="0" oninput="mcCalc()">
+            <span class="s5-unit">Stk. &times;</span>
+            <input type="number" class="s5-inp s5-w50" id="mcWand2Ap" value="2" min="0" oninput="mcCalc()">
             <span class="s5-unit">AP/Stk.</span>
+            <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcDaemmung2" value="10" checked onchange="mcCalc()"> 10cm</label>
+            <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcDaemmung2" value="18" onchange="mcCalc()"> 18cm</label>
           </div>
           <div class="s5-irow">
-            <span class="s5-lbl">D&auml;mmung</span>
-            <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcDaemmung" value="10" checked onchange="mcCalc()"> bis 10cm</label>
-            <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcDaemmung" value="18" onchange="mcCalc()"> bis 18cm</label>
+            <span class="s5-lbl">Wandplatte (4 AP)</span>
+            <input type="number" class="s5-inp s5-w50" id="mcWand4Anzahl" value="0" min="0" oninput="mcCalc()">
+            <span class="s5-unit">Stk. &times;</span>
+            <input type="number" class="s5-inp s5-w50" id="mcWand4Ap" value="4" min="0" oninput="mcCalc()">
+            <span class="s5-unit">AP/Stk.</span>
+            <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcDaemmung4" value="10" checked onchange="mcCalc()"> 10cm</label>
+            <label class="s5-radio-row" style="margin-bottom:0"><input type="radio" name="mcDaemmung4" value="18" onchange="mcCalc()"> 18cm</label>
           </div>
         </div>
       </div>
@@ -587,11 +594,11 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="s5-card" style="grid-area:erg;align-self:start;position:sticky;top:10px">
-        <div class="s5-card-hdr"><strong>Ergebnis</strong><span id="mcStatus"></span></div>
-        <div class="s5-card-body" id="mcResult"></div>
-      </div>
+    <div class="s5-card" style="margin-top:14px">
+      <div class="s5-card-hdr"><strong>Ergebnis</strong><span id="mcStatus"></span></div>
+      <div class="s5-card-body" id="mcResult"></div>
     </div>
   </div>
 </div>
@@ -1790,9 +1797,14 @@ function mcFindZonePrice(zoneNum,want3t){
 
 function mcCalc(){
   if(!mc.loaded) return;
-  const uses18=(document.querySelector('input[name="mcDaemmung"]:checked')||{}).value==='18';
-  const ap10=parseFloat((document.getElementById('mcApProPlatte')||{}).value)||4;
-  const wandplatten=Math.max(0,parseInt((document.getElementById('mcWandplatten')||{}).value)||0);
+  const wandGroups=[
+    {label:'Wandplatte (2 AP)',anzahl:Math.max(0,parseInt((document.getElementById('mcWand2Anzahl')||{}).value)||0),
+      ap:parseFloat((document.getElementById('mcWand2Ap')||{}).value)||2,
+      uses18:(document.querySelector('input[name="mcDaemmung2"]:checked')||{}).value==='18'},
+    {label:'Wandplatte (4 AP)',anzahl:Math.max(0,parseInt((document.getElementById('mcWand4Anzahl')||{}).value)||0),
+      ap:parseFloat((document.getElementById('mcWand4Ap')||{}).value)||4,
+      uses18:(document.querySelector('input[name="mcDaemmung4"]:checked')||{}).value==='18'}
+  ];
   const schraubfund=Math.max(0,parseInt((document.getElementById('mcSchraubfund')||{}).value)||0);
   const zone=parseInt((document.getElementById('mcZone')||{}).value)||2;
   const termine=parseInt((document.querySelector('input[name="mcTermine"]:checked')||{}).value)||2;
@@ -1823,8 +1835,11 @@ function mcCalc(){
     rowDetails.push({row,sailH,verbH,ok:mk.ok,isFix,priceAsExtra:isFix&&hasNonFixOtherRow});
   });
 
-  const apH=mkUniversal?(uses18?mkUniversal.ap18:mkUniversal.ap10):0;
-  apHTotal=wandplatten*ap10*apH;
+  wandGroups.forEach(g=>{
+    const apH=mkUniversal?(g.uses18?mkUniversal.ap18:mkUniversal.ap10):0;
+    g.h=g.anzahl*g.ap*apH;
+    apHTotal+=g.h;
+  });
   const sfH=mkUniversal?mkUniversal.schraubfund:0;
   sfHTotal=schraubfund*sfH;
 
@@ -1847,24 +1862,38 @@ function mcCalc(){
   const ok=mkUniversal&&mc.stundensatz;
   document.getElementById('mcStatus').textContent=ok?'':'⚠ Preisdaten unvollständig — Google Sheet prüfen';
 
-  let h=`<div class="s5-calc-detail">`;
-  rowDetails.forEach((rd,i)=>{
+  // Tile 1: Stunden-Aufschlüsselung
+  let t1=`<h4>Stunden-Aufschl&uuml;sselung</h4>`;
+  rowDetails.forEach(rd=>{
     const welleTxt=rd.isFix?'':`, ${rd.row.welle}m Welle`;
-    const sailLbl=rd.priceAsExtra?'Std. (alle zum "weiteres Segel"-Preis, da weiteres System vorhanden)':'Std. Grundpreis';
-    h+=`${MC_SYS_LABEL[rd.row.sys]||rd.row.sys} &times;${rd.row.segel} Segel${welleTxt}: ${fmt(rd.sailH)} ${sailLbl}`+(rd.verbH?` + ${fmt(rd.verbH)} Std. Wellenverbinder`:'')+`<br>`;
+    const sailLbl=rd.priceAsExtra?' (zum "weiteres Segel"-Preis)':' Grundpreis';
+    t1+=`${MC_SYS_LABEL[rd.row.sys]||rd.row.sys} &times;${rd.row.segel} Segel${welleTxt}: ${fmt(rd.sailH)} Std.${sailLbl}`+(rd.verbH?` + ${fmt(rd.verbH)} Std. Wellenverbinder`:'')+`<br>`;
   });
-  h+=`Ankerpunkte: ${wandplatten} Platten &times; ${ap10} AP/Stk. &times; ${fmt(apH)} Std. = ${fmt(apHTotal)} Std.<br>`;
-  h+=`Schraubfundamente: ${schraubfund} &times; ${fmt(sfH)} Std. = ${fmt(sfHTotal)} Std.<br>`;
-  h+=`Montage-Stunden (ohne Anfahrt): ${fmt(totalH)} Std. &times; ${fmt(mc.stundensatz)} &euro;/Std. = ${fmt(raw)} &euro;<br>`;
-  h+=`Anfahrt: ${fmt(anfahrtHProTermin)} Std./Termin &times; ${termine} Termine = ${fmt(anfahrtHProTermin*termine)} Std.<br>`;
-  h+=`<strong style="color:var(--accent2)">Gesamtstunden inkl. Anfahrt: ${fmt(gesamtHMitAnfahrt)} Std.</strong></div>`;
+  wandGroups.forEach(g=>{
+    if(g.anzahl>0) t1+=`${g.label}: ${g.anzahl} &times; ${fmt(g.ap)} AP &times; ${fmt(g.uses18?mkUniversal?.ap18||0:mkUniversal?.ap10||0)} Std. = ${fmt(g.h)} Std.<br>`;
+  });
+  t1+=`Schraubfundamente: ${schraubfund} &times; ${fmt(sfH)} Std. = ${fmt(sfHTotal)} Std.<br>`;
+  t1+=`<strong>Montage-Stunden gesamt: ${fmt(totalH)} Std.</strong>`;
 
-  h+=`<div class="s5-calc" style="${terminWarnung?'color:#ffb300':''}"><span>${terminWarnung?'⚠ ':''}Empfohlene Anzahl Termine (&oslash; max. 8 Std./Tag inkl. Anfahrt)</span><strong style="${terminWarnung?'color:#ffb300':''}">${empfohleneTermine}</strong></div>`;
+  // Tile 2: Anfahrt & Termine
+  let t2=`<h4>Anfahrt &amp; Termine</h4>`;
+  t2+=`Anfahrt: ${fmt(anfahrtHProTermin)} Std./Termin &times; ${termine} Termine = ${fmt(anfahrtHProTermin*termine)} Std.<br>`;
+  t2+=`<strong style="color:var(--accent2)">Gesamtstunden inkl. Anfahrt: ${fmt(gesamtHMitAnfahrt)} Std.</strong><br><br>`;
+  t2+=`<span style="${terminWarnung?'color:#ffb300':''}">${terminWarnung?'⚠ ':''}Empfohlene Anzahl Termine (&oslash; max. 8 Std./Tag inkl. Anfahrt): <strong style="${terminWarnung?'color:#ffb300':''}">${empfohleneTermine}</strong></span>`;
 
-  h+=`<div class="s5-calc"><span>System Installation</span><strong>${fmtE(instPreis)}</strong></div>`;
-  h+=`<div class="s5-calc"><span>Service &amp; Logistik (Zone ${zone}, ${termine} Termine)</span><strong>${fmtE(servLogPreis)}</strong></div>`;
-  if(dach) h+=`<div class="s5-calc"><span>Dachterrassen-Aufschlag</span><strong>${fmtE(dachPreis)}</strong></div>`;
-  h+=`<div class="s5-calc" style="border-top:2px solid var(--accent);margin-top:6px;padding-top:10px"><span style="font-weight:700">Gesamt</span><strong style="font-size:18px">${fmtE(gesamt)}</strong></div>`;
+  // Tile 3: Preise
+  let t3=`<h4>Preise</h4>`;
+  t3+=`<div class="s5-calc" style="margin-top:0;border-top:none;padding-top:0"><span>Montage-Stunden &times; ${fmt(mc.stundensatz)} &euro;/Std.</span><strong>${fmt(raw)} &euro;</strong></div>`;
+  t3+=`<div class="s5-calc"><span>System Installation</span><strong>${fmtE(instPreis)}</strong></div>`;
+  t3+=`<div class="s5-calc"><span>Service &amp; Logistik (Zone ${zone}, ${termine} Termine)</span><strong>${fmtE(servLogPreis)}</strong></div>`;
+  if(dach) t3+=`<div class="s5-calc"><span>Dachterrassen-Aufschlag</span><strong>${fmtE(dachPreis)}</strong></div>`;
+  t3+=`<div class="s5-calc" style="border-top:2px solid var(--accent);margin-top:6px;padding-top:10px"><span style="font-weight:700">Gesamt</span><strong style="font-size:18px">${fmtE(gesamt)}</strong></div>`;
+
+  const h=`<div class="mc-tiles">
+    <div class="mc-tile">${t1}</div>
+    <div class="mc-tile">${t2}</div>
+    <div class="mc-tile">${t3}</div>
+  </div>`;
 
   document.getElementById('mcResult').innerHTML=h;
 }
