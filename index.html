@@ -242,7 +242,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 22:44 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 22:52 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -623,7 +623,10 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
             </div>
           </div>
           <div class="s5-irow">
-            <label class="s5-radio-row" style="margin-bottom:0"><input type="checkbox" id="mcDachterrasse" onchange="mcCalc()"> Dachterrasse</label>
+            <span class="s5-lbl">Dachterrasse</span>
+            <div class="mc-pick-row" id="mcDachterrassePicks">
+              <div class="mc-pick" data-v="1" onclick="mcToggleDach(this)">Dachterrasse</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1531,7 +1534,7 @@ async function loadPrices5(){
   if(pR.length>1) pR.forEach(r=>{
     // Brute-force row scan (runs before key/preis guard — catches any column layout)
     const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s./\\]+/g,'')).join('|');
-    if(!prices5.anfahrtSatz&&rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('satz'))){
+    if(!prices5.anfahrtSatz&&rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('satz')||rowStr.includes('team'))){
       for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20&&v<200){prices5.anfahrtSatz=v;return;}}
     }
     if(!prices5.stundensatz&&!rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
@@ -1733,7 +1736,7 @@ function gsMonPreis(key){
     return calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,satz);
   }
   if(key==='VORFRACHT'||key==='VERSAND') return prices5.fracht[key]||0;
-  if(key==='DACH') return prices5.dachterrasse||0;
+  if(key==='DACH') return(prices5.dachterrasse||0)*(fragebogen.termine||2);
   if(key==='EINWEIS-FUND') return prices5.eigenleistung||0;
   if(key.startsWith('INST-')) return calcInstPreis();
   return 0;
@@ -1761,7 +1764,7 @@ async function initMontageMode(){
     mc.verbRowsRaw=vR;
     if(pR.length>1) pR.forEach(r=>{
       const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s./\\]+/g,'')).join('|');
-      if(!mc.anfahrtSatz&&rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('satz'))){
+      if(!mc.anfahrtSatz&&rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('satz')||rowStr.includes('team'))){
         for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20&&v<200){mc.anfahrtSatz=v;break;}}
       }
       if(!mc.stundensatz&&!rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
@@ -1794,6 +1797,10 @@ function mcRowSegel(i,v){mc.rows[i].segel=Math.max(1,parseInt(v)||1);mcCalc();}
 function mcRowWelle(i,v){mc.rows[i].welle=Math.max(0,parseFloat(v)||0);mcCalc();}
 function mcPick(containerId,el){
   document.querySelectorAll(`#${containerId} .mc-pick`).forEach(p=>p.classList.toggle('sel',p===el));
+  mcCalc();
+}
+function mcToggleDach(el){
+  el.classList.toggle('sel');
   mcCalc();
 }
 function mcPickVal(containerId,fallback){
@@ -1831,7 +1838,7 @@ function mcCalc(){
   const schraubfund=Math.max(0,parseInt((document.getElementById('mcSchraubfund')||{}).value)||0);
   const zone=parseInt((document.getElementById('mcZone')||{}).value)||2;
   const termine=parseInt(mcPickVal('mcTerminePicks','2'))||2;
-  const dach=(document.getElementById('mcDachterrasse')||{}).checked;
+  const dach=!!document.querySelector('#mcDachterrassePicks .mc-pick.sel');
   const anfahrtVoll=mcPickVal('mcAnfahrtPicks','0')==='1';
 
   let totalH=0,sailHTotal=0,apHTotal=0,sfHTotal=0,verbHTotal=0;
@@ -1873,7 +1880,7 @@ function mcCalc(){
   const servLogPreis=calcAnfahrtPreis(zone,termine,anfahrtVoll?mc.stundensatz:mc.anfahrtSatz);
   const servLogRed=calcAnfahrtPreis(zone,termine,mc.anfahrtSatz);
   const servLogFull=calcAnfahrtPreis(zone,termine,mc.stundensatz);
-  const dachPreis=dach?mc.dachterrasse:0;
+  const dachPreis=dach?mc.dachterrasse*termine:0;
   const gesamt=instPreis+servLogPreis+dachPreis;
 
   // Anfahrtszeit: Zone-Minuten (einfache Fahrt) × 2 (Hin+Rück) × Anzahl Termine
@@ -1912,7 +1919,7 @@ function mcCalc(){
   t3+=`<div class="s5-calc" style="margin-top:0;border-top:none;padding-top:0"><span>Montage</span><strong>${fmtE(instPreis)}</strong></div>`;
   t3+=`<div class="s5-calc"><span>Service &amp; Logistik (Zone ${zone}, ${termine} Termine)</span><strong>${fmtE(servLogPreis)}</strong></div>`;
   t3+=`<div class="mc-sub">${anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(mc.anfahrtSatz)}/h): ${fmtE(servLogRed)} &nbsp;&middot;&nbsp; ${anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(mc.stundensatz)}/h): ${fmtE(servLogFull)}</div>`;
-  if(dach) t3+=`<div class="s5-calc"><span>Dachterrassen-Aufschlag</span><strong>${fmtE(dachPreis)}</strong></div>`;
+  if(dach) t3+=`<div class="s5-calc"><span>Dachterrassen-Aufschlag (${termine}&times; ${fmtE(mc.dachterrasse)})</span><strong>${fmtE(dachPreis)}</strong></div>`;
   t3+=`<div class="s5-calc" style="border-top:2px solid var(--accent);margin-top:6px;padding-top:10px"><span style="font-weight:700">Gesamt</span><strong style="font-size:18px">${fmtE(gesamt)}</strong></div>`;
 
   const h=`<div class="mc-tiles">
