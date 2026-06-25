@@ -242,7 +242,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 22:52 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 22:59 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -616,16 +616,16 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
             </div>
           </div>
           <div class="s5-irow">
+            <span class="s5-lbl">Dachterrasse</span>
+            <div class="mc-pick-row" id="mcDachterrassePicks">
+              <div class="mc-pick" data-v="1" onclick="mcToggleDach(this)">Dachterrasse</div>
+            </div>
+          </div>
+          <div class="s5-irow">
             <span class="s5-lbl">Anfahrt-Satz</span>
             <div class="mc-pick-row" id="mcAnfahrtPicks">
               <div class="mc-pick sel" data-v="0" onclick="mcPick('mcAnfahrtPicks',this)">Reduziert</div>
               <div class="mc-pick" data-v="1" onclick="mcPick('mcAnfahrtPicks',this)">Voller Satz</div>
-            </div>
-          </div>
-          <div class="s5-irow">
-            <span class="s5-lbl">Dachterrasse</span>
-            <div class="mc-pick-row" id="mcDachterrassePicks">
-              <div class="mc-pick" data-v="1" onclick="mcToggleDach(this)">Dachterrasse</div>
             </div>
           </div>
         </div>
@@ -1915,12 +1915,12 @@ function mcCalc(){
   t2+=`<div class="mc-row" style="border-top:none;margin-top:10px;${terminWarnung?'color:#ffb300':''}"><span style="color:inherit">${terminWarnung?'⚠ ':''}Empfohlene Termine (&oslash; max. 8 Std./Tag)</span><span style="color:inherit">${empfohleneTermine}</span></div></div>`;
 
   // Tile 3: Preise
-  let t3=`<h4>Preise</h4>`;
-  t3+=`<div class="s5-calc" style="margin-top:0;border-top:none;padding-top:0"><span>Montage</span><strong>${fmtE(instPreis)}</strong></div>`;
-  t3+=`<div class="s5-calc"><span>Service &amp; Logistik (Zone ${zone}, ${termine} Termine)</span><strong>${fmtE(servLogPreis)}</strong></div>`;
+  let t3=`<h4>Preise</h4><div class="mc-tile-sm">`;
+  t3+=`<div class="mc-row"><span>Montage</span><span>${fmtE(instPreis)}</span></div>`;
+  t3+=`<div class="mc-row"><span>Service &amp; Logistik (Zone ${zone}, ${termine} Termine)</span><span>${fmtE(servLogPreis)}</span></div>`;
   t3+=`<div class="mc-sub">${anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(mc.anfahrtSatz)}/h): ${fmtE(servLogRed)} &nbsp;&middot;&nbsp; ${anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(mc.stundensatz)}/h): ${fmtE(servLogFull)}</div>`;
-  if(dach) t3+=`<div class="s5-calc"><span>Dachterrassen-Aufschlag (${termine}&times; ${fmtE(mc.dachterrasse)})</span><strong>${fmtE(dachPreis)}</strong></div>`;
-  t3+=`<div class="s5-calc" style="border-top:2px solid var(--accent);margin-top:6px;padding-top:10px"><span style="font-weight:700">Gesamt</span><strong style="font-size:18px">${fmtE(gesamt)}</strong></div>`;
+  if(dach) t3+=`<div class="mc-row"><span>Dachterrassen-Aufschlag (${termine}&times; ${fmtE(mc.dachterrasse)})</span><span>${fmtE(dachPreis)}</span></div>`;
+  t3+=`<div class="mc-total"><span>Gesamt</span><span>${fmtE(gesamt)}</span></div></div>`;
 
   const h=`<div class="mc-tiles">
     <div class="mc-tile">${t1}</div>
