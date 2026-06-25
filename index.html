@@ -211,6 +211,12 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .mc-tile-sm .mc-sub{font-size:10px;color:var(--muted);padding:0 0 6px;margin-top:-2px}
 .mc-tile-sm .mc-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:12px;font-weight:700}
 .mc-tile-sm .mc-total span:last-child{color:var(--accent2);font-size:14px;font-family:'DM Mono',monospace}
+.mc-postable{background:rgba(91,141,238,.06);border:1px solid var(--accent);border-radius:10px;padding:14px 16px;margin-top:12px}
+.mc-postable-title{font-size:11px;color:var(--accent);margin:0 0 10px;text-transform:uppercase;letter-spacing:.03em;font-weight:700}
+.mc-posrow{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.mc-posrow:last-of-type{border-bottom:none}
+.mc-posrow span:first-child{font-size:14px;font-weight:600;color:var(--text)}
+.mc-posrow strong{font-size:18px;color:var(--accent2);font-family:'DM Mono',monospace;white-space:nowrap}
 .mc-pick-row{display:flex;gap:8px;flex-wrap:wrap}
 .mc-pick{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center;cursor:pointer;transition:all .2s;font-size:12px;font-weight:600;color:var(--text);user-select:none}
 .mc-pick.sel{border-color:var(--accent);background:rgba(91,141,238,.08);color:var(--accent)}
@@ -242,7 +248,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 22:59 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 23:04 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1783,7 +1789,7 @@ async function initMontageMode(){
 }
 
 function mcAddRow(){
-  mc.rows.push({sys:'SOLIDAY-ONE',segel:1,welle:9});
+  mc.rows.push({sys:'SOLIDAY-M',segel:1,welle:9});
   mcRenderRows();
   mcCalc();
 }
@@ -1922,11 +1928,22 @@ function mcCalc(){
   if(dach) t3+=`<div class="mc-row"><span>Dachterrassen-Aufschlag (${termine}&times; ${fmtE(mc.dachterrasse)})</span><span>${fmtE(dachPreis)}</span></div>`;
   t3+=`<div class="mc-total"><span>Gesamt</span><span>${fmtE(gesamt)}</span></div></div>`;
 
+  // Positionen für Angebot: exakte Namen wie im sevdesk-Angebot, gut sichtbar zum Übertragen
+  const sysLabels=[...new Set(mc.rows.map(r=>{
+    const s=(r.sys||'').toUpperCase();
+    return s.startsWith('SOLIDAY-')?'Soliday '+s.replace('SOLIDAY-',''):s.startsWith('SONNENSEGEL')?s.replace('SONNENSEGEL-','Sonnensegel '):s;
+  }))].join(' / ');
+  let tp=`<div class="mc-postable"><div class="mc-postable-title">Positionen f&uuml;r Angebot</div>`;
+  tp+=`<div class="mc-posrow"><span>System Installation - ${sysLabels}</span><strong>${fmtE(instPreis)}</strong></div>`;
+  tp+=`<div class="mc-posrow"><span>Service &amp; Logistik (Zone ${zone})</span><strong>${fmtE(servLogPreis)}</strong></div>`;
+  if(dach) tp+=`<div class="mc-posrow"><span>Dachterrassen-Aufschlag</span><strong>${fmtE(dachPreis)}</strong></div>`;
+  tp+=`</div>`;
+
   const h=`<div class="mc-tiles">
     <div class="mc-tile">${t1}</div>
     <div class="mc-tile">${t2}</div>
     <div class="mc-tile">${t3}</div>
-  </div>`;
+  </div>${tp}`;
 
   document.getElementById('mcResult').innerHTML=h;
 }
