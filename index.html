@@ -248,7 +248,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 23:04 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 23:05 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -566,17 +566,17 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
         <div class="s5-card-hdr"><strong>Wandbefestigungen</strong><span>Wandplatten &rarr; Ankerpunkte</span></div>
         <div class="s5-card-body">
           <div class="s5-irow">
+            <span class="s5-lbl">Wandplatte (4 AP)</span>
+            <input type="number" class="s5-inp s5-w50" id="mcWand4Anzahl" value="2" min="0" oninput="mcCalc()">
+            <span class="s5-unit">Stk. &times;</span>
+            <input type="number" class="s5-inp s5-w50" id="mcWand4Ap" value="4" min="0" oninput="mcCalc()">
+            <span class="s5-unit">AP/Stk.</span>
+          </div>
+          <div class="s5-irow">
             <span class="s5-lbl">Wandplatte (2 AP)</span>
             <input type="number" class="s5-inp s5-w50" id="mcWand2Anzahl" value="0" min="0" oninput="mcCalc()">
             <span class="s5-unit">Stk. &times;</span>
             <input type="number" class="s5-inp s5-w50" id="mcWand2Ap" value="2" min="0" oninput="mcCalc()">
-            <span class="s5-unit">AP/Stk.</span>
-          </div>
-          <div class="s5-irow">
-            <span class="s5-lbl">Wandplatte (4 AP)</span>
-            <input type="number" class="s5-inp s5-w50" id="mcWand4Anzahl" value="0" min="0" oninput="mcCalc()">
-            <span class="s5-unit">Stk. &times;</span>
-            <input type="number" class="s5-inp s5-w50" id="mcWand4Ap" value="4" min="0" oninput="mcCalc()">
             <span class="s5-unit">AP/Stk.</span>
           </div>
           <div class="s5-irow">
@@ -594,7 +594,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
         <div class="s5-card-body">
           <div class="s5-irow">
             <span class="s5-lbl">Anzahl Schraubfundamente</span>
-            <input type="number" class="s5-inp s5-w70" id="mcSchraubfund" value="0" min="0" oninput="mcCalc()">
+            <input type="number" class="s5-inp s5-w70" id="mcSchraubfund" value="2" min="0" oninput="mcCalc()">
             <span class="s5-unit">Stk.</span>
           </div>
         </div>
