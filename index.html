@@ -137,7 +137,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .dach-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
 .fg-outer{display:flex;gap:20px;align-items:start;max-width:1100px;margin:0 auto}
 .fg-col-1{flex:0 0 170px}
-.fg-montage-opts{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;min-width:0}
+.fg-montage-opts{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:20px;min-width:0}
 .fg-col{display:flex;flex-direction:column}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:8px 8px;text-align:center;cursor:pointer;transition:all .2s;min-height:52px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
@@ -242,7 +242,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 19:12 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 22:44 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -417,6 +417,13 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
           <div class="zone-grid">
             <div class="zone-item" id="dachCard" onclick="toggleDach()"><div class="zone-num">Dachterrasse</div><div class="zone-time">Aufschlag wird hinzugef&uuml;gt</div></div>
             <div class="zone-item" id="eigenCard" onclick="toggleEigenleistung()"><div class="zone-num">Eigenleistung</div><div class="zone-time">Fundamente in Eigenleistung</div></div>
+          </div>
+        </div>
+        <div class="fg-col">
+          <div class="fg-title">Anfahrt-Satz</div>
+          <div class="zone-grid">
+            <div class="zone-item sel" id="anfRedCard" onclick="selAnfahrtSatz(false)"><div class="zone-num">Reduziert</div><div class="zone-time">empfohlen</div></div>
+            <div class="zone-item" id="anfVollCard" onclick="selAnfahrtSatz(true)"><div class="zone-num">Voller Satz</div><div class="zone-time">Team-Stundensatz</div></div>
           </div>
         </div>
       </div>
@@ -609,6 +616,13 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
             </div>
           </div>
           <div class="s5-irow">
+            <span class="s5-lbl">Anfahrt-Satz</span>
+            <div class="mc-pick-row" id="mcAnfahrtPicks">
+              <div class="mc-pick sel" data-v="0" onclick="mcPick('mcAnfahrtPicks',this)">Reduziert</div>
+              <div class="mc-pick" data-v="1" onclick="mcPick('mcAnfahrtPicks',this)">Voller Satz</div>
+            </div>
+          </div>
+          <div class="s5-irow">
             <label class="s5-radio-row" style="margin-bottom:0"><input type="checkbox" id="mcDachterrasse" onchange="mcCalc()"> Dachterrasse</label>
           </div>
         </div>
@@ -648,7 +662,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 // === STATE ===
 let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
-let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selTermine=2,selMontage=true,extractAttempts=0,maxStep=0;
+let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,extractAttempts=0,maxStep=0;
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
@@ -1337,6 +1351,11 @@ function selTermineF(n){
   document.getElementById('t2Card').classList.toggle('sel',n===2);
   document.getElementById('t3Card').classList.toggle('sel',n===3);
 }
+function selAnfahrtSatz(voll){
+  selAnfahrtVoll=voll;
+  document.getElementById('anfRedCard').classList.toggle('sel',!voll);
+  document.getElementById('anfVollCard').classList.toggle('sel',voll);
+}
 function toggleMontage(v){
   selMontage=v;
   document.getElementById('mitMontCard').classList.toggle('sel',v);
@@ -1379,6 +1398,7 @@ async function initStep5(){
     dachterrasse:selDach,
     eigenleistung:selEigenleistung,
     montage:selMontage,
+    anfahrtVoll:selAnfahrtVoll,
     freitext:document.getElementById('fgFrei').value
   };
   // Re-transform with current fragebogen (applies montage/eigenleistung settings)
@@ -1709,7 +1729,8 @@ function calcAnfahrtPreis(zoneNum,termine,satz){
 }
 function gsMonPreis(key){
   if(key==='SERV-LOG'){
-    return calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,prices5.anfahrtSatz);
+    const satz=fragebogen.anfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
+    return calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,satz);
   }
   if(key==='VORFRACHT'||key==='VERSAND') return prices5.fracht[key]||0;
   if(key==='DACH') return prices5.dachterrasse||0;
@@ -1811,6 +1832,7 @@ function mcCalc(){
   const zone=parseInt((document.getElementById('mcZone')||{}).value)||2;
   const termine=parseInt(mcPickVal('mcTerminePicks','2'))||2;
   const dach=(document.getElementById('mcDachterrasse')||{}).checked;
+  const anfahrtVoll=mcPickVal('mcAnfahrtPicks','0')==='1';
 
   let totalH=0,sailHTotal=0,apHTotal=0,sfHTotal=0,verbHTotal=0;
   const rowDetails=[];
@@ -1848,7 +1870,9 @@ function mcCalc(){
   totalH=sailHTotal+apHTotal+sfHTotal+verbHTotal;
   const raw=totalH*mc.stundensatz;
   const instPreis=mc.stundensatz?Math.ceil(raw/10)*10:0;
-  const servLogPreis=calcAnfahrtPreis(zone,termine,mc.anfahrtSatz);
+  const servLogPreis=calcAnfahrtPreis(zone,termine,anfahrtVoll?mc.stundensatz:mc.anfahrtSatz);
+  const servLogRed=calcAnfahrtPreis(zone,termine,mc.anfahrtSatz);
+  const servLogFull=calcAnfahrtPreis(zone,termine,mc.stundensatz);
   const dachPreis=dach?mc.dachterrasse:0;
   const gesamt=instPreis+servLogPreis+dachPreis;
 
@@ -1887,6 +1911,7 @@ function mcCalc(){
   let t3=`<h4>Preise</h4>`;
   t3+=`<div class="s5-calc" style="margin-top:0;border-top:none;padding-top:0"><span>Montage</span><strong>${fmtE(instPreis)}</strong></div>`;
   t3+=`<div class="s5-calc"><span>Service &amp; Logistik (Zone ${zone}, ${termine} Termine)</span><strong>${fmtE(servLogPreis)}</strong></div>`;
+  t3+=`<div class="mc-sub">${anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(mc.anfahrtSatz)}/h): ${fmtE(servLogRed)} &nbsp;&middot;&nbsp; ${anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(mc.stundensatz)}/h): ${fmtE(servLogFull)}</div>`;
   if(dach) t3+=`<div class="s5-calc"><span>Dachterrassen-Aufschlag</span><strong>${fmtE(dachPreis)}</strong></div>`;
   t3+=`<div class="s5-calc" style="border-top:2px solid var(--accent);margin-top:6px;padding-top:10px"><span style="font-weight:700">Gesamt</span><strong style="font-size:18px">${fmtE(gesamt)}</strong></div>`;
 
@@ -2149,6 +2174,8 @@ function renderStep5(){
   if(servPos){
     const mi=monPosIdx['SERV-LOG'];
     const gp=gsMonPreis('SERV-LOG');
+    const slRed=calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,prices5.anfahrtSatz);
+    const slFull=calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,prices5.stundensatz);
     const zoneTimeMap2={1:'bis 15 min',2:'bis 30 min',3:'bis 45 min',4:'bis 60 min',5:'bis 75 min',6:'bis 90 min'};
     const zT2=zoneTimeMap2[fragebogen.zone||2]||'';
     const tAnz2=fragebogen.termine||2;
@@ -2159,6 +2186,10 @@ function renderStep5(){
         <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${slChips}</span>
       </div>
       <div class="s5-card-body">
+        <div class="s5-calc-detail">
+          <div>${fragebogen.anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(prices5.anfahrtSatz)}/h): ${fmtE(slRed)}</div>
+          <div>${fragebogen.anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(prices5.stundensatz)}/h): ${fmtE(slFull)}</div>
+        </div>
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
           <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
           <span class="s5-unit">&euro;</span>
