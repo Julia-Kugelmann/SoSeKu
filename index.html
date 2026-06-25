@@ -217,12 +217,16 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .mc-posrow:last-of-type{border-bottom:none}
 .mc-posrow span:first-child{font-size:14px;font-weight:600;color:var(--text)}
 .mc-posrow strong{font-size:18px;color:var(--accent2);font-family:'DM Mono',monospace;white-space:nowrap}
+.mc-grandtotal{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:14px 0 2px;margin-top:6px;border-top:2px solid var(--accent)}
+.mc-grandtotal span{font-size:15px;font-weight:700;color:var(--text)}
+.mc-grandtotal strong{font-size:28px;font-weight:800;color:var(--accent);font-family:'DM Mono',monospace;white-space:nowrap}
 .mc-pick-row{display:flex;gap:8px;flex-wrap:wrap}
 .mc-pick{background:var(--surface);border:2px solid var(--border);border-radius:8px;padding:6px 14px;text-align:center;cursor:pointer;transition:all .2s;font-size:12px;font-weight:600;color:var(--text);user-select:none}
 .mc-pick.sel{border-color:var(--accent);background:rgba(91,141,238,.08);color:var(--accent)}
 @media(hover:hover){.mc-pick:hover{border-color:var(--accent)}}
-.mc-trash{background:transparent;border:1px solid var(--border);border-radius:8px;width:30px;height:30px;flex-shrink:0;cursor:pointer;color:var(--muted);font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .2s}
-@media(hover:hover){.mc-trash:hover{border-color:#ff6b6b;color:#ff6b6b}}
+.mc-trash{background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.4);border-radius:8px;width:32px;height:32px;flex-shrink:0;cursor:pointer;color:#ff6b6b;line-height:1;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.mc-trash svg{width:16px;height:16px}
+@media(hover:hover){.mc-trash:hover{border-color:#ff6b6b;background:rgba(255,107,107,.18)}}
 /* Step 6 */
 .s6-totals{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:18px 0}
 .s6-tr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
@@ -248,7 +252,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 23:05 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 23:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1825,7 +1829,7 @@ function mcRowHtml(row,i){
     <input type="number" class="s5-inp s5-w40" value="${row.segel}" min="1" oninput="mcRowSegel(${i},this.value)" title="Anzahl Segel">
     <span class="s5-unit">&times;Segel</span>
     ${welleHtml}
-    <button class="mc-trash" onclick="mcRemoveRow(${i})" title="System entfernen">&#128465;</button>
+    <button class="mc-trash" onclick="mcRemoveRow(${i})" title="System entfernen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6l-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg></button>
   </div>`;
 }
 function mcRenderRows(){
@@ -1937,6 +1941,7 @@ function mcCalc(){
   tp+=`<div class="mc-posrow"><span>System Installation - ${sysLabels}</span><strong>${fmtE(instPreis)}</strong></div>`;
   tp+=`<div class="mc-posrow"><span>Service &amp; Logistik (Zone ${zone})</span><strong>${fmtE(servLogPreis)}</strong></div>`;
   if(dach) tp+=`<div class="mc-posrow"><span>Dachterrassen-Aufschlag</span><strong>${fmtE(dachPreis)}</strong></div>`;
+  tp+=`<div class="mc-grandtotal"><span>Gesamt</span><strong>${fmtE(gesamt)}</strong></div>`;
   tp+=`</div>`;
 
   const h=`<div class="mc-tiles">
