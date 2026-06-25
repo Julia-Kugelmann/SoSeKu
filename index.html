@@ -242,7 +242,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 17:44 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-25 19:12 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -650,7 +650,7 @@ let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selTermine=2,selMontage=true,extractAttempts=0,maxStep=0;
 let sevdeskPositions=null;
-let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},zonePreis:{},fracht:{},stundensatz:0,schraubfundament:0};
+let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
@@ -1384,7 +1384,7 @@ async function initStep5(){
   // Re-transform with current fragebogen (applies montage/eigenleistung settings)
   transformedData=transformiere(soSeKuJSON);
   // Skip sheet reload if prices already loaded (back-nav from step 5)
-  const pricesLoaded=prices5.stoffe.length>0||Object.keys(prices5.zonePreis).length>0||prices5.preislisteZeilen>0;
+  const pricesLoaded=prices5.stoffe.length>0||prices5.anfahrtSatz>0||prices5.preislisteZeilen>0;
   if(pricesLoaded){
     try{renderStep5();}catch(e){showError('Anzeige-Fehler Schritt 5: '+e.message);return;}
     showView('viewStep5');setStep(5);
@@ -1483,7 +1483,7 @@ async function loadPrices5(){
   prices5={
     stoffe:[],stofFeste:[],stofSandy:[],
     apPreis:{},apAnzahl:{},
-    zonePreis:{},fracht:{},
+    anfahrtSatz:0,fracht:{},
     stundensatz:0,dachterrasse:0,eigenleistung:0,schraubfundament:0,
     // Montage Zeitbausteine (Matrix): parsed values für aktuelles System
     montKalkParsed:null,
@@ -1511,7 +1511,10 @@ async function loadPrices5(){
   if(pR.length>1) pR.forEach(r=>{
     // Brute-force row scan (runs before key/preis guard — catches any column layout)
     const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s./\\]+/g,'')).join('|');
-    if(!prices5.stundensatz&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
+    if(!prices5.anfahrtSatz&&rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('satz'))){
+      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20&&v<200){prices5.anfahrtSatz=v;return;}}
+    }
+    if(!prices5.stundensatz&&!rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
       for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){prices5.stundensatz=v;return;}}
     }
     if(!prices5.dachterrasse&&rowStr.includes('dach')){
@@ -1531,10 +1534,10 @@ async function loadPrices5(){
     const preis=sheetNum(r,2,1,3,4);
     if(!key||!preis) return;
     if(['ziegel-10','ziegel-18','holz-10','holz-18'].includes(key)) prices5.apPreis[key]=preis;
-    else if(key.startsWith('zone')) prices5.zonePreis[key]=preis;
     else if(key==='vorfracht') prices5.fracht['VORFRACHT']=preis;
     else if(key==='versand') prices5.fracht['VERSAND']=preis;
     else if(key==='eigenleistung'||descL.includes('einweisung fundamente')) prices5.eigenleistung=preis;
+    else if(key.includes('anfahrt')&&key.includes('stundensatz')) prices5.anfahrtSatz=preis;
     else if(key==='stundensatz'||key.includes('stundensatz')) prices5.stundensatz=preis;
   });
   prices5.preislisteZeilen=pR.length;
@@ -1698,27 +1701,15 @@ function calcInstPreis(){
   const raw=totalH*prices5.stundensatz;
   return Math.ceil(raw/10)*10;
 }
-function findZonePrice(zoneNum,want3t){
-  // Direct lookup (expected format)
-  const d2='zone'+zoneNum, d3='zone'+zoneNum+'-3t';
-  if(want3t&&prices5.zonePreis[d3]) return prices5.zonePreis[d3];
-  if(!want3t&&prices5.zonePreis[d2]) return prices5.zonePreis[d2];
-  // Flexible scan: match any key containing the zone number
-  for(const [k,v] of Object.entries(prices5.zonePreis)){
-    const m=k.match(/zone.?(\d+)/i);
-    if(!m||parseInt(m[1])!==zoneNum) continue;
-    const has3t=/3t/i.test(k);
-    if(want3t===has3t) return v;
-  }
-  // 3-Termine fallback: use 2-Termine price
-  if(want3t) return findZonePrice(zoneNum,false);
-  return 0;
+// Anfahrt: Zone-Minuten (einfache Fahrt) × 2 (Hin+Rück) × Anzahl Termine × reduzierter Anfahrt-Stundensatz
+const ZONE_MIN={1:15,2:30,3:45,4:60,5:75,6:90};
+function calcAnfahrtPreis(zoneNum,termine,satz){
+  const std=((ZONE_MIN[zoneNum]||0)*2/60)*(termine||2);
+  return Math.round(std*(satz||0));
 }
 function gsMonPreis(key){
   if(key==='SERV-LOG'){
-    const zn=fragebogen.zone||2;
-    const is3t=(fragebogen.termine||2)===3;
-    return findZonePrice(zn,is3t);
+    return calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,prices5.anfahrtSatz);
   }
   if(key==='VORFRACHT'||key==='VERSAND') return prices5.fracht[key]||0;
   if(key==='DACH') return prices5.dachterrasse||0;
@@ -1731,7 +1722,7 @@ function gsMonPreis(key){
 // MONTAGEKOSTEN KALKULATOR (Standalone-Modus, ?mode=montage)
 // Isolierter State `mc` — fasst `prices5` (Haupt-Importflow) nicht an.
 // ══════════════════════════════════════════════════════════════════════
-let mc={loaded:false,rows:[],montRowsRaw:null,verbRowsRaw:null,stundensatz:0,zonePreis:{},dachterrasse:0};
+let mc={loaded:false,rows:[],montRowsRaw:null,verbRowsRaw:null,stundensatz:0,anfahrtSatz:0,dachterrasse:0};
 const MC_SYS_LIST=['SOLIDAY-M','SOLIDAY-MA','SOLIDAY-X','SOLIDAY-XS','SOLIDAY-ONE','SOLIDAY-FLEX','SOLIDAY-C','SOLIDAY-CS','SONNENSEGEL-MAß','SONNENSEGEL-MAß-SNAP'];
 const MC_SYS_LABEL={'SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-ONE':'ONE','SOLIDAY-FLEX':'FLEX','SOLIDAY-C':'C','SOLIDAY-CS':'CS','SONNENSEGEL-MAß':'Fix Segel','SONNENSEGEL-MAß-SNAP':'Fix Segel SNAP'};
 
@@ -1749,16 +1740,15 @@ async function initMontageMode(){
     mc.verbRowsRaw=vR;
     if(pR.length>1) pR.forEach(r=>{
       const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s./\\]+/g,'')).join('|');
-      if(!mc.stundensatz&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
+      if(!mc.anfahrtSatz&&rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('satz'))){
+        for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20&&v<200){mc.anfahrtSatz=v;break;}}
+      }
+      if(!mc.stundensatz&&!rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
         for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){mc.stundensatz=v;break;}}
       }
       if(!mc.dachterrasse&&rowStr.includes('dach')){
         for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>0&&v<5000){mc.dachterrasse=v;break;}}
       }
-      const keyRaw=(r[0]||'').trim();
-      const key=keyRaw.toLowerCase().replace(/\s+/g,'');
-      const preis=sheetNum(r,2,1,3,4);
-      if(key&&preis&&key.startsWith('zone')) mc.zonePreis[key]=preis;
     });
     mc.loaded=true;
     document.getElementById('mcStatus').textContent='';
@@ -1806,20 +1796,6 @@ function mcRowHtml(row,i){
 }
 function mcRenderRows(){
   document.getElementById('mcRows').innerHTML=mc.rows.map((r,i)=>mcRowHtml(r,i)).join('');
-}
-
-function mcFindZonePrice(zoneNum,want3t){
-  const d2='zone'+zoneNum, d3='zone'+zoneNum+'-3t';
-  if(want3t&&mc.zonePreis[d3]) return mc.zonePreis[d3];
-  if(!want3t&&mc.zonePreis[d2]) return mc.zonePreis[d2];
-  for(const[k,v]of Object.entries(mc.zonePreis)){
-    const m=k.match(/zone.?(\d+)/i);
-    if(!m||parseInt(m[1])!==zoneNum) continue;
-    const has3t=/3t/i.test(k);
-    if(want3t===has3t) return v;
-  }
-  if(want3t) return mcFindZonePrice(zoneNum,false);
-  return 0;
 }
 
 function mcCalc(){
@@ -1872,12 +1848,11 @@ function mcCalc(){
   totalH=sailHTotal+apHTotal+sfHTotal+verbHTotal;
   const raw=totalH*mc.stundensatz;
   const instPreis=mc.stundensatz?Math.ceil(raw/10)*10:0;
-  const servLogPreis=mcFindZonePrice(zone,termine===3);
+  const servLogPreis=calcAnfahrtPreis(zone,termine,mc.anfahrtSatz);
   const dachPreis=dach?mc.dachterrasse:0;
   const gesamt=instPreis+servLogPreis+dachPreis;
 
   // Anfahrtszeit: Zone-Minuten (einfache Fahrt) × 2 (Hin+Rück) × Anzahl Termine
-  const ZONE_MIN={1:15,2:30,3:45,4:60,5:75,6:90};
   const anfahrtHProTermin=((ZONE_MIN[zone]||0)*2)/60;
   const gesamtHMitAnfahrt=totalH+anfahrtHProTermin*termine;
   // Max. 8 Std./Montagetag inkl. An-/Abfahrt → Arbeitszeit pro Termin begrenzt
@@ -1944,14 +1919,13 @@ function renderStep5(){
   const mSek=transformedData.sektionen.find(s=>s.id==='montage');
   _gsMonPos=mSek?mSek.positionen.filter(p=>p._gs):[];
 
-  const sheetOk=prices5.stoffe.length>0||prices5.stofFeste.length>0||prices5.stofSandy.length>0||Object.keys(prices5.zonePreis).length>0;
-  const zK=Object.keys(prices5.zonePreis),vvK=Object.keys(prices5.verbByWelle);
+  const sheetOk=prices5.stoffe.length>0||prices5.stofFeste.length>0||prices5.stofSandy.length>0||prices5.anfahrtSatz>0;
+  const vvK=Object.keys(prices5.verbByWelle);
   const mk=prices5.montKalkParsed;
-  const zPreview=zK.length?` (${zK.slice(0,2).join(', ')})`:' (–)';
   const mkInfo=mk?.ok?`GP ${mk.grundpreis}h · SF ${mk.schraubfund}h · AP10 ${mk.ap10}h`:'Montage-Tab nicht gefunden';
   // Debug bar at bottom of screen
   const dbgBar=document.getElementById('s5debugBar');
-  if(dbgBar) dbgBar.innerHTML=`<span style="color:${sheetOk?'var(--accent2)':'var(--warn)'}">${sheetOk?'✓':'!'} Sheet</span>&ensp;${sheetOk?`${prices5.stoffe.length} Stoffe · ${zK.length} Zonen${zPreview} · ${mkInfo} · Verbinder: ${vvK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · PL: ${prices5.preislisteZeilen||0}Z · Std: ${prices5.stundensatz}€ · Dach: ${prices5.dachterrasse}€ · SF: ${prices5.schraubfundament}€`:'Preisdaten nicht geladen — Sheet ID prüfen'}`;
+  if(dbgBar) dbgBar.innerHTML=`<span style="color:${sheetOk?'var(--accent2)':'var(--warn)'}">${sheetOk?'✓':'!'} Sheet</span>&ensp;${sheetOk?`${prices5.stoffe.length} Stoffe · Anfahrt: ${prices5.anfahrtSatz}€/h · ${mkInfo} · Verbinder: ${vvK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · PL: ${prices5.preislisteZeilen||0}Z · Std: ${prices5.stundensatz}€ · Dach: ${prices5.dachterrasse}€ · SF: ${prices5.schraubfundament}€`:'Preisdaten nicht geladen — Sheet ID prüfen'}`;
   let h=``;
 
   // Calc breakdown for INST card
