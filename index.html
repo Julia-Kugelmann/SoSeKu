@@ -199,6 +199,8 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 /* Montage Kalkulator: multi-column, alles ohne Scrollen sichtbar */
 .mc-grid{display:grid;gap:14px;align-items:start;grid-template-columns:1fr 1fr 1fr;grid-template-areas:"sys wand serv" "sys fund serv"}
 @media(max-width:1000px){.mc-grid{grid-template-columns:1fr;grid-template-areas:"sys" "wand" "fund" "serv"}}
+.rep-grid{display:grid;gap:14px;align-items:start;grid-template-columns:1fr 1fr;grid-template-areas:"team anfahrt"}
+@media(max-width:800px){.rep-grid{grid-template-columns:1fr;grid-template-areas:"team" "anfahrt"}}
 .mc-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:900px){.mc-tiles{grid-template-columns:1fr}}
 .mc-tile{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
@@ -254,13 +256,14 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-26 10:23 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-06-26 13:46 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
       <a id="modeAngebot" href="?" class="mode-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>Angebot</a>
       <a id="modeAdresse" href="?mode=adresse" class="mode-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="4"/><path d="M5.5 21a6.5 6.5 0 0 1 13 0"/></svg>Adresse</a>
       <a id="modeMontage" href="?mode=montage" class="mode-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>Montage</a>
+      <a id="modeReparatur" href="?mode=reparatur" class="mode-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-8.5 8.5a2.12 2.12 0 1 1-3-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.41-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/></svg>Reparatur</a>
     </div>
     <button class="btn-reset-hdr" id="btnReset" onclick="resetKeys()" style="display:none">&#9881; Keys &auml;ndern</button>
   </div>
@@ -651,6 +654,70 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
   </div>
 </div>
 
+<!-- REPARATUR-MONTAGE KALKULATOR -->
+<div id="viewReparatur" class="hidden">
+  <div style="max-width:1500px;margin:0 auto;padding:0 20px">
+    <div style="margin-bottom:16px">
+      <div class="adr-title">Reparatur-Montage Kalkulator</div>
+      <div class="adr-sub">Grobe Sch&auml;tzung der Arbeitszeit &middot; alle Preise aus dem Google Sheet</div>
+    </div>
+
+    <div class="rep-grid">
+      <div class="s5-card" style="grid-area:team">
+        <div class="s5-card-hdr"><strong>Team &amp; Arbeitszeit</strong><span>grobe Sch&auml;tzung</span></div>
+        <div class="s5-card-body">
+          <div class="s5-irow">
+            <span class="s5-lbl">Team</span>
+            <div class="mc-pick-row" id="repTeamPicks">
+              <div class="mc-pick" data-v="1" onclick="repPick('repTeamPicks',this)">1 Person</div>
+              <div class="mc-pick sel" data-v="2" onclick="repPick('repTeamPicks',this)">2 Personen</div>
+            </div>
+          </div>
+          <div class="s5-irow">
+            <span class="s5-lbl">Gesch&auml;tzte Arbeitszeit</span>
+            <input type="number" class="s5-inp s5-w70" id="repStunden" value="1" min="0" step="0.25" oninput="repCalc()">
+            <span class="s5-unit">Std.</span>
+          </div>
+          <div class="s5-irow" style="flex-direction:column;align-items:stretch;gap:8px">
+            <span class="s5-lbl">Reparatur-Bausteine</span>
+            <div class="mc-pick-row" id="repBausteinePicks"></div>
+            <div id="repBausteineEmpty" class="hidden" style="font-size:11px;color:var(--muted)">Noch keine Bausteine im Sheet hinterlegt &mdash; Tab &quot;Reparatur Bausteine&quot; (Spalte A: Name, Spalte B: Std.) anlegen.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="s5-card" style="grid-area:anfahrt">
+        <div class="s5-card-hdr"><strong>Anfahrt</strong><span>Zone &middot; Satz</span></div>
+        <div class="s5-card-body">
+          <div class="s5-irow">
+            <span class="s5-lbl">Anfahrtszone</span>
+            <select class="s5-inp" id="repZone" style="text-align:left" onchange="repCalc()">
+              <option value="1">Zone 1 &ndash; bis 15 min</option>
+              <option value="2" selected>Zone 2 &ndash; bis 30 min</option>
+              <option value="3">Zone 3 &ndash; bis 45 min</option>
+              <option value="4">Zone 4 &ndash; bis 60 min</option>
+              <option value="5">Zone 5 &ndash; bis 75 min</option>
+              <option value="6">Zone 6 &ndash; bis 90 min</option>
+            </select>
+          </div>
+          <div class="s5-irow">
+            <span class="s5-lbl">Anfahrt-Satz</span>
+            <div class="mc-pick-row" id="repAnfahrtPicks">
+              <div class="mc-pick sel" data-v="0" onclick="repPick('repAnfahrtPicks',this)">Reduziert</div>
+              <div class="mc-pick" data-v="1" onclick="repPick('repAnfahrtPicks',this)">Voller Satz</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="s5-card" style="margin-top:14px">
+      <div class="s5-card-hdr"><strong>Ergebnis</strong><span id="repStatus"></span></div>
+      <div class="s5-card-body" id="repResult"></div>
+    </div>
+  </div>
+</div>
+
 <!-- DONE -->
 <div id="viewDone" class="hidden">
   <div class="center-wrap">
@@ -687,7 +754,7 @@ let _s3DragSrc=null;
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtE=n=>fmt(n)+' €';
-const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse','viewMontage'];
+const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse','viewMontage','viewReparatur'];
 function fixViewPinnedHeight(){
   // Body-scroll layout — no fixed height needed
 }
@@ -751,6 +818,7 @@ function saveSetup(){
   const mode=new URLSearchParams(location.search).get('mode');
   if(mode==='adresse'){showView('viewAdresse');initAdresseMode();}
   else if(mode==='montage'){showView('viewMontage');initMontageMode();}
+  else if(mode==='reparatur'){showView('viewReparatur');initReparaturMode();}
   else{showView('viewUpload');setStep(1);}
 }
 function resetKeys(){
@@ -766,20 +834,25 @@ window.addEventListener('DOMContentLoaded',()=>{
   const _si=document.getElementById('iSheet');
   if(_si&&!_si.value)_si.value=localStorage.getItem('sid')||DEF_SHEET_ID;
   const mode=new URLSearchParams(location.search).get('mode');
-  const mA=document.getElementById('modeAngebot'),mAd=document.getElementById('modeAdresse'),mM=document.getElementById('modeMontage');
+  const mA=document.getElementById('modeAngebot'),mAd=document.getElementById('modeAdresse'),mM=document.getElementById('modeMontage'),mR=document.getElementById('modeReparatur');
   const activeStyle='background:var(--accent);color:#fff';const inactiveStyle='color:var(--muted)';
   if(mode==='adresse'){
-    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+activeStyle;if(mM)mM.style.cssText+=';'+inactiveStyle;
+    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+activeStyle;if(mM)mM.style.cssText+=';'+inactiveStyle;if(mR)mR.style.cssText+=';'+inactiveStyle;
     const stepsBar=document.getElementById('stepsBar');if(stepsBar)stepsBar.style.display='none';
     if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewAdresse');initAdresseMode();}
     else{showView('viewSetup');}
   } else if(mode==='montage'){
-    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;if(mM)mM.style.cssText+=';'+activeStyle;
+    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;if(mM)mM.style.cssText+=';'+activeStyle;if(mR)mR.style.cssText+=';'+inactiveStyle;
     const stepsBar=document.getElementById('stepsBar');if(stepsBar)stepsBar.style.display='none';
     if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewMontage');initMontageMode();}
     else{showView('viewSetup');}
+  } else if(mode==='reparatur'){
+    if(mA)mA.style.cssText+=';'+inactiveStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;if(mM)mM.style.cssText+=';'+inactiveStyle;if(mR)mR.style.cssText+=';'+activeStyle;
+    const stepsBar=document.getElementById('stepsBar');if(stepsBar)stepsBar.style.display='none';
+    if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewReparatur');initReparaturMode();}
+    else{showView('viewSetup');}
   } else {
-    if(mA)mA.style.cssText+=';'+activeStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;if(mM)mM.style.cssText+=';'+inactiveStyle;
+    if(mA)mA.style.cssText+=';'+activeStyle;if(mAd)mAd.style.cssText+=';'+inactiveStyle;if(mM)mM.style.cssText+=';'+inactiveStyle;if(mR)mR.style.cssText+=';'+inactiveStyle;
     if(getKeys().anthropic){document.getElementById('btnReset').style.display='';showView('viewUpload');setStep(1);}
   }
   fixViewPinnedHeight();
@@ -1952,6 +2025,101 @@ function mcCalc(){
   </div>${tp}`;
 
   document.getElementById('mcResult').innerHTML=h;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// REPARATUR-MONTAGE KALKULATOR (Standalone-Modus, ?mode=reparatur)
+// Grobe Arbeitszeit-Schätzung statt detaillierter Stunden-Bausteine.
+// ══════════════════════════════════════════════════════════════════════
+let rep={loaded:false,stundensatz:0,anfahrtSatz:0,bausteine:[]};
+async function initReparaturMode(){
+  if(!rep.loaded){
+    document.getElementById('repStatus').textContent='Lade Preisdaten...';
+    const[pR,bR]=await Promise.all([
+      fetchSheetTabAll('SoSeKu - Preisliste'),
+      fetchSheetTabAll('Reparatur Bausteine')
+    ]);
+    if(pR.length>1) pR.forEach(r=>{
+      const rowStr=r.map(c=>(c||'').toLowerCase().replace(/[\s./\\]+/g,'')).join('|');
+      if(!rep.anfahrtSatz&&rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('satz')||rowStr.includes('team'))){
+        for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20&&v<200){rep.anfahrtSatz=v;break;}}
+      }
+      if(!rep.stundensatz&&!rowStr.includes('anfahrt')&&(rowStr.includes('stundensatz')||rowStr.includes('stdteam')||rowStr.includes('teamstd'))){
+        for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){rep.stundensatz=v;break;}}
+      }
+    });
+    bR.forEach(r=>{
+      const name=(r[0]||'').trim();
+      if(!name) return;
+      let std=0;
+      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>0&&v<50){std=v;break;}}
+      if(std>0) rep.bausteine.push({name,std});
+    });
+    rep.loaded=true;
+    document.getElementById('repStatus').textContent='';
+  }
+  renderRepBausteine();
+  repCalc();
+}
+function renderRepBausteine(){
+  const c=document.getElementById('repBausteinePicks'),empty=document.getElementById('repBausteineEmpty');
+  if(!rep.bausteine.length){c.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  c.innerHTML=rep.bausteine.map((b,i)=>`<div class="mc-pick" data-i="${i}" onclick="repToggleBaustein(this)">${b.name} (${fmt(b.std)} Std.)</div>`).join('');
+}
+function repToggleBaustein(el){
+  el.classList.toggle('sel');
+  repCalc();
+}
+function repPick(containerId,el){
+  document.querySelectorAll(`#${containerId} .mc-pick`).forEach(p=>p.classList.toggle('sel',p===el));
+  repCalc();
+}
+function repCalc(){
+  if(!rep.loaded) return;
+  const team=parseInt(mcPickVal('repTeamPicks','2'))||2;
+  const manualStd=Math.max(0,parseFloat((document.getElementById('repStunden')||{}).value)||0);
+  const bausteinStd=[...document.querySelectorAll('#repBausteinePicks .mc-pick.sel')].reduce((s,el)=>s+(rep.bausteine[+el.dataset.i]?.std||0),0);
+  const totalStd=manualStd+bausteinStd;
+  const zone=parseInt((document.getElementById('repZone')||{}).value)||2;
+  const anfahrtVoll=mcPickVal('repAnfahrtPicks','0')==='1';
+
+  // Team mit 1 Person: halber Team-Stundensatz (kein separater Sheet-Wert vorhanden)
+  const teamRate=team===2?rep.stundensatz:rep.stundensatz/2;
+  const raw=totalStd*teamRate;
+  const montagePreis=teamRate?Math.ceil(raw/10)*10:0;
+  const satz=anfahrtVoll?rep.stundensatz:rep.anfahrtSatz;
+  const servLogPreis=calcAnfahrtPreis(zone,1,satz);
+  const servLogRed=calcAnfahrtPreis(zone,1,rep.anfahrtSatz);
+  const servLogFull=calcAnfahrtPreis(zone,1,rep.stundensatz);
+  const gesamt=montagePreis+servLogPreis;
+
+  const ok=rep.stundensatz>0;
+  document.getElementById('repStatus').textContent=ok?'':'⚠ Preisdaten unvollständig — Google Sheet prüfen';
+
+  let t1=`<h4>Arbeitszeit</h4><div class="mc-tile-sm">`;
+  t1+=`<div class="mc-row"><span>Gesch&auml;tzte Arbeitszeit</span><span>${fmt(manualStd)} Std.</span></div>`;
+  if(bausteinStd>0) t1+=`<div class="mc-row"><span>Reparatur-Bausteine</span><span>${fmt(bausteinStd)} Std.</span></div>`;
+  t1+=`<div class="mc-total"><span>Arbeitszeit gesamt</span><span>${fmt(totalStd)} Std.</span></div></div>`;
+
+  let t2=`<h4>Preise</h4><div class="mc-tile-sm">`;
+  t2+=`<div class="mc-row"><span>Montage (${team===2?'2 Pers.':'1 Pers.'} &times; ${fmt(teamRate)}/h)</span><span>${fmtE(montagePreis)}</span></div>`;
+  t2+=`<div class="mc-row"><span>Service &amp; Logistik (Zone ${zone})</span><span>${fmtE(servLogPreis)}</span></div>`;
+  t2+=`<div class="mc-sub">${anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(rep.anfahrtSatz)}/h): ${fmtE(servLogRed)} &nbsp;&middot;&nbsp; ${anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(rep.stundensatz)}/h): ${fmtE(servLogFull)}</div>`;
+  t2+=`<div class="mc-total"><span>Gesamt</span><span>${fmtE(gesamt)}</span></div></div>`;
+
+  let tp=`<div class="mc-postable"><div class="mc-postable-title">Positionen f&uuml;r Angebot</div>`;
+  tp+=`<div class="mc-posrow"><span>Reparatur-Montage</span><strong>${fmtE(montagePreis)}</strong></div>`;
+  tp+=`<div class="mc-posrow"><span>Service &amp; Logistik (Zone ${zone})</span><strong>${fmtE(servLogPreis)}</strong></div>`;
+  tp+=`<div class="mc-grandtotal"><span>Gesamt</span><strong>${fmtE(gesamt)}</strong></div>`;
+  tp+=`</div>`;
+
+  const h=`<div class="mc-tiles" style="grid-template-columns:1fr 1fr">
+    <div class="mc-tile">${t1}</div>
+    <div class="mc-tile">${t2}</div>
+  </div>${tp}`;
+
+  document.getElementById('repResult').innerHTML=h;
 }
 
 function renderStep5(){
