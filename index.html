@@ -237,6 +237,10 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .rep-mini-step{padding:5px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
 .rep-mini-step.rep-mini-active{background:rgba(91,141,238,.1);border-color:var(--accent);color:var(--accent)}
 .rep-mini-arrow{color:var(--muted);font-size:12px}
+.rep-split-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;max-width:1300px;margin:0 auto;padding:16px 0 8px}
+.rep-split-l{min-width:0}
+.rep-split-r{min-width:0}
+@media(max-width:900px){.rep-split-wrap{grid-template-columns:1fr}}
 tr.rep-auto-row td{background:rgba(255,152,0,.07)}
 tr.rep-auto-row td:last-child{color:rgba(255,152,0,.95);font-weight:700}
 tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:700;color:rgba(255,152,0,.9);background:rgba(255,152,0,.12);border:1px solid rgba(255,152,0,.3);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.06em}
@@ -266,7 +270,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 19:47 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 20:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -740,7 +744,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 
 <!-- REPARATUR PFAD -->
 <div id="viewStepRep" class="hidden view-pinned">
-  <!-- Own mini step bar for Reparatur path -->
+  <!-- Own mini step bar -->
   <div class="rep-mini-bar">
     <span class="rep-mini-step rep-mini-active">Positionen &amp; Montage</span>
     <span class="rep-mini-arrow">&#8594;</span>
@@ -750,110 +754,100 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
   </div>
 
   <div class="view-scroll">
-  <div style="max-width:960px;margin:0 auto;padding:16px 0 8px">
-    <div style="display:grid;grid-template-columns:3fr 2fr;gap:18px;align-items:start">
+  <div class="rep-split-wrap">
 
-      <!-- LEFT: Positions table -->
-      <div>
-        <div class="fg-title" style="text-align:left;margin-bottom:10px">Positionen</div>
-        <div class="sektion-body">
-          <div style="overflow-x:auto">
-            <table class="jtable">
-              <thead><tr><th>Pos.</th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
-              <tbody id="repStepRows"></tbody>
-              <!-- auto-added rows appended here by JS -->
-            </table>
-          </div>
-          <div id="repStepFooter" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;margin:10px 4px 4px"></div>
+    <!-- LEFT 50%: Positions table + postable -->
+    <div class="rep-split-l">
+      <div class="fg-title">Positionen</div>
+      <div class="sektion-body">
+        <div style="overflow-x:auto">
+          <table class="jtable">
+            <thead><tr><th>Pos.</th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
+            <tbody id="repStepRows"></tbody>
+          </table>
         </div>
-
-        <!-- Netto preview with auto rows -->
-        <div class="mc-postable" style="margin-top:14px">
-          <div class="mc-postable-title">Positionen f&uuml;r sevdesk</div>
-          <div id="repStepPostableBody"></div>
-        </div>
+        <div id="repStepFooter" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;margin:10px 4px 4px"></div>
       </div>
-
-      <!-- RIGHT: Fragebogen -->
-      <div>
-        <div class="fg-title" style="text-align:left;margin-bottom:10px">Montage &amp; Fracht</div>
-
-        <!-- Montage Auswahl (zone-item style) -->
-        <div class="s5-card" style="margin-bottom:14px">
-          <div class="s5-card-hdr"><strong>Montage</strong></div>
-          <div class="s5-card-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
-              <div class="zone-item sel" id="repMontageOhne" onclick="repStepSetMontage(false)">
-                <div class="zone-num" style="font-size:13px">Ohne</div>
-                <div class="zone-time">nur Versand</div>
-              </div>
-              <div class="zone-item" id="repMontageMit" onclick="repStepSetMontage(true)">
-                <div class="zone-num" style="font-size:13px">Mit Montage</div>
-                <div class="zone-time">inkl. Anfahrt</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Montage inputs (hidden until "Mit Montage" selected) -->
-        <div id="repMontageInputs" class="hidden">
-          <div class="s5-card" style="margin-bottom:14px">
-            <div class="s5-card-hdr"><strong>Montagezeit</strong></div>
-            <div class="s5-card-body" style="display:flex;flex-direction:column;gap:12px">
-              <div>
-                <div class="s5-lbl">Gesch&auml;tzte Stunden</div>
-                <input type="number" class="s5-inp s5-w70" id="repStepStunden" value="1" min="0" step="0.25" oninput="repStepCalc()">
-              </div>
-              <div>
-                <div class="s5-lbl" style="margin-bottom:6px">Team</div>
-                <div class="mc-pick-row" id="repStepTeamPicks">
-                  <div class="mc-pick" data-v="1" onclick="repPick('repStepTeamPicks',this);repStepCalc()">1 Person</div>
-                  <div class="mc-pick sel" data-v="2" onclick="repPick('repStepTeamPicks',this);repStepCalc()">2 Personen</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="s5-card" style="margin-bottom:14px">
-            <div class="s5-card-hdr"><strong>Anfahrt</strong></div>
-            <div class="s5-card-body" style="display:flex;flex-direction:column;gap:12px">
-              <div>
-                <div class="s5-lbl" style="margin-bottom:6px">Anfahrtszone</div>
-                <div class="zone-grid" id="repStepZoneGrid" style="grid-template-columns:repeat(3,1fr)">
-                  <div class="zone-item" data-z="1" onclick="repStepSelZone(1)"><div class="zone-num">Z1</div><div class="zone-time">15 min</div></div>
-                  <div class="zone-item sel" data-z="2" onclick="repStepSelZone(2)"><div class="zone-num">Z2</div><div class="zone-time">30 min</div></div>
-                  <div class="zone-item" data-z="3" onclick="repStepSelZone(3)"><div class="zone-num">Z3</div><div class="zone-time">45 min</div></div>
-                  <div class="zone-item" data-z="4" onclick="repStepSelZone(4)"><div class="zone-num">Z4</div><div class="zone-time">60 min</div></div>
-                  <div class="zone-item" data-z="5" onclick="repStepSelZone(5)"><div class="zone-num">Z5</div><div class="zone-time">75 min</div></div>
-                  <div class="zone-item" data-z="6" onclick="repStepSelZone(6)"><div class="zone-num">Z6</div><div class="zone-time">90 min</div></div>
-                </div>
-              </div>
-              <div>
-                <div class="s5-lbl" style="margin-bottom:6px">Anfahrt-Satz</div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                  <div class="zone-item sel" id="repAnfahrtRedCard" onclick="repStepSelAnfahrt(false)"><div class="zone-num" style="font-size:12px">Reduziert</div><div class="zone-time">empfohlen</div></div>
-                  <div class="zone-item" id="repAnfahrtVollCard" onclick="repStepSelAnfahrt(true)"><div class="zone-num" style="font-size:12px">Voller Satz</div><div class="zone-time">Team-Std.</div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Versand info -->
-        <div class="s5-card">
-          <div class="s5-card-hdr"><strong>Versand</strong><span style="color:rgba(255,152,0,.9);font-size:11px;font-weight:600">&#9679; automatisch</span></div>
-          <div class="s5-card-body">
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <span style="font-size:13px">Versandkosten</span>
-              <strong id="repStepVersandPreis" style="color:rgba(255,152,0,.9)">–</strong>
-            </div>
-            <div style="font-size:10px;color:var(--muted);margin-top:4px">Preis aus Google Sheet · wird automatisch erg&auml;nzt</div>
-          </div>
-        </div>
-
+      <div class="mc-postable" style="margin-top:14px">
+        <div class="mc-postable-title">Positionen f&uuml;r sevdesk</div>
+        <div id="repStepPostableBody"></div>
       </div>
     </div>
-  </div>
+
+    <!-- RIGHT 50%: Fragebogen — same style as Schritt 4 -->
+    <div class="rep-split-r">
+      <div class="fg-title">Montage &amp; Fracht</div>
+      <div class="fg-outer" style="align-items:start">
+
+        <!-- Col 1: Montage toggle -->
+        <div class="fg-col" style="flex:0 0 150px">
+          <div class="fg-title">Montage</div>
+          <div class="zone-grid">
+            <div class="zone-item sel" id="repMontageOhne" onclick="repStepSetMontage(false)">
+              <div class="zone-num">Ohne</div><div class="zone-time">nur Versand</div>
+            </div>
+            <div class="zone-item" id="repMontageMit" onclick="repStepSetMontage(true)">
+              <div class="zone-num">Mit Montage</div><div class="zone-time">inkl. Anfahrt</div>
+            </div>
+          </div>
+          <!-- Versand info always visible -->
+          <div style="margin-top:16px">
+            <div class="fg-title" style="color:rgba(255,152,0,.9)">Versand</div>
+            <div class="zone-item" style="cursor:default;border-color:rgba(255,152,0,.4);background:rgba(255,152,0,.06)">
+              <div class="zone-num" style="font-size:12px" id="repStepVersandPreis">–</div>
+              <div class="zone-time">automatisch</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cols 2–4: Montage options (hidden when Ohne) -->
+        <div id="repMontageInputs" class="hidden" style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+
+          <!-- Anfahrtszone -->
+          <div class="fg-col">
+            <div class="fg-title">Anfahrtszone</div>
+            <div class="zone-grid" id="repStepZoneGrid">
+              <div class="zone-item" data-z="1" onclick="repStepSelZone(1)"><div class="zone-num">Zone 1</div><div class="zone-time">bis 15 min</div></div>
+              <div class="zone-item sel" data-z="2" onclick="repStepSelZone(2)"><div class="zone-num">Zone 2</div><div class="zone-time">bis 30 min</div></div>
+              <div class="zone-item" data-z="3" onclick="repStepSelZone(3)"><div class="zone-num">Zone 3</div><div class="zone-time">bis 45 min</div></div>
+              <div class="zone-item" data-z="4" onclick="repStepSelZone(4)"><div class="zone-num">Zone 4</div><div class="zone-time">bis 60 min</div></div>
+              <div class="zone-item" data-z="5" onclick="repStepSelZone(5)"><div class="zone-num">Zone 5</div><div class="zone-time">bis 75 min</div></div>
+              <div class="zone-item" data-z="6" onclick="repStepSelZone(6)"><div class="zone-num">Zone 6</div><div class="zone-time">bis 90 min</div></div>
+            </div>
+          </div>
+
+          <!-- Montagezeit + Team + Anfahrt-Satz -->
+          <div class="fg-col">
+            <div class="fg-title">Montagezeit</div>
+            <div class="zone-grid" style="margin-bottom:16px">
+              <div class="zone-item" style="cursor:default;padding:10px 12px">
+                <div class="zone-time" style="margin-bottom:4px">Gesch&auml;tzte Stunden</div>
+                <input type="number" class="s5-inp" id="repStepStunden" value="1" min="0" step="0.25" oninput="repStepCalc()" style="width:80px;text-align:center">
+              </div>
+            </div>
+            <div class="fg-title">Team</div>
+            <div class="zone-grid" id="repStepTeamPicks">
+              <div class="zone-item" data-v="1" onclick="repStepSelTeam(1)"><div class="zone-num">1 Person</div></div>
+              <div class="zone-item sel" data-v="2" onclick="repStepSelTeam(2)"><div class="zone-num">2 Personen</div></div>
+            </div>
+            <div class="fg-title" style="margin-top:16px">Anfahrt-Satz</div>
+            <div class="zone-grid">
+              <div class="zone-item sel" id="repAnfahrtRedCard" onclick="repStepSelAnfahrt(false)"><div class="zone-num">Reduziert</div><div class="zone-time">empfohlen</div></div>
+              <div class="zone-item" id="repAnfahrtVollCard" onclick="repStepSelAnfahrt(true)"><div class="zone-num">Voller Satz</div><div class="zone-time">Team-Stundensatz</div></div>
+            </div>
+          </div>
+
+          <!-- Montage cost preview -->
+          <div class="fg-col">
+            <div class="fg-title">Montagekosten</div>
+            <div id="repMontageVorschau" style="display:flex;flex-direction:column;gap:8px"></div>
+          </div>
+
+        </div><!-- /repMontageInputs -->
+      </div><!-- /fg-outer -->
+    </div><!-- /rep-split-r -->
+
+  </div><!-- /rep-split-wrap -->
   </div><!-- /view-scroll -->
 
   <div class="btn-row">
@@ -918,7 +912,10 @@ function showView(id,fromHistory){
 window.addEventListener('popstate',e=>{if(e.state?.view)showView(e.state.view,true);});
 function setStep(n){
   if(n>maxStep)maxStep=n;
-  document.getElementById('stepsBar').classList.remove('hidden');
+  // stepsBar only for segelsystem mode, and only from step 2 onwards
+  if(importMode==='segelsystem'&&n>=2){
+    document.getElementById('stepsBar').classList.remove('hidden');
+  }
   for(let i=1;i<=8;i++){
     const el=document.getElementById('st'+i);
     if(!el) continue;
@@ -927,7 +924,7 @@ function setStep(n){
   }
 }
 const STEP_NAV={
-  1:()=>{showView('viewUpload');document.getElementById('stepsBar').classList.remove('hidden');for(let i=1;i<=8;i++){const el=document.getElementById('st'+i);if(!el)continue;el.className='step'+(i===1?' active':i<1?' done':'');el.querySelector('.step-num').textContent=i;}},
+  1:()=>{showView('viewUpload');document.getElementById('stepsBar').classList.add('hidden');for(let i=1;i<=8;i++){const el=document.getElementById('st'+i);if(!el)continue;el.className='step'+(i===1?' active':i<1?' done':'');el.querySelector('.step-num').textContent=i;}},
   2:()=>{if(soSeKuJSON){showView('viewStep2');setStep(2);}},
   3:()=>{if(transformedData){showView('viewStep3');setStep(3);}},
   4:()=>{if(transformedData){goToStep4();}},
@@ -941,7 +938,8 @@ function showError(msg){document.getElementById('errMsg').textContent=msg;showVi
 function resetToUpload(){
   pdfFile=null;pdfBase64=null;soSeKuJSON=null;transformedData=null;extractAttempts=0;manualWeglass=new Set();
   document.getElementById('fileInput').value='';
-  showView('viewUpload');setStep(1);
+  document.getElementById('stepsBar').classList.add('hidden');
+  showView('viewUpload');
 }
 function setImportMode(m){
   importMode=m;
@@ -1536,15 +1534,16 @@ let _repMontageAn=false,_repZone=2,_repAnfahrtVoll=false;
 
 async function goToRepStep(){
   document.getElementById('stepsBar').classList.add('hidden');
-  _repMontageAn=false;_repZone=2;_repAnfahrtVoll=false;
+  _repMontageAn=false;_repZone=2;_repAnfahrtVoll=false;_repTeam=2;
   // Reset picks to defaults
   document.querySelectorAll('#repStepZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===2));
   document.getElementById('repMontageOhne').classList.add('sel');
   document.getElementById('repMontageMit').classList.remove('sel');
-  document.getElementById('repMontageInputs').classList.add('hidden');
+  const inp=document.getElementById('repMontageInputs');
+  inp.classList.add('hidden');inp.style.display='';
   document.getElementById('repAnfahrtRedCard').classList.add('sel');
   document.getElementById('repAnfahrtVollCard').classList.remove('sel');
-  document.querySelectorAll('#repStepTeamPicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v==='2'));
+  document.querySelectorAll('#repStepTeamPicks .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.v===2));
   renderRepStepPositions();
   showView('viewStepRep');
   if(!prices5.stundensatz){
@@ -1572,16 +1571,25 @@ function renderRepStepPositions(){
     `<span style="color:var(--muted)">MwSt.: <strong>${fmtE(d.mwst||0)}</strong></span>`+
     `<span style="font-size:15px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt||0)}</strong></span>`;
 }
+let _repTeam=2;
 function repStepSetMontage(an){
   _repMontageAn=an;
   document.getElementById('repMontageOhne').classList.toggle('sel',!an);
   document.getElementById('repMontageMit').classList.toggle('sel',an);
-  document.getElementById('repMontageInputs').classList.toggle('hidden',!an);
+  const inp=document.getElementById('repMontageInputs');
+  inp.classList.toggle('hidden',!an);
+  // hidden→display:grid when revealed (inline style overrides hidden class removal)
+  inp.style.display=an?'grid':'';
   repStepCalc();
 }
 function repStepSelZone(z){
   _repZone=z;
   document.querySelectorAll('#repStepZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===z));
+  repStepCalc();
+}
+function repStepSelTeam(t){
+  _repTeam=t;
+  document.querySelectorAll('#repStepTeamPicks .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.v===t));
   repStepCalc();
 }
 function repStepSelAnfahrt(voll){
@@ -1593,30 +1601,35 @@ function repStepSelAnfahrt(voll){
 function repStepCalc(){
   const versand=prices5.fracht['VERSAND']||0;
   document.getElementById('repStepVersandPreis').textContent=versand?fmtE(versand):'–';
-  let montagePreis=0;
+  let montagePreis=0,arbeit=0,anfahrt=0;
   if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
-    const team=parseInt(mcPickVal('repStepTeamPicks','2'))||2;
-    const teamRate=team===2?prices5.stundensatz:(prices5.stundensatz/2);
-    const arbeit=teamRate?Math.ceil(std*teamRate/10)*10:0;
+    const teamRate=_repTeam===2?prices5.stundensatz:(prices5.stundensatz/2);
+    arbeit=teamRate?Math.ceil(std*teamRate/10)*10:0;
     const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
-    const anfahrt=calcAnfahrtPreis(_repZone,1,satz);
+    anfahrt=calcAnfahrtPreis(_repZone,1,satz);
     montagePreis=arbeit+anfahrt;
+    // Inline preview in right column
+    const vorschau=document.getElementById('repMontageVorschau');
+    if(vorschau){
+      const std2=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
+      const teamRate2=_repTeam===2?prices5.stundensatz:(prices5.stundensatz/2);
+      vorschau.innerHTML=
+        `<div class="zone-item" style="cursor:default"><div class="zone-num" style="font-size:12px">Arbeitszeit</div><div class="zone-time">${fmt(std2)} Std. &times; ${fmtE(teamRate2)} = <strong>${fmtE(arbeit)}</strong></div></div>`+
+        `<div class="zone-item" style="cursor:default"><div class="zone-num" style="font-size:12px">Anfahrt Zone ${_repZone}</div><div class="zone-time"><strong>${fmtE(anfahrt)}</strong></div></div>`+
+        `<div class="zone-item" style="cursor:default;border-color:var(--accent2);background:rgba(56,217,169,.07)"><div class="zone-num" style="color:var(--accent2)">Montage gesamt</div><div class="zone-time" style="font-size:13px;font-weight:700;color:var(--accent2)">${fmtE(montagePreis)}</div></div>`;
+    }
   }
   // Update auto-added rows in table
   const tbody=document.getElementById('repStepRows');
-  // Remove old auto rows
   tbody.querySelectorAll('tr.rep-auto-row').forEach(r=>r.remove());
-  // Add Versandkosten row (always)
   const vRow=document.createElement('tr');vRow.className='rep-auto-row';
   vRow.innerHTML=`<td>–</td><td style="font-size:11px;color:var(--muted)">VERSAND</td><td>Versandkosten<span class="rep-auto-badge">auto</span></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(versand)}</td><td class="num-r">${fmt(versand)}</td>`;
   tbody.appendChild(vRow);
-  // Add Montage row if active
   if(_repMontageAn){
-    const team=parseInt(mcPickVal('repStepTeamPicks','2'))||2;
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
     const mRow=document.createElement('tr');mRow.className='rep-auto-row';
-    mRow.innerHTML=`<td>–</td><td></td><td>Montage inkl. Anfahrt<span class="rep-auto-badge">auto</span><div style="font-size:10px;color:rgba(255,152,0,.7);margin-top:2px">${team===2?'2 Personen':'1 Person'} · ${fmt(std)} Std. · Zone ${_repZone}</div></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(montagePreis)}</td><td class="num-r">${fmt(montagePreis)}</td>`;
+    mRow.innerHTML=`<td>–</td><td></td><td>Montage inkl. Anfahrt<span class="rep-auto-badge">auto</span><div style="font-size:10px;color:rgba(255,152,0,.7);margin-top:2px">${_repTeam===2?'2 Personen':'1 Person'} · ${fmt(std)} Std. · Zone ${_repZone}</div></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(montagePreis)}</td><td class="num-r">${fmt(montagePreis)}</td>`;
     tbody.appendChild(mRow);
   }
   const pdfNetto=Number(soSeKuJSON?.netto_gesamt||0);
@@ -1638,13 +1651,12 @@ function buildRepSevdeskPositions(){
   rows.push({type:'pos',name:'Versandkosten',beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:v,gesamt:v,artikelnummer:'VERSAND'});
   if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
-    const team=parseInt(mcPickVal('repStepTeamPicks','2'))||2;
-    const teamRate=team===2?prices5.stundensatz:(prices5.stundensatz/2);
+    const teamRate=_repTeam===2?prices5.stundensatz:(prices5.stundensatz/2);
     const arbeit=teamRate?Math.ceil(std*teamRate/10)*10:0;
     const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
     const anfahrt=calcAnfahrtPreis(_repZone,1,satz);
     const mp=arbeit+anfahrt;
-    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:`${team===2?'2 Personen':'1 Person'} · ${fmt(std)} Std. · Zone ${_repZone}`,menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
+    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:`${_repTeam===2?'2 Personen':'1 Person'} · ${fmt(std)} Std. · Zone ${_repZone}`,menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
   }
   return rows;
 }
