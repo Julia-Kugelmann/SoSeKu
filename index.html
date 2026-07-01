@@ -243,7 +243,12 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .rep-mini-step:not(.rep-mini-active) .rep-mini-num{background:var(--muted)}
 .rep-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px}
 .rep-block-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:12px}
-.rep-btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.rep-btn-row{display:grid;grid-template-columns:repeat(2,minmax(0,150px));gap:8px;margin-bottom:12px}
+.rep-stunden-box{border:2px solid var(--border);border-radius:10px;padding:12px 10px 8px;text-align:center;background:var(--surface);margin-bottom:4px}
+.rep-stunden-box:focus-within{border-color:var(--accent)}
+.rep-stunden-box input{background:none;border:none;outline:none;font-size:32px;font-weight:700;color:var(--fg);text-align:center;width:100%;font-family:'DM Mono',monospace;padding:0;line-height:1.2;-moz-appearance:textfield}
+.rep-stunden-box input::-webkit-inner-spin-button,.rep-stunden-box input::-webkit-outer-spin-button{opacity:.4}
+.rep-stunden-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:4px}
 .rep-zone-col{display:flex;flex-direction:column;gap:8px}
 .rep-montage-detail{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:12px}
 .rep-detail-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:12px 0 6px}
@@ -287,7 +292,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 20:44 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 20:59 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -823,7 +828,10 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
           <!-- Right col: Zeit + Team + Anfahrt-Satz -->
           <div>
             <div class="rep-detail-label">Gesch&auml;tzte Stunden</div>
-            <input type="number" class="s5-inp" id="repStepStunden" value="1" min="0" step="0.25" oninput="repStepCalc()" style="width:100%;box-sizing:border-box">
+            <div class="rep-stunden-box">
+              <input type="number" id="repStepStunden" value="1" min="0" step="0.25" oninput="repStepCalc()">
+              <div class="rep-stunden-lbl">Stunden</div>
+            </div>
             <div class="rep-detail-label">Team</div>
             <div class="rep-btn-row" id="repStepTeamPicks" style="margin-bottom:0">
               <div class="zone-item" data-v="1" onclick="repStepSelTeam(1)"><div class="zone-num">1 Person</div></div>
@@ -1632,7 +1640,7 @@ function repStepCalc(){
   if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
     const teamRate=_repTeam===2?prices5.stundensatz:(prices5.stundensatz/2);
-    arbeit=teamRate?Math.ceil(std*teamRate/10)*10:0;
+    arbeit=teamRate?Math.round(std*teamRate*100)/100:0;
     const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
     anfahrt=calcAnfahrtPreis(_repZone,1,satz);
     montagePreis=arbeit+anfahrt;
@@ -1678,7 +1686,7 @@ function buildRepSevdeskPositions(){
   if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
     const teamRate=_repTeam===2?prices5.stundensatz:(prices5.stundensatz/2);
-    const arbeit=teamRate?Math.ceil(std*teamRate/10)*10:0;
+    const arbeit=teamRate?Math.round(std*teamRate*100)/100:0;
     const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
     const anfahrt=calcAnfahrtPreis(_repZone,1,satz);
     const mp=arbeit+anfahrt;
