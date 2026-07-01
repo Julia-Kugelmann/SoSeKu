@@ -237,7 +237,10 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .rep-mini-step{padding:5px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
 .rep-mini-step.rep-mini-active{background:rgba(91,141,238,.1);border-color:var(--accent);color:var(--accent)}
 .rep-mini-arrow{color:var(--muted);font-size:12px}
-.rep-split-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;max-width:1300px;margin:0 auto;padding:16px 0 8px}
+.rep-split-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;padding:16px 0 8px}
+.rep-mini-num{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:currentColor;color:var(--bg);font-size:10px;font-weight:700;margin-right:5px;flex-shrink:0}
+.rep-mini-step.rep-mini-active .rep-mini-num{background:var(--accent)}
+.rep-mini-step:not(.rep-mini-active) .rep-mini-num{background:var(--muted)}
 .rep-split-l{min-width:0}
 .rep-split-r{min-width:0}
 @media(max-width:900px){.rep-split-wrap{grid-template-columns:1fr}}
@@ -270,7 +273,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 20:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 20:27 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -744,19 +747,19 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 
 <!-- REPARATUR PFAD -->
 <div id="viewStepRep" class="hidden view-pinned">
-  <!-- Own mini step bar -->
+  <!-- Own mini step bar with numbers -->
   <div class="rep-mini-bar">
-    <span class="rep-mini-step rep-mini-active">Positionen &amp; Montage</span>
+    <span class="rep-mini-step rep-mini-active"><span class="rep-mini-num">1</span>Positionen &amp; Montage</span>
     <span class="rep-mini-arrow">&#8594;</span>
-    <span class="rep-mini-step">Runden</span>
+    <span class="rep-mini-step"><span class="rep-mini-num">2</span>Runden</span>
     <span class="rep-mini-arrow">&#8594;</span>
-    <span class="rep-mini-step">Import</span>
+    <span class="rep-mini-step"><span class="rep-mini-num">3</span>Import</span>
   </div>
 
   <div class="view-scroll">
   <div class="rep-split-wrap">
 
-    <!-- LEFT 50%: Positions table + postable -->
+    <!-- LEFT: Positions table + postable -->
     <div class="rep-split-l">
       <div class="fg-title">Positionen</div>
       <div class="sektion-body">
@@ -774,12 +777,14 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
       </div>
     </div>
 
-    <!-- RIGHT 50%: Fragebogen — same style as Schritt 4 -->
+    <!-- RIGHT: two vertical blocks -->
     <div class="rep-split-r">
-      <div class="fg-title">Montage &amp; Fracht</div>
-      <div class="fg-outer" style="align-items:start">
 
-        <!-- Col 1: Montage toggle -->
+      <!-- BLOCK 1: Montage -->
+      <div class="fg-title">Montage</div>
+      <div class="fg-outer" style="align-items:start;margin-bottom:0">
+
+        <!-- Col 1: Ohne/Mit toggle -->
         <div class="fg-col" style="flex:0 0 150px">
           <div class="fg-title">Montage</div>
           <div class="zone-grid">
@@ -790,18 +795,10 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
               <div class="zone-num">Mit Montage</div><div class="zone-time">inkl. Anfahrt</div>
             </div>
           </div>
-          <!-- Versand info always visible -->
-          <div style="margin-top:16px">
-            <div class="fg-title" style="color:rgba(255,152,0,.9)">Versand</div>
-            <div class="zone-item" style="cursor:default;border-color:rgba(255,152,0,.4);background:rgba(255,152,0,.06)">
-              <div class="zone-num" style="font-size:12px" id="repStepVersandPreis">–</div>
-              <div class="zone-time">automatisch</div>
-            </div>
-          </div>
         </div>
 
-        <!-- Cols 2–4: Montage options (hidden when Ohne) -->
-        <div id="repMontageInputs" class="hidden" style="flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+        <!-- Cols 2–3: revealed when Mit Montage -->
+        <div id="repMontageInputs" class="hidden" style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:20px">
 
           <!-- Anfahrtszone -->
           <div class="fg-col">
@@ -821,30 +818,57 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
             <div class="fg-title">Montagezeit</div>
             <div class="zone-grid" style="margin-bottom:16px">
               <div class="zone-item" style="cursor:default;padding:10px 12px">
-                <div class="zone-time" style="margin-bottom:4px">Gesch&auml;tzte Stunden</div>
+                <div class="zone-time" style="margin-bottom:6px">Gesch&auml;tzte Stunden</div>
                 <input type="number" class="s5-inp" id="repStepStunden" value="1" min="0" step="0.25" oninput="repStepCalc()" style="width:80px;text-align:center">
               </div>
             </div>
             <div class="fg-title">Team</div>
-            <div class="zone-grid" id="repStepTeamPicks">
+            <div class="zone-grid" id="repStepTeamPicks" style="margin-bottom:16px">
               <div class="zone-item" data-v="1" onclick="repStepSelTeam(1)"><div class="zone-num">1 Person</div></div>
               <div class="zone-item sel" data-v="2" onclick="repStepSelTeam(2)"><div class="zone-num">2 Personen</div></div>
             </div>
-            <div class="fg-title" style="margin-top:16px">Anfahrt-Satz</div>
+            <div class="fg-title">Anfahrt-Satz</div>
             <div class="zone-grid">
               <div class="zone-item sel" id="repAnfahrtRedCard" onclick="repStepSelAnfahrt(false)"><div class="zone-num">Reduziert</div><div class="zone-time">empfohlen</div></div>
               <div class="zone-item" id="repAnfahrtVollCard" onclick="repStepSelAnfahrt(true)"><div class="zone-num">Voller Satz</div><div class="zone-time">Team-Stundensatz</div></div>
             </div>
           </div>
 
-          <!-- Montage cost preview -->
-          <div class="fg-col">
-            <div class="fg-title">Montagekosten</div>
-            <div id="repMontageVorschau" style="display:flex;flex-direction:column;gap:8px"></div>
-          </div>
-
         </div><!-- /repMontageInputs -->
       </div><!-- /fg-outer -->
+
+      <!-- Zusammenfassung Montage (shown when Mit Montage) -->
+      <div id="repMontageSummary" class="hidden" style="margin:12px 0 28px">
+        <div id="repMontageVorschau" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px"></div>
+      </div>
+
+      <!-- BLOCK 2: Versand -->
+      <div class="fg-title">Versand</div>
+      <div class="fg-outer" style="align-items:start">
+        <div class="fg-col">
+          <div class="fg-title">Versandart</div>
+          <div class="zone-grid">
+            <div class="zone-item sel" id="repVersandNorm" onclick="repStepSelVersand('VERSAND')">
+              <div class="zone-num">Versandkosten</div>
+              <div class="zone-time">Paketversand</div>
+            </div>
+            <div class="zone-item" id="repVersandFracht" onclick="repStepSelVersand('VORFRACHT')">
+              <div class="zone-num">Vorfrachtpauschale</div>
+              <div class="zone-time">Speditionsartikel</div>
+            </div>
+          </div>
+        </div>
+        <div class="fg-col">
+          <div class="fg-title">Preis</div>
+          <div class="zone-grid">
+            <div class="zone-item" style="cursor:default;border-color:rgba(255,152,0,.4);background:rgba(255,152,0,.06)">
+              <div class="zone-num" id="repStepVersandPreis" style="color:rgba(255,152,0,.9)">–</div>
+              <div class="zone-time">aus Google Sheet</div>
+            </div>
+          </div>
+        </div>
+      </div><!-- /versand fg-outer -->
+
     </div><!-- /rep-split-r -->
 
   </div><!-- /rep-split-wrap -->
@@ -1534,16 +1558,19 @@ let _repMontageAn=false,_repZone=2,_repAnfahrtVoll=false;
 
 async function goToRepStep(){
   document.getElementById('stepsBar').classList.add('hidden');
-  _repMontageAn=false;_repZone=2;_repAnfahrtVoll=false;_repTeam=2;
+  _repMontageAn=false;_repZone=2;_repAnfahrtVoll=false;_repTeam=2;_repVersandTyp='VERSAND';
   // Reset picks to defaults
   document.querySelectorAll('#repStepZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===2));
   document.getElementById('repMontageOhne').classList.add('sel');
   document.getElementById('repMontageMit').classList.remove('sel');
   const inp=document.getElementById('repMontageInputs');
   inp.classList.add('hidden');inp.style.display='';
+  document.getElementById('repMontageSummary').classList.add('hidden');
   document.getElementById('repAnfahrtRedCard').classList.add('sel');
   document.getElementById('repAnfahrtVollCard').classList.remove('sel');
   document.querySelectorAll('#repStepTeamPicks .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.v===2));
+  document.getElementById('repVersandNorm').classList.add('sel');
+  document.getElementById('repVersandFracht').classList.remove('sel');
   renderRepStepPositions();
   showView('viewStepRep');
   if(!prices5.stundensatz){
@@ -1572,14 +1599,15 @@ function renderRepStepPositions(){
     `<span style="font-size:15px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt||0)}</strong></span>`;
 }
 let _repTeam=2;
+let _repVersandTyp='VERSAND';
 function repStepSetMontage(an){
   _repMontageAn=an;
   document.getElementById('repMontageOhne').classList.toggle('sel',!an);
   document.getElementById('repMontageMit').classList.toggle('sel',an);
   const inp=document.getElementById('repMontageInputs');
   inp.classList.toggle('hidden',!an);
-  // hidden→display:grid when revealed (inline style overrides hidden class removal)
   inp.style.display=an?'grid':'';
+  document.getElementById('repMontageSummary').classList.toggle('hidden',!an);
   repStepCalc();
 }
 function repStepSelZone(z){
@@ -1598,8 +1626,15 @@ function repStepSelAnfahrt(voll){
   document.getElementById('repAnfahrtVollCard').classList.toggle('sel',voll);
   repStepCalc();
 }
+function repStepSelVersand(typ){
+  _repVersandTyp=typ;
+  document.getElementById('repVersandNorm').classList.toggle('sel',typ==='VERSAND');
+  document.getElementById('repVersandFracht').classList.toggle('sel',typ==='VORFRACHT');
+  repStepCalc();
+}
 function repStepCalc(){
-  const versand=prices5.fracht['VERSAND']||0;
+  const versand=prices5.fracht[_repVersandTyp]||0;
+  const versandName=_repVersandTyp==='VORFRACHT'?'Vorfrachtpauschale':'Versandkosten';
   document.getElementById('repStepVersandPreis').textContent=versand?fmtE(versand):'–';
   let montagePreis=0,arbeit=0,anfahrt=0;
   if(_repMontageAn){
@@ -1624,7 +1659,7 @@ function repStepCalc(){
   const tbody=document.getElementById('repStepRows');
   tbody.querySelectorAll('tr.rep-auto-row').forEach(r=>r.remove());
   const vRow=document.createElement('tr');vRow.className='rep-auto-row';
-  vRow.innerHTML=`<td>–</td><td style="font-size:11px;color:var(--muted)">VERSAND</td><td>Versandkosten<span class="rep-auto-badge">auto</span></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(versand)}</td><td class="num-r">${fmt(versand)}</td>`;
+  vRow.innerHTML=`<td>–</td><td style="font-size:11px;color:var(--muted)">${_repVersandTyp}</td><td>${versandName}<span class="rep-auto-badge">auto</span></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(versand)}</td><td class="num-r">${fmt(versand)}</td>`;
   tbody.appendChild(vRow);
   if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
@@ -1635,7 +1670,7 @@ function repStepCalc(){
   const pdfNetto=Number(soSeKuJSON?.netto_gesamt||0);
   const gesamt=pdfNetto+versand+montagePreis;
   let h=`<div class="mc-posrow"><span>Positionen aus PDF (Netto)</span><strong>${fmtE(pdfNetto)}</strong></div>`;
-  h+=`<div class="mc-posrow" style="color:rgba(255,152,0,.9)"><span>Versandkosten</span><strong>${fmtE(versand)}</strong></div>`;
+  h+=`<div class="mc-posrow" style="color:rgba(255,152,0,.9)"><span>${versandName}</span><strong>${fmtE(versand)}</strong></div>`;
   if(_repMontageAn) h+=`<div class="mc-posrow" style="color:rgba(255,152,0,.9)"><span>Montage inkl. Anfahrt</span><strong>${fmtE(montagePreis)}</strong></div>`;
   h+=`<div class="mc-grandtotal"><span>Netto gesamt</span><strong>${fmtE(gesamt)}</strong></div>`;
   document.getElementById('repStepPostableBody').innerHTML=h;
@@ -1647,8 +1682,9 @@ function buildRepSevdeskPositions(){
     rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});
   }
   rows.push({type:'section',name:'Montage und Fracht'});
-  const v=prices5.fracht['VERSAND']||0;
-  rows.push({type:'pos',name:'Versandkosten',beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:v,gesamt:v,artikelnummer:'VERSAND'});
+  const v=prices5.fracht[_repVersandTyp]||0;
+  const vName=_repVersandTyp==='VORFRACHT'?'Vorfrachtpauschale':'Versandkosten';
+  rows.push({type:'pos',name:vName,beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:v,gesamt:v,artikelnummer:_repVersandTyp});
   if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
     const teamRate=_repTeam===2?prices5.stundensatz:(prices5.stundensatz/2);
