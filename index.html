@@ -230,6 +230,9 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .mc-trash svg{width:16px;height:16px}
 .mode-link{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;text-decoration:none;border-radius:5px;padding:4px 10px;white-space:nowrap;transition:background .15s,color .15s;color:var(--muted)}
 .mode-link svg{width:14px;height:14px;flex-shrink:0}
+.mode-sel-btn{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px;border:2px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:all .18s;flex:1;justify-content:center}
+.mode-sel-btn:hover{border-color:var(--accent);color:var(--fg)}
+.mode-sel-btn.mode-sel-active{border-color:var(--accent);background:rgba(91,141,238,.1);color:var(--accent)}
 @media(hover:hover){.mc-trash:hover{border-color:#ff6b6b;background:rgba(255,107,107,.18)}}
 /* Step 6 */
 .s6-totals{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:18px 0}
@@ -256,7 +259,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-06-26 13:46 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 19:34 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -306,6 +309,16 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <!-- UPLOAD -->
 <div id="viewUpload" class="hidden">
   <div style="max-width:620px;margin:0 auto">
+  <div style="display:flex;gap:10px;margin-bottom:16px">
+    <button id="modeSel_seg" class="mode-sel-btn mode-sel-active" onclick="setImportMode('segelsystem')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Segelsystem-Angebot
+    </button>
+    <button id="modeSel_rep" class="mode-sel-btn" onclick="setImportMode('reparatur')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px"><path d="m15 12-8.5 8.5a2.12 2.12 0 1 1-3-3L12 9"/><path d="M17.64 15 22 10.64"/><path d="m20.91 11.7-1.25-1.25c-.6-.6-.93-1.41-.93-2.25v-.86L16.01 4.6a5.56 5.56 0 0 0-3.94-1.64H9l.92.82A6.18 6.18 0 0 1 12 8.4v1.56l2 2h2.47l2.26 1.91"/></svg>
+      Reparatur / Ersatz
+    </button>
+  </div>
   <div class="upload-zone" id="dropZone">
     <div class="upload-icon">&#128196;</div>
     <div class="upload-title">Soliday PDF ablegen</div>
@@ -357,7 +370,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
   </div>
   <div class="btn-row">
     <button class="btn btn-s" onclick="resetToUpload()">&larr; Zur&uuml;ck</button>
-    <button class="btn btn-p" onclick="goToStep3()">Weiter &rarr; Transformation</button>
+    <button class="btn btn-p" id="btnStep2Weiter" onclick="goFromStep2()">Weiter &rarr;</button>
   </div>
 </div>
 
@@ -470,7 +483,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <div id="viewStep6" class="hidden view-pinned">
   <div class="view-scroll" id="s6content"></div>
   <div class="btn-row">
-    <button class="btn btn-s" onclick="showView('viewStep5');setStep(5)">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-s" onclick="importMode==='reparatur'?showView('viewStepRep'):showView('viewStep5');if(importMode!=='reparatur')setStep(5)">&larr; Zur&uuml;ck</button>
     <button class="btn btn-p" onclick="goToStep7()">Weiter &rarr; Runden</button>
   </div>
 </div>
@@ -718,6 +731,96 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
   </div>
 </div>
 
+<!-- REPARATUR PFAD -->
+<div id="viewStepRep" class="hidden">
+  <div style="max-width:860px;margin:0 auto">
+    <div style="margin-bottom:16px">
+      <div class="s3-title" style="font-size:17px">Reparatur / Ersatz finalisieren</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">Positionen aus dem PDF &middot; Versand &amp; optionale Montage</div>
+    </div>
+
+    <!-- Extracted positions table -->
+    <div class="sektion-body" style="margin-bottom:16px">
+      <div class="s5-sec-title" style="padding:10px 14px 8px;font-size:11px">Positionen aus PDF</div>
+      <div style="overflow-x:auto;padding:0 14px 14px">
+        <table class="jtable"><thead><tr><th>Pos.</th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
+        <tbody id="repStepRows"></tbody></table>
+        <div id="repStepFooter" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;margin-top:10px"></div>
+      </div>
+    </div>
+
+    <!-- Versand + Montage config -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <!-- Versand (auto) -->
+      <div class="s5-card">
+        <div class="s5-card-hdr"><strong>Versand</strong> <span style="font-size:11px;color:var(--accent2)">automatisch</span></div>
+        <div class="s5-card-body">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:13px">Versandkosten</span>
+            <strong id="repStepVersandPreis" style="color:var(--accent2)">–</strong>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">Preis aus Google Sheet (Versand-Zeile)</div>
+        </div>
+      </div>
+
+      <!-- Montage (optional) -->
+      <div class="s5-card">
+        <div class="s5-card-hdr" style="display:flex;align-items:center;gap:10px">
+          <strong>Montage</strong>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:400;color:var(--muted)">
+            <input type="checkbox" id="repStepMontageAn" onchange="repStepToggleMontage()" style="accent-color:var(--accent);width:15px;height:15px">
+            hinzuf&uuml;gen
+          </label>
+        </div>
+        <div class="s5-card-body" id="repStepMontageBody" style="display:none">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div>
+              <div class="s5-lbl">Gesch&auml;tzte Stunden</div>
+              <input type="number" class="s5-inp s5-w70" id="repStepStunden" value="1" min="0" step="0.25" oninput="repStepCalc()">
+            </div>
+            <div>
+              <div class="s5-lbl">Team</div>
+              <div class="mc-pick-row" id="repStepTeamPicks">
+                <div class="mc-pick" data-v="1" onclick="repPick('repStepTeamPicks',this);repStepCalc()">1 Person</div>
+                <div class="mc-pick sel" data-v="2" onclick="repPick('repStepTeamPicks',this);repStepCalc()">2 Personen</div>
+              </div>
+            </div>
+            <div>
+              <div class="s5-lbl">Anfahrtszone</div>
+              <select class="s5-inp" id="repStepZone" style="text-align:left" onchange="repStepCalc()">
+                <option value="1">Zone 1 – bis 15 min</option>
+                <option value="2" selected>Zone 2 – bis 30 min</option>
+                <option value="3">Zone 3 – bis 45 min</option>
+                <option value="4">Zone 4 – bis 60 min</option>
+                <option value="5">Zone 5 – bis 75 min</option>
+                <option value="6">Zone 6 – bis 90 min</option>
+              </select>
+            </div>
+            <div>
+              <div class="s5-lbl">Anfahrt-Satz</div>
+              <div class="mc-pick-row" id="repStepAnfahrtPicks">
+                <div class="mc-pick sel" data-v="0" onclick="repPick('repStepAnfahrtPicks',this);repStepCalc()">Reduziert</div>
+                <div class="mc-pick" data-v="1" onclick="repPick('repStepAnfahrtPicks',this);repStepCalc()">Voller Satz</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result preview -->
+    <div class="mc-postable" id="repStepPostable" style="margin-bottom:20px">
+      <div class="mc-postable-title">Positionen f&uuml;r sevdesk</div>
+      <div id="repStepPostableBody"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-s" onclick="resetToUpload()">&larr; Zur&uuml;ck</button>
+      <button class="btn btn-p" onclick="goToRepStep6()">Weiter &rarr; sevdesk Import</button>
+    </div>
+  </div>
+</div>
+
 <!-- DONE -->
 <div id="viewDone" class="hidden">
   <div class="center-wrap">
@@ -747,6 +850,8 @@ let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,extractAttempts=0,maxStep=0;
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
+let importMode='segelsystem'; // 'segelsystem' | 'reparatur'
+let repStep={montageAn:false,stunden:1,team:2,zone:2,anfahrtVoll:false};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
@@ -754,7 +859,7 @@ let _s3DragSrc=null;
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtE=n=>fmt(n)+' €';
-const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse','viewMontage','viewReparatur'];
+const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse','viewMontage','viewReparatur','viewStepRep'];
 function fixViewPinnedHeight(){
   // Body-scroll layout — no fixed height needed
 }
@@ -796,6 +901,13 @@ function resetToUpload(){
   pdfFile=null;pdfBase64=null;soSeKuJSON=null;transformedData=null;extractAttempts=0;manualWeglass=new Set();
   document.getElementById('fileInput').value='';
   showView('viewUpload');setStep(1);
+}
+function setImportMode(m){
+  importMode=m;
+  document.getElementById('modeSel_seg').classList.toggle('mode-sel-active',m==='segelsystem');
+  document.getElementById('modeSel_rep').classList.toggle('mode-sel-active',m==='reparatur');
+  const btn=document.getElementById('btnStep2Weiter');
+  if(btn) btn.textContent=m==='reparatur'?'Weiter → Reparatur':'Weiter → Transformation';
 }
 
 // === KEYS ===
@@ -1057,6 +1169,8 @@ function renderStep2(){
     `<span style="font-size:16px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt)}</strong></span>`;
   if(pdfBase64){renderPDFPages(pdfBase64);}
   setTimeout(()=>{const sc=document.getElementById('s2jsonScroll');if(sc)sc.scrollTop=sc.scrollHeight;},120);
+  const wBtn=document.getElementById('btnStep2Weiter');
+  if(wBtn) wBtn.textContent=importMode==='reparatur'?'Weiter → Reparatur':'Weiter → Transformation';
   showView('viewStep2');setStep(2);
 }
 async function reextract(){
@@ -1368,7 +1482,126 @@ function s3Drop(event,tgtSekId){event.preventDefault();s3ClearDragUI();if(!_s3Dr
 function s3MoveTo(srcSekId,pidx,tgtSekId){const srcSek=transformedData.sektionen.find(s=>s.id===srcSekId);const tgtSek=transformedData.sektionen.find(s=>s.id===tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(pidx,1);tgtSek.positionen.push(moved);document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
 function s3MoveInSek(sekId,pidx,dir){const sek=transformedData.sektionen.find(s=>s.id===sekId);if(!sek)return;const ni=pidx+dir;if(ni<0||ni>=sek.positionen.length)return;[sek.positionen[pidx],sek.positionen[ni]]=[sek.positionen[ni],sek.positionen[pidx]];document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
 function s3ShowMover(event,sekId,pidx){event.stopPropagation();document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());const sek=transformedData.sektionen.find(s=>s.id===sekId);const canUp=pidx>0;const canDown=sek&&pidx<sek.positionen.length-1;const upDown=(canUp||canDown)?`<div style="border-bottom:1px solid rgba(91,141,238,.2);padding-bottom:4px;margin-bottom:4px">${canUp?`<button onclick="s3MoveInSek('${sekId}',${pidx},-1)">▲ Eine nach oben</button>`:''}${canDown?`<button onclick="s3MoveInSek('${sekId}',${pidx},1)">▼ Eine nach unten</button>`:''}</div>`:'';const sects=transformedData.sektionen.filter(s=>s.id!==sekId).map(s=>`<button onclick="s3MoveTo('${sekId}',${pidx},'${s.id}')">→ ${s.name}</button>`).join('');const pop=document.createElement('div');pop.className='s3-mover-popup';const r=event.target.getBoundingClientRect();pop.style.left=Math.min(r.left,window.innerWidth-180)+'px';pop.style.top=(r.bottom+4)+'px';pop.innerHTML=upDown+sects;document.body.appendChild(pop);setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),0);}
+function goFromStep2(){
+  if(importMode==='reparatur') goToRepStep();
+  else goToStep3();
+}
 function goToStep3(){transformedData=transformiere(soSeKuJSON);renderStep3();}
+
+// ══════════════════════════════════════════════════════════════════════
+// REPARATUR-PFAD im Import-Tool
+// ══════════════════════════════════════════════════════════════════════
+async function goToRepStep(){
+  // Render extracted positions immediately
+  renderRepStepPositions();
+  showView('viewStepRep');
+  // Load prices if not yet loaded
+  if(!prices5.stundensatz){
+    document.getElementById('repStepVersandPreis').textContent='Lade...';
+    await loadPrices5();
+  }
+  repStepCalc();
+}
+function renderRepStepPositions(){
+  const d=soSeKuJSON;
+  const rows=document.getElementById('repStepRows');
+  rows.innerHTML=(d.positionen||[]).map(p=>`<tr>
+    <td>${p.pos}</td>
+    <td style="color:var(--muted);font-size:11px">${p.artikelnummer||''}</td>
+    <td>${p.name}${p.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${p.beschreibung}</div>`:''}</td>
+    <td class="num-r">${fmt(p.menge)}</td>
+    <td style="color:var(--muted)">${p.einheit||''}</td>
+    <td class="num-r">${fmt(p.preis_einheit)}</td>
+    <td class="num-r"><strong>${fmt(p.gesamt)}</strong></td>
+  </tr>`).join('');
+  const teu=Number(d.teuerungszuschlag_netto||0);
+  const netto=d.netto_gesamt||0;
+  document.getElementById('repStepFooter').innerHTML=
+    (teu?`<span style="color:var(--muted)">+ Teuerungszuschlag: <strong>${fmtE(teu)}</strong></span>`:'')+
+    `<span style="color:var(--muted)">Netto gesamt: <strong>${fmtE(netto)}</strong></span>`+
+    `<span style="color:var(--muted)">MwSt.: <strong>${fmtE(d.mwst||0)}</strong></span>`+
+    `<span style="font-size:15px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt||0)}</strong></span>`;
+}
+function repStepToggleMontage(){
+  const an=document.getElementById('repStepMontageAn').checked;
+  document.getElementById('repStepMontageBody').style.display=an?'':'none';
+  repStepCalc();
+}
+function repStepCalc(){
+  const versand=prices5.fracht['VERSAND']||0;
+  document.getElementById('repStepVersandPreis').textContent=versand?fmtE(versand):'–';
+  const montageAn=document.getElementById('repStepMontageAn')?.checked||false;
+  let montagePreis=0;
+  let zone=2;
+  if(montageAn){
+    const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
+    const team=parseInt(mcPickVal('repStepTeamPicks','2'))||2;
+    zone=parseInt(document.getElementById('repStepZone')?.value)||2;
+    const anfahrtVoll=mcPickVal('repStepAnfahrtPicks','0')==='1';
+    const teamRate=team===2?prices5.stundensatz:(prices5.stundensatz/2);
+    const raw=std*teamRate;
+    const arbeit=teamRate?Math.ceil(raw/10)*10:0;
+    const satz=anfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
+    const anfahrt=calcAnfahrtPreis(zone,1,satz);
+    montagePreis=arbeit+anfahrt;
+  }
+  const pdfNetto=Number(soSeKuJSON?.netto_gesamt||0);
+  const gesamt=pdfNetto+versand+montagePreis;
+  const body=document.getElementById('repStepPostableBody');
+  let h=`<div class="mc-posrow"><span>Positionen aus PDF (Netto)</span><strong>${fmtE(pdfNetto)}</strong></div>`;
+  h+=`<div class="mc-posrow"><span>Versandkosten</span><strong>${fmtE(versand)}</strong></div>`;
+  if(montageAn) h+=`<div class="mc-posrow"><span>Montage inkl. Anfahrt</span><strong>${fmtE(montagePreis)}</strong></div>`;
+  h+=`<div class="mc-grandtotal"><span>Netto gesamt</span><strong>${fmtE(gesamt)}</strong></div>`;
+  body.innerHTML=h;
+}
+function buildRepSevdeskPositions(){
+  const rows=[];
+  // Section: Positionen
+  rows.push({type:'section',name:'Positionen'});
+  for(const p of (soSeKuJSON?.positionen||[])){
+    rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});
+  }
+  // Section: Montage und Fracht
+  rows.push({type:'section',name:'Montage und Fracht'});
+  rows.push({type:'pos',name:'Versandkosten',beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:prices5.fracht['VERSAND']||0,gesamt:prices5.fracht['VERSAND']||0,artikelnummer:'VERSAND'});
+  const montageAn=document.getElementById('repStepMontageAn')?.checked||false;
+  if(montageAn){
+    const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
+    const team=parseInt(mcPickVal('repStepTeamPicks','2'))||2;
+    const zone=parseInt(document.getElementById('repStepZone')?.value)||2;
+    const anfahrtVoll=mcPickVal('repStepAnfahrtPicks','0')==='1';
+    const teamRate=team===2?prices5.stundensatz:(prices5.stundensatz/2);
+    const arbeit=teamRate?Math.ceil(std*teamRate/10)*10:0;
+    const satz=anfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
+    const anfahrt=calcAnfahrtPreis(zone,1,satz);
+    const montagePreis=arbeit+anfahrt;
+    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:`${team===2?'2 Personen':'1 Person'} · ${fmt(std)} Std. · Zone ${zone}`,menge:1,einheit:'pauschal',preis_einheit:montagePreis,gesamt:montagePreis,artikelnummer:''});
+  }
+  return rows;
+}
+function goToRepStep6(){
+  sevdeskPositions=buildRepSevdeskPositions();
+  renderRepStep6();
+}
+function renderRepStep6(){
+  const teu=Number(soSeKuJSON?.teuerungszuschlag_netto||0);
+  const netto=sevdeskPositions.filter(r=>r.type==='pos').reduce((s,r)=>s+(r.gesamt||0),0);
+  const nettoT=netto+teu;
+  const mwst=nettoT*0.19;
+  const brutto=nettoT+mwst;
+  const d=soSeKuJSON;
+  let h=`<div style="max-width:860px;margin:0 auto;padding:16px 0">`;
+  h+=`<div class="info-chips" style="margin-bottom:12px"><span>Kommission: <strong>${d.kommission||'–'}</strong></span><span>Reparatur / Ersatz</span><span>Datum: <strong>${d.datum||'–'}</strong></span></div>`;
+  h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
+  h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
+  if(teu>0)h+=`<div class="s6-tr"><span style="color:var(--muted)">Temporäre Anpassung</span><span>${fmtE(teu)}</span></div>`;
+  h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto gesamt</span><span>${fmtE(nettoT)}</span></div>`;
+  h+=`<div class="s6-tr"><span style="color:var(--muted)">MwSt. 19 %</span><span>${fmtE(mwst)}</span></div>`;
+  h+=`<div class="s6-tr" style="font-size:15px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Brutto gesamt</span><span style="color:var(--accent)">${fmtE(brutto)}</span></div>`;
+  h+=`</div></div>`;
+  document.getElementById('s6content').innerHTML=h;
+  showView('viewStep6');setStep(6);
+}
 function toggleManualWeglass(posNr,checked){
   if(checked) manualWeglass.delete(String(posNr));
   else manualWeglass.add(String(posNr));
