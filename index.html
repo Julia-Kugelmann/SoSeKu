@@ -295,7 +295,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 21:23 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 21:36 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -325,6 +325,15 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
     <div class="step" id="st7" onclick="navigateToStep(7)"><div class="step-num">7</div><span>Runden</span></div>
     <div class="step-line"></div>
     <div class="step" id="st8" onclick="navigateToStep(8)"><div class="step-num">8</div><span>Import</span></div>
+  </div>
+</div>
+<div class="steps-wrap hidden" id="repStepsBar">
+  <div class="steps">
+    <div class="step active" id="rst1"><div class="step-num">1</div><span>Positionen &amp; Montage</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="rst2"><div class="step-num">2</div><span>Runden</span></div>
+    <div class="step-line"></div>
+    <div class="step" id="rst3"><div class="step-num">3</div><span>Import</span></div>
   </div>
 </div>
 
@@ -528,7 +537,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <div id="viewStep7" class="hidden view-pinned">
   <div class="view-scroll" id="s7content"></div>
   <div class="btn-row" style="align-items:flex-end">
-    <button class="btn btn-s" onclick="importMode==='reparatur'?showView('viewStepRep'):showView('viewStep6'),importMode!=='reparatur'&&setStep(6)">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-s" onclick="importMode==='reparatur'?(showView('viewStepRep'),setRepMiniStep(1)):(showView('viewStep6'),setStep(6))">&larr; Zur&uuml;ck</button>
     <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
       <span style="font-size:48px;line-height:1">&#128228;</span>
       <button class="btn btn-p" onclick="goToStep8()">Jetzt importieren &rarr;</button>
@@ -547,7 +556,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
     <button class="btn btn-p" id="btnImport" onclick="importToSevdesk()" style="font-size:14px;padding:14px 32px">Jetzt in sevdesk importieren &rarr;</button>
   </div>
   <div class="btn-row">
-    <button class="btn btn-s" onclick="showView('viewStep7');setStep(7)">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-s" onclick="importMode==='reparatur'?(showView('viewStep7'),setRepMiniStep(2)):(showView('viewStep7'),setStep(7))">&larr; Zur&uuml;ck</button>
   </div>
 </div>
 
@@ -769,15 +778,6 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 
 <!-- REPARATUR PFAD -->
 <div id="viewStepRep" class="hidden view-pinned">
-  <!-- Own mini step bar with numbers -->
-  <div class="rep-mini-bar">
-    <span class="rep-mini-step rep-mini-active"><span class="rep-mini-num">1</span>Positionen &amp; Montage</span>
-    <span class="rep-mini-arrow">&#8594;</span>
-    <span class="rep-mini-step"><span class="rep-mini-num">2</span>Runden</span>
-    <span class="rep-mini-arrow">&#8594;</span>
-    <span class="rep-mini-step"><span class="rep-mini-num">3</span>Import</span>
-  </div>
-
   <div class="view-scroll">
   <div class="rep-split-wrap">
 
@@ -959,10 +959,20 @@ const STEP_NAV={
 };
 function navigateToStep(n){if(n<=maxStep&&STEP_NAV[n])STEP_NAV[n]();}
 function showError(msg){document.getElementById('errMsg').textContent=msg;showView('viewError');}
+function setRepMiniStep(n){
+  document.getElementById('repStepsBar').classList.remove('hidden');
+  for(let i=1;i<=3;i++){
+    const el=document.getElementById('rst'+i);
+    if(!el) continue;
+    el.className='step'+(i===n?' active':i<n?' done':'');
+    el.querySelector('.step-num').textContent=i<n?'✓':String(i);
+  }
+}
 function resetToUpload(){
   pdfFile=null;pdfBase64=null;soSeKuJSON=null;transformedData=null;extractAttempts=0;manualWeglass=new Set();
   document.getElementById('fileInput').value='';
   document.getElementById('stepsBar').classList.add('hidden');
+  document.getElementById('repStepsBar').classList.add('hidden');
   showView('viewUpload');
 }
 function setImportMode(m){
@@ -1573,6 +1583,7 @@ async function goToRepStep(){
   document.getElementById('repVersandFracht').classList.remove('sel');
   renderRepStepPositions();
   showView('viewStepRep');
+  setRepMiniStep(1);
   if(!prices5.stundensatz){
     await loadPrices5();
   }
@@ -3170,7 +3181,8 @@ function renderStep7(){
   h+=`<div class="s6-tr" style="font-size:15px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Brutto gesamt</span><span style="color:var(--accent)">${fmtE(brutto)}</span></div>`;
   h+=`</div></div>`;
   document.getElementById('s7content').innerHTML=h;
-  showView('viewStep7');setStep(7);
+  showView('viewStep7');
+  if(importMode==='reparatur') setRepMiniStep(2); else setStep(7);
 }
 
 // === STEP 8: Import ===
@@ -3195,7 +3207,8 @@ function goToStep8(){
     `<div class="import-sum-row"><span>Brutto gesamt</span><span><strong>${fmtE(brutto)}</strong></span></div>`;
   document.getElementById('s8nokey').classList.remove('hidden');
   document.getElementById('btnImport').disabled=true;
-  showView('viewStep8');setStep(8);
+  showView('viewStep8');
+  if(importMode==='reparatur') setRepMiniStep(3); else setStep(8);
 }
 
 // === SEVDESK ===
