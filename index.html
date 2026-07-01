@@ -233,6 +233,13 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .mode-sel-btn{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px;border:2px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:all .18s;flex:1;justify-content:center}
 .mode-sel-btn:hover{border-color:var(--accent);color:var(--fg)}
 .mode-sel-btn.mode-sel-active{border-color:var(--accent);background:rgba(91,141,238,.1);color:var(--accent)}
+.rep-mini-bar{display:flex;align-items:center;gap:10px;padding:10px 0 0;font-size:11px;font-weight:600;flex-shrink:0;justify-content:center}
+.rep-mini-step{padding:5px 14px;border-radius:20px;background:var(--surface);border:1px solid var(--border);color:var(--muted)}
+.rep-mini-step.rep-mini-active{background:rgba(91,141,238,.1);border-color:var(--accent);color:var(--accent)}
+.rep-mini-arrow{color:var(--muted);font-size:12px}
+tr.rep-auto-row td{background:rgba(255,152,0,.07)}
+tr.rep-auto-row td:last-child{color:rgba(255,152,0,.95);font-weight:700}
+tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:700;color:rgba(255,152,0,.9);background:rgba(255,152,0,.12);border:1px solid rgba(255,152,0,.3);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.06em}
 @media(hover:hover){.mc-trash:hover{border-color:#ff6b6b;background:rgba(255,107,107,.18)}}
 /* Step 6 */
 .s6-totals{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:18px 0}
@@ -259,7 +266,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 19:34 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 19:47 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -492,7 +499,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 <div id="viewStep7" class="hidden view-pinned">
   <div class="view-scroll" id="s7content"></div>
   <div class="btn-row" style="align-items:flex-end">
-    <button class="btn btn-s" onclick="showView('viewStep6');setStep(6)">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-s" onclick="importMode==='reparatur'?showView('viewStepRep'):showView('viewStep6'),importMode!=='reparatur'&&setStep(6)">&larr; Zur&uuml;ck</button>
     <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
       <span style="font-size:48px;line-height:1">&#128228;</span>
       <button class="btn btn-p" onclick="goToStep8()">Jetzt importieren &rarr;</button>
@@ -732,92 +739,126 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 </div>
 
 <!-- REPARATUR PFAD -->
-<div id="viewStepRep" class="hidden">
-  <div style="max-width:860px;margin:0 auto">
-    <div style="margin-bottom:16px">
-      <div class="s3-title" style="font-size:17px">Reparatur / Ersatz finalisieren</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:3px">Positionen aus dem PDF &middot; Versand &amp; optionale Montage</div>
-    </div>
+<div id="viewStepRep" class="hidden view-pinned">
+  <!-- Own mini step bar for Reparatur path -->
+  <div class="rep-mini-bar">
+    <span class="rep-mini-step rep-mini-active">Positionen &amp; Montage</span>
+    <span class="rep-mini-arrow">&#8594;</span>
+    <span class="rep-mini-step">Runden</span>
+    <span class="rep-mini-arrow">&#8594;</span>
+    <span class="rep-mini-step">Import</span>
+  </div>
 
-    <!-- Extracted positions table -->
-    <div class="sektion-body" style="margin-bottom:16px">
-      <div class="s5-sec-title" style="padding:10px 14px 8px;font-size:11px">Positionen aus PDF</div>
-      <div style="overflow-x:auto;padding:0 14px 14px">
-        <table class="jtable"><thead><tr><th>Pos.</th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
-        <tbody id="repStepRows"></tbody></table>
-        <div id="repStepFooter" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;margin-top:10px"></div>
-      </div>
-    </div>
+  <div class="view-scroll">
+  <div style="max-width:960px;margin:0 auto;padding:16px 0 8px">
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:18px;align-items:start">
 
-    <!-- Versand + Montage config -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
-      <!-- Versand (auto) -->
-      <div class="s5-card">
-        <div class="s5-card-hdr"><strong>Versand</strong> <span style="font-size:11px;color:var(--accent2)">automatisch</span></div>
-        <div class="s5-card-body">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:13px">Versandkosten</span>
-            <strong id="repStepVersandPreis" style="color:var(--accent2)">–</strong>
+      <!-- LEFT: Positions table -->
+      <div>
+        <div class="fg-title" style="text-align:left;margin-bottom:10px">Positionen</div>
+        <div class="sektion-body">
+          <div style="overflow-x:auto">
+            <table class="jtable">
+              <thead><tr><th>Pos.</th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
+              <tbody id="repStepRows"></tbody>
+              <!-- auto-added rows appended here by JS -->
+            </table>
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">Preis aus Google Sheet (Versand-Zeile)</div>
+          <div id="repStepFooter" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;margin:10px 4px 4px"></div>
+        </div>
+
+        <!-- Netto preview with auto rows -->
+        <div class="mc-postable" style="margin-top:14px">
+          <div class="mc-postable-title">Positionen f&uuml;r sevdesk</div>
+          <div id="repStepPostableBody"></div>
         </div>
       </div>
 
-      <!-- Montage (optional) -->
-      <div class="s5-card">
-        <div class="s5-card-hdr" style="display:flex;align-items:center;gap:10px">
-          <strong>Montage</strong>
-          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:400;color:var(--muted)">
-            <input type="checkbox" id="repStepMontageAn" onchange="repStepToggleMontage()" style="accent-color:var(--accent);width:15px;height:15px">
-            hinzuf&uuml;gen
-          </label>
-        </div>
-        <div class="s5-card-body" id="repStepMontageBody" style="display:none">
-          <div style="display:flex;flex-direction:column;gap:10px">
-            <div>
-              <div class="s5-lbl">Gesch&auml;tzte Stunden</div>
-              <input type="number" class="s5-inp s5-w70" id="repStepStunden" value="1" min="0" step="0.25" oninput="repStepCalc()">
-            </div>
-            <div>
-              <div class="s5-lbl">Team</div>
-              <div class="mc-pick-row" id="repStepTeamPicks">
-                <div class="mc-pick" data-v="1" onclick="repPick('repStepTeamPicks',this);repStepCalc()">1 Person</div>
-                <div class="mc-pick sel" data-v="2" onclick="repPick('repStepTeamPicks',this);repStepCalc()">2 Personen</div>
+      <!-- RIGHT: Fragebogen -->
+      <div>
+        <div class="fg-title" style="text-align:left;margin-bottom:10px">Montage &amp; Fracht</div>
+
+        <!-- Montage Auswahl (zone-item style) -->
+        <div class="s5-card" style="margin-bottom:14px">
+          <div class="s5-card-hdr"><strong>Montage</strong></div>
+          <div class="s5-card-body">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px">
+              <div class="zone-item sel" id="repMontageOhne" onclick="repStepSetMontage(false)">
+                <div class="zone-num" style="font-size:13px">Ohne</div>
+                <div class="zone-time">nur Versand</div>
               </div>
-            </div>
-            <div>
-              <div class="s5-lbl">Anfahrtszone</div>
-              <select class="s5-inp" id="repStepZone" style="text-align:left" onchange="repStepCalc()">
-                <option value="1">Zone 1 – bis 15 min</option>
-                <option value="2" selected>Zone 2 – bis 30 min</option>
-                <option value="3">Zone 3 – bis 45 min</option>
-                <option value="4">Zone 4 – bis 60 min</option>
-                <option value="5">Zone 5 – bis 75 min</option>
-                <option value="6">Zone 6 – bis 90 min</option>
-              </select>
-            </div>
-            <div>
-              <div class="s5-lbl">Anfahrt-Satz</div>
-              <div class="mc-pick-row" id="repStepAnfahrtPicks">
-                <div class="mc-pick sel" data-v="0" onclick="repPick('repStepAnfahrtPicks',this);repStepCalc()">Reduziert</div>
-                <div class="mc-pick" data-v="1" onclick="repPick('repStepAnfahrtPicks',this);repStepCalc()">Voller Satz</div>
+              <div class="zone-item" id="repMontageMit" onclick="repStepSetMontage(true)">
+                <div class="zone-num" style="font-size:13px">Mit Montage</div>
+                <div class="zone-time">inkl. Anfahrt</div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Montage inputs (hidden until "Mit Montage" selected) -->
+        <div id="repMontageInputs" class="hidden">
+          <div class="s5-card" style="margin-bottom:14px">
+            <div class="s5-card-hdr"><strong>Montagezeit</strong></div>
+            <div class="s5-card-body" style="display:flex;flex-direction:column;gap:12px">
+              <div>
+                <div class="s5-lbl">Gesch&auml;tzte Stunden</div>
+                <input type="number" class="s5-inp s5-w70" id="repStepStunden" value="1" min="0" step="0.25" oninput="repStepCalc()">
+              </div>
+              <div>
+                <div class="s5-lbl" style="margin-bottom:6px">Team</div>
+                <div class="mc-pick-row" id="repStepTeamPicks">
+                  <div class="mc-pick" data-v="1" onclick="repPick('repStepTeamPicks',this);repStepCalc()">1 Person</div>
+                  <div class="mc-pick sel" data-v="2" onclick="repPick('repStepTeamPicks',this);repStepCalc()">2 Personen</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="s5-card" style="margin-bottom:14px">
+            <div class="s5-card-hdr"><strong>Anfahrt</strong></div>
+            <div class="s5-card-body" style="display:flex;flex-direction:column;gap:12px">
+              <div>
+                <div class="s5-lbl" style="margin-bottom:6px">Anfahrtszone</div>
+                <div class="zone-grid" id="repStepZoneGrid" style="grid-template-columns:repeat(3,1fr)">
+                  <div class="zone-item" data-z="1" onclick="repStepSelZone(1)"><div class="zone-num">Z1</div><div class="zone-time">15 min</div></div>
+                  <div class="zone-item sel" data-z="2" onclick="repStepSelZone(2)"><div class="zone-num">Z2</div><div class="zone-time">30 min</div></div>
+                  <div class="zone-item" data-z="3" onclick="repStepSelZone(3)"><div class="zone-num">Z3</div><div class="zone-time">45 min</div></div>
+                  <div class="zone-item" data-z="4" onclick="repStepSelZone(4)"><div class="zone-num">Z4</div><div class="zone-time">60 min</div></div>
+                  <div class="zone-item" data-z="5" onclick="repStepSelZone(5)"><div class="zone-num">Z5</div><div class="zone-time">75 min</div></div>
+                  <div class="zone-item" data-z="6" onclick="repStepSelZone(6)"><div class="zone-num">Z6</div><div class="zone-time">90 min</div></div>
+                </div>
+              </div>
+              <div>
+                <div class="s5-lbl" style="margin-bottom:6px">Anfahrt-Satz</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div class="zone-item sel" id="repAnfahrtRedCard" onclick="repStepSelAnfahrt(false)"><div class="zone-num" style="font-size:12px">Reduziert</div><div class="zone-time">empfohlen</div></div>
+                  <div class="zone-item" id="repAnfahrtVollCard" onclick="repStepSelAnfahrt(true)"><div class="zone-num" style="font-size:12px">Voller Satz</div><div class="zone-time">Team-Std.</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Versand info -->
+        <div class="s5-card">
+          <div class="s5-card-hdr"><strong>Versand</strong><span style="color:rgba(255,152,0,.9);font-size:11px;font-weight:600">&#9679; automatisch</span></div>
+          <div class="s5-card-body">
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:13px">Versandkosten</span>
+              <strong id="repStepVersandPreis" style="color:rgba(255,152,0,.9)">–</strong>
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px">Preis aus Google Sheet · wird automatisch erg&auml;nzt</div>
+          </div>
+        </div>
+
       </div>
     </div>
+  </div>
+  </div><!-- /view-scroll -->
 
-    <!-- Result preview -->
-    <div class="mc-postable" id="repStepPostable" style="margin-bottom:20px">
-      <div class="mc-postable-title">Positionen f&uuml;r sevdesk</div>
-      <div id="repStepPostableBody"></div>
-    </div>
-
-    <div class="btn-row">
-      <button class="btn btn-s" onclick="resetToUpload()">&larr; Zur&uuml;ck</button>
-      <button class="btn btn-p" onclick="goToRepStep6()">Weiter &rarr; sevdesk Import</button>
-    </div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="resetToUpload()">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-p" onclick="goRepToRunden()">Weiter &rarr; Runden</button>
   </div>
 </div>
 
@@ -1491,11 +1532,21 @@ function goToStep3(){transformedData=transformiere(soSeKuJSON);renderStep3();}
 // ══════════════════════════════════════════════════════════════════════
 // REPARATUR-PFAD im Import-Tool
 // ══════════════════════════════════════════════════════════════════════
+let _repMontageAn=false,_repZone=2,_repAnfahrtVoll=false;
+
 async function goToRepStep(){
-  // Render extracted positions immediately
+  document.getElementById('stepsBar').classList.add('hidden');
+  _repMontageAn=false;_repZone=2;_repAnfahrtVoll=false;
+  // Reset picks to defaults
+  document.querySelectorAll('#repStepZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===2));
+  document.getElementById('repMontageOhne').classList.add('sel');
+  document.getElementById('repMontageMit').classList.remove('sel');
+  document.getElementById('repMontageInputs').classList.add('hidden');
+  document.getElementById('repAnfahrtRedCard').classList.add('sel');
+  document.getElementById('repAnfahrtVollCard').classList.remove('sel');
+  document.querySelectorAll('#repStepTeamPicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v==='2'));
   renderRepStepPositions();
   showView('viewStepRep');
-  // Load prices if not yet loaded
   if(!prices5.stundensatz){
     document.getElementById('repStepVersandPreis').textContent='Lade...';
     await loadPrices5();
@@ -1504,8 +1555,8 @@ async function goToRepStep(){
 }
 function renderRepStepPositions(){
   const d=soSeKuJSON;
-  const rows=document.getElementById('repStepRows');
-  rows.innerHTML=(d.positionen||[]).map(p=>`<tr>
+  const tbody=document.getElementById('repStepRows');
+  tbody.innerHTML=(d.positionen||[]).map(p=>`<tr>
     <td>${p.pos}</td>
     <td style="color:var(--muted);font-size:11px">${p.artikelnummer||''}</td>
     <td>${p.name}${p.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${p.beschreibung}</div>`:''}</td>
@@ -1515,92 +1566,91 @@ function renderRepStepPositions(){
     <td class="num-r"><strong>${fmt(p.gesamt)}</strong></td>
   </tr>`).join('');
   const teu=Number(d.teuerungszuschlag_netto||0);
-  const netto=d.netto_gesamt||0;
   document.getElementById('repStepFooter').innerHTML=
     (teu?`<span style="color:var(--muted)">+ Teuerungszuschlag: <strong>${fmtE(teu)}</strong></span>`:'')+
-    `<span style="color:var(--muted)">Netto gesamt: <strong>${fmtE(netto)}</strong></span>`+
+    `<span style="color:var(--muted)">Netto gesamt: <strong>${fmtE(d.netto_gesamt||0)}</strong></span>`+
     `<span style="color:var(--muted)">MwSt.: <strong>${fmtE(d.mwst||0)}</strong></span>`+
     `<span style="font-size:15px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt||0)}</strong></span>`;
 }
-function repStepToggleMontage(){
-  const an=document.getElementById('repStepMontageAn').checked;
-  document.getElementById('repStepMontageBody').style.display=an?'':'none';
+function repStepSetMontage(an){
+  _repMontageAn=an;
+  document.getElementById('repMontageOhne').classList.toggle('sel',!an);
+  document.getElementById('repMontageMit').classList.toggle('sel',an);
+  document.getElementById('repMontageInputs').classList.toggle('hidden',!an);
+  repStepCalc();
+}
+function repStepSelZone(z){
+  _repZone=z;
+  document.querySelectorAll('#repStepZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===z));
+  repStepCalc();
+}
+function repStepSelAnfahrt(voll){
+  _repAnfahrtVoll=voll;
+  document.getElementById('repAnfahrtRedCard').classList.toggle('sel',!voll);
+  document.getElementById('repAnfahrtVollCard').classList.toggle('sel',voll);
   repStepCalc();
 }
 function repStepCalc(){
   const versand=prices5.fracht['VERSAND']||0;
   document.getElementById('repStepVersandPreis').textContent=versand?fmtE(versand):'–';
-  const montageAn=document.getElementById('repStepMontageAn')?.checked||false;
   let montagePreis=0;
-  let zone=2;
-  if(montageAn){
+  if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
     const team=parseInt(mcPickVal('repStepTeamPicks','2'))||2;
-    zone=parseInt(document.getElementById('repStepZone')?.value)||2;
-    const anfahrtVoll=mcPickVal('repStepAnfahrtPicks','0')==='1';
     const teamRate=team===2?prices5.stundensatz:(prices5.stundensatz/2);
-    const raw=std*teamRate;
-    const arbeit=teamRate?Math.ceil(raw/10)*10:0;
-    const satz=anfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
-    const anfahrt=calcAnfahrtPreis(zone,1,satz);
+    const arbeit=teamRate?Math.ceil(std*teamRate/10)*10:0;
+    const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
+    const anfahrt=calcAnfahrtPreis(_repZone,1,satz);
     montagePreis=arbeit+anfahrt;
+  }
+  // Update auto-added rows in table
+  const tbody=document.getElementById('repStepRows');
+  // Remove old auto rows
+  tbody.querySelectorAll('tr.rep-auto-row').forEach(r=>r.remove());
+  // Add Versandkosten row (always)
+  const vRow=document.createElement('tr');vRow.className='rep-auto-row';
+  vRow.innerHTML=`<td>–</td><td style="font-size:11px;color:var(--muted)">VERSAND</td><td>Versandkosten<span class="rep-auto-badge">auto</span></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(versand)}</td><td class="num-r">${fmt(versand)}</td>`;
+  tbody.appendChild(vRow);
+  // Add Montage row if active
+  if(_repMontageAn){
+    const team=parseInt(mcPickVal('repStepTeamPicks','2'))||2;
+    const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
+    const mRow=document.createElement('tr');mRow.className='rep-auto-row';
+    mRow.innerHTML=`<td>–</td><td></td><td>Montage inkl. Anfahrt<span class="rep-auto-badge">auto</span><div style="font-size:10px;color:rgba(255,152,0,.7);margin-top:2px">${team===2?'2 Personen':'1 Person'} · ${fmt(std)} Std. · Zone ${_repZone}</div></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(montagePreis)}</td><td class="num-r">${fmt(montagePreis)}</td>`;
+    tbody.appendChild(mRow);
   }
   const pdfNetto=Number(soSeKuJSON?.netto_gesamt||0);
   const gesamt=pdfNetto+versand+montagePreis;
-  const body=document.getElementById('repStepPostableBody');
   let h=`<div class="mc-posrow"><span>Positionen aus PDF (Netto)</span><strong>${fmtE(pdfNetto)}</strong></div>`;
-  h+=`<div class="mc-posrow"><span>Versandkosten</span><strong>${fmtE(versand)}</strong></div>`;
-  if(montageAn) h+=`<div class="mc-posrow"><span>Montage inkl. Anfahrt</span><strong>${fmtE(montagePreis)}</strong></div>`;
+  h+=`<div class="mc-posrow" style="color:rgba(255,152,0,.9)"><span>Versandkosten</span><strong>${fmtE(versand)}</strong></div>`;
+  if(_repMontageAn) h+=`<div class="mc-posrow" style="color:rgba(255,152,0,.9)"><span>Montage inkl. Anfahrt</span><strong>${fmtE(montagePreis)}</strong></div>`;
   h+=`<div class="mc-grandtotal"><span>Netto gesamt</span><strong>${fmtE(gesamt)}</strong></div>`;
-  body.innerHTML=h;
+  document.getElementById('repStepPostableBody').innerHTML=h;
 }
 function buildRepSevdeskPositions(){
   const rows=[];
-  // Section: Positionen
   rows.push({type:'section',name:'Positionen'});
   for(const p of (soSeKuJSON?.positionen||[])){
     rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});
   }
-  // Section: Montage und Fracht
   rows.push({type:'section',name:'Montage und Fracht'});
-  rows.push({type:'pos',name:'Versandkosten',beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:prices5.fracht['VERSAND']||0,gesamt:prices5.fracht['VERSAND']||0,artikelnummer:'VERSAND'});
-  const montageAn=document.getElementById('repStepMontageAn')?.checked||false;
-  if(montageAn){
+  const v=prices5.fracht['VERSAND']||0;
+  rows.push({type:'pos',name:'Versandkosten',beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:v,gesamt:v,artikelnummer:'VERSAND'});
+  if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
     const team=parseInt(mcPickVal('repStepTeamPicks','2'))||2;
-    const zone=parseInt(document.getElementById('repStepZone')?.value)||2;
-    const anfahrtVoll=mcPickVal('repStepAnfahrtPicks','0')==='1';
     const teamRate=team===2?prices5.stundensatz:(prices5.stundensatz/2);
     const arbeit=teamRate?Math.ceil(std*teamRate/10)*10:0;
-    const satz=anfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
-    const anfahrt=calcAnfahrtPreis(zone,1,satz);
-    const montagePreis=arbeit+anfahrt;
-    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:`${team===2?'2 Personen':'1 Person'} · ${fmt(std)} Std. · Zone ${zone}`,menge:1,einheit:'pauschal',preis_einheit:montagePreis,gesamt:montagePreis,artikelnummer:''});
+    const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
+    const anfahrt=calcAnfahrtPreis(_repZone,1,satz);
+    const mp=arbeit+anfahrt;
+    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:`${team===2?'2 Personen':'1 Person'} · ${fmt(std)} Std. · Zone ${_repZone}`,menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
   }
   return rows;
 }
-function goToRepStep6(){
+function goRepToRunden(){
   sevdeskPositions=buildRepSevdeskPositions();
-  renderRepStep6();
-}
-function renderRepStep6(){
-  const teu=Number(soSeKuJSON?.teuerungszuschlag_netto||0);
-  const netto=sevdeskPositions.filter(r=>r.type==='pos').reduce((s,r)=>s+(r.gesamt||0),0);
-  const nettoT=netto+teu;
-  const mwst=nettoT*0.19;
-  const brutto=nettoT+mwst;
-  const d=soSeKuJSON;
-  let h=`<div style="max-width:860px;margin:0 auto;padding:16px 0">`;
-  h+=`<div class="info-chips" style="margin-bottom:12px"><span>Kommission: <strong>${d.kommission||'–'}</strong></span><span>Reparatur / Ersatz</span><span>Datum: <strong>${d.datum||'–'}</strong></span></div>`;
-  h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
-  h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
-  if(teu>0)h+=`<div class="s6-tr"><span style="color:var(--muted)">Temporäre Anpassung</span><span>${fmtE(teu)}</span></div>`;
-  h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto gesamt</span><span>${fmtE(nettoT)}</span></div>`;
-  h+=`<div class="s6-tr"><span style="color:var(--muted)">MwSt. 19 %</span><span>${fmtE(mwst)}</span></div>`;
-  h+=`<div class="s6-tr" style="font-size:15px;font-weight:700;padding-top:8px;border-top:1px solid var(--border)"><span>Brutto gesamt</span><span style="color:var(--accent)">${fmtE(brutto)}</span></div>`;
-  h+=`</div></div>`;
-  document.getElementById('s6content').innerHTML=h;
-  showView('viewStep6');setStep(6);
+  goToStep7();
 }
 function toggleManualWeglass(posNr,checked){
   if(checked) manualWeglass.delete(String(posNr));
@@ -3060,7 +3110,7 @@ function renderStep7(){
   h+=`<div style="margin-bottom:12px;padding:10px 14px;background:rgba(56,217,169,.08);border:1px solid rgba(56,217,169,.2);border-radius:10px;font-size:12px;color:var(--accent2)">Alle Preise wurden auf ganze Euro gerundet. Die Positionen unten zeigen die finalen Import-Werte.</div>`;
   h+=`<div class="info-chips" style="margin-bottom:12px">`+
     `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`+
-    `<span>System: <strong>${d.system||'–'}</strong></span>`+
+    (importMode==='reparatur'?`<span style="color:rgba(255,152,0,.9)">Reparatur / Ersatz</span>`:`<span>System: <strong>${d.system||'–'}</strong></span>`)+
     `<span>Datum: <strong>${d.datum||'–'}</strong></span></div>`;
   h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line;line-height:1.5">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
   h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
