@@ -295,7 +295,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 17:19 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 18:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1218,7 +1218,7 @@ function renderStep2(){
   const _multiSysWarn=_aufrollPos.length>=2&&!_isMultiSegel;
   document.getElementById('s2info').innerHTML=
     (_isMultiSegel?`<div style="background:rgba(56,217,169,.1);border:1px solid rgba(56,217,169,.3);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--accent2)">
-      <strong>✓ ${_segelNrs.length} Segel erkannt</strong> — Mehrsegliges Angebot. Jedes Segel erhält eine eigene Überschrift im sevdesk-Import.
+      <strong>✓ ${_segelNrs.length} Segel erkannt</strong>
     </div>`:'')+
     (_multiSysWarn?`<div style="background:rgba(255,160,0,.15);border:1px solid rgba(255,160,0,.5);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#ffb300">
       <strong>⚠ Mehrere Systeme erkannt</strong> — Dieses PDF enthält ${_aufrollPos.length} Aufrollsysteme (${_aufrollPos.map(p=>p.name||p.artikelnummer).join(' + ')}).<br>
@@ -1562,7 +1562,7 @@ function transformiere(json){
   segelNrs.forEach(nr=>{
     const groupJson={...json,positionen:(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr)};
     const res=_transformiereKern(groupJson);
-    res.sektionen.forEach(sek=>{sek._segelNr=nr;allSektionen.push(sek);});
+    res.sektionen.filter(s=>s.id!=='montage').forEach(sek=>{sek._segelNr=nr;allSektionen.push(sek);});
     allRemoved.push(...res.removedPositionen);
     if(res.effectiveSys)effectiveSys=res.effectiveSys;
   });
@@ -1797,7 +1797,8 @@ function renderStep3(){
     let sailHdr='';
     if(isMS&&sek._segelNr&&sek._segelNr!==lastSegelNr){
       lastSegelNr=sek._segelNr;
-      const lbl=`${sek._segelNr} ${effectiveSys||soSeKuJSON.system||'SOLIDAY'}`;
+      const _sys=(effectiveSys||soSeKuJSON.system||'SOLIDAY').replace(/-/g,' ');
+      const lbl=`${_sys} - elektrisch aufrollbar - Segel ${sek._segelNr}`;
       sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
     }
     return sailHdr+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sekKey,i)).join('')}`;
@@ -3102,7 +3103,8 @@ function buildSevdeskPositions(){
     const sysFull=transformedData.effectiveSys||soSeKuJSON.system||'SOLIDAY-C';
     const segelNrs=transformedData.segelNrs||[];
     segelNrs.forEach(nr=>{
-      rows.push({type:'section',name:`${nr} ${sysFull}`});
+      const _sysLbl=sysFull.replace(/-/g,' ');
+      rows.push({type:'section',name:`${_sysLbl} - elektrisch aufrollbar - Segel ${nr}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
         rows.push({type:'section',name:sek.name});
         sek.positionen.forEach(addPos);
