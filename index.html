@@ -295,7 +295,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 18:25 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 18:40 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1470,8 +1470,8 @@ function _transformiereKern(json){
   const stName='Segeltuch - '+(_stNmMap[sys]||'Austrosail Nano');
   map.segeltuch.unshift({artikelnummer:'',name:stName,beschreibung:'',preis_einheit:sailTotal,menge:1,einheit:'Stk.',gesamt:sailTotal,_gs:true});
   if(sys==='SOLIDAY-ONE'){const sp=map.segeltuch.find(p=>p.artikelnummer==='00E13001416');if(sp)sp.beschreibung='* nur beim Austrosail Nano Stoff möglich';}
-  // Segeltuch: Segel → Segelplatten → Schutzhülle → Schutzabdeckung → Befestigungsset → Schnappschäkel (wenn Segelzubehör) → Pflegeset
-  const _SEG_KEY={'00E13001416':20,'73004A001':30,'71004A011':30,'70004A007':30,'71004A003':40,'71004A020':40,'00E13001929':50,'00E13001885':50,'00E13000417':60,'00E13001325':70,'00E13001321':70};
+  // Segeltuch: Segel → Segelplatten → Befestigungsset → Schnappschäkel → Schutzhülle → Schutzabdeckung → Pflegeset
+  const _SEG_KEY={'00E13001416':10,'00E13001929':20,'00E13001885':20,'00E13000417':30,'73004A001':40,'71004A010':40,'71004A011':40,'70004A007':40,'71004A003':50,'71004A020':50,'00E13001325':60,'00E13001321':60};
   map.segeltuch.sort((a,b)=>{
     if(a._gs&&!b._gs)return -1;if(!a._gs&&b._gs)return 1;
     return (_SEG_KEY[a.artikelnummer]||55)-(_SEG_KEY[b.artikelnummer]||55);
