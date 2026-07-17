@@ -295,7 +295,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-01 22:06 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 17:19 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1099,10 +1099,11 @@ Wichtig:
 - "wellenlaenge_aufrollsystem_mm": Wellenlaenge in mm, null wenn nicht angegeben
 - "system": "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA" oder ""
 - "kommission": Wert aus Feld Kommission ohne Klammerzusaetze
+- "segel_nr": Segelnummer (1 fuer erstes Segel, 2 fuer zweites usw.). Bei einem einzigen Segel immer 1. Bei mehrsegligen Angeboten (erkennbar an Ueberschriften wie "1 SOLIDAY-C", "2 SOLIDAY-C") die zugehoerige Nummer einsetzen.
 
 Format:
 {"kommission":"string","datum":"string","system":"string","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,
-"positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null}],
+"positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null,"segel_nr":1}],
 "teuerungszuschlag_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
 
 // === CLAUDE API ===
@@ -1175,7 +1176,7 @@ async function processFile(file,correctionHint){
       if(!usedSonnet){data=await trySonnet('Antwort unvollständig');prog.style.width='75%';}
       const text2=(data.content||[]).find(b=>b.type==='text')?.text||'';
       const clean2=text2.replace(/```json\n?|```\n?/g,'').trim();
-      if(!clean2.endsWith('}'))throw new Error('Claude-Antwort konnte nicht vollständig geladen werden. Mögliche Ursache: Das PDF enthält mehrere Soliday-Systeme (z.B. SOLIDAY-ONE + SOLIDAY-C). Das Tool unterstützt aktuell ein System pro Angebot — bitte trenne die Systeme in Soliday in separate Angebote auf.');
+      if(!clean2.endsWith('}'))throw new Error('Claude-Antwort konnte nicht vollständig geladen werden. Mögliche Ursache: Das PDF enthält verschiedene Soliday-Systeme (z.B. SOLIDAY-ONE + SOLIDAY-C). Mehrere Segel desselben Systems werden unterstützt, aber unterschiedliche Systemtypen bitte in separate Angebote aufteilen.');
       const parsed2=JSON.parse(clean2);soSeKuJSON=parsed2;prog.style.width='100%';setTimeout(renderStep2,300);return;
     }
     soSeKuJSON=JSON.parse(clean);
@@ -1210,10 +1211,15 @@ function renderStep2(){
     const qmStr=totalQm>0?` &nbsp;·&nbsp; ${totalQm.toLocaleString('de-DE',{maximumFractionDigits:2})} m² Segel`:'';
     badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen${qmStr}</div>`;
   }
-  // Warn if multiple aufrollsystems detected (multi-system PDF)
+  // Warn if multiple DIFFERENT systems detected (same-system multi-sail is supported)
   const _aufrollPos=d.positionen.filter(p=>isAufrollsystem(p.artikelnummer||''));
-  const _multiSysWarn=_aufrollPos.length>=2;
+  const _segelNrs=[...new Set(d.positionen.map(p=>Number(p.segel_nr)||1))];
+  const _isMultiSegel=_segelNrs.length>1;
+  const _multiSysWarn=_aufrollPos.length>=2&&!_isMultiSegel;
   document.getElementById('s2info').innerHTML=
+    (_isMultiSegel?`<div style="background:rgba(56,217,169,.1);border:1px solid rgba(56,217,169,.3);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--accent2)">
+      <strong>✓ ${_segelNrs.length} Segel erkannt</strong> — Mehrsegliges Angebot. Jedes Segel erhält eine eigene Überschrift im sevdesk-Import.
+    </div>`:'')+
     (_multiSysWarn?`<div style="background:rgba(255,160,0,.15);border:1px solid rgba(255,160,0,.5);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#ffb300">
       <strong>⚠ Mehrere Systeme erkannt</strong> — Dieses PDF enthält ${_aufrollPos.length} Aufrollsysteme (${_aufrollPos.map(p=>p.name||p.artikelnummer).join(' + ')}).<br>
       Das Tool unterstützt aktuell <strong>ein System pro Angebot</strong>. Bitte trenne die Systeme in Soliday in separate Angebote auf und importiere sie einzeln.
@@ -1395,7 +1401,7 @@ function pylonName(nr){
   const pre={AL:'Aluminium Rund-Mast Zugpylon',NI:'Edelstahl Rund-Mast Zugpylon',DP:'Droppole Zugpylon'};
   return`${pre[t]||'Zugpylon'} l=bis ${parseInt(len)}m - ${farbe[t+v]||'eloxiert'}`;
 }
-function transformiere(json){
+function _transformiereKern(json){
   const sys=(json.system||'').toUpperCase();
   const welleM=json.wellenlaenge_aufrollsystem_mm?Math.ceil(json.wellenlaenge_aufrollsystem_mm/1000):null;
   const BESCHREIBUNG={
@@ -1545,16 +1551,46 @@ function transformiere(json){
   return{sektionen,removedPositionen:removed,effectiveSys};
 }
 
+function transformiere(json){
+  const segelNrs=[...new Set((json.positionen||[]).map(p=>Number(p.segel_nr)||1))].sort((a,b)=>a-b);
+  if(segelNrs.length<=1) return _transformiereKern(json);
+  // Multi-sail: run per sail, then shared montage
+  const allSektionen=[],allRemoved=[];
+  let effectiveSys=(json.system||'').toUpperCase();
+  const savedMontage=fragebogen.montage;
+  fragebogen.montage=false; // no montage per-sail
+  segelNrs.forEach(nr=>{
+    const groupJson={...json,positionen:(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr)};
+    const res=_transformiereKern(groupJson);
+    res.sektionen.forEach(sek=>{sek._segelNr=nr;allSektionen.push(sek);});
+    allRemoved.push(...res.removedPositionen);
+    if(res.effectiveSys)effectiveSys=res.effectiveSys;
+  });
+  fragebogen.montage=savedMontage;
+  // Shared montage from full json
+  const monRes=_transformiereKern(json);
+  const monSek=monRes.sektionen.find(s=>s.id==='montage');
+  if(monSek)allSektionen.push(monSek);
+  return{sektionen:allSektionen,removedPositionen:allRemoved,effectiveSys,isMultiSegel:true,segelNrs};
+}
+
+// Compound sekId helper for multi-sail drag/drop: 'sekId|segelNr' or plain 'sekId'
+function findSek(key){
+  const m=(key||'').split('|');
+  if(m.length>1)return transformedData.sektionen.find(s=>s.id===m[0]&&s._segelNr===Number(m[1]));
+  return transformedData.sektionen.find(s=>s.id===key&&!s._segelNr)||transformedData.sektionen.find(s=>s.id===key);
+}
+
 const escHtml=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-function s3SaveName(el,sekId,pidx){el.style.background='';const sek=transformedData.sektionen.find(s=>s.id===sekId);if(sek&&sek.positionen[pidx])sek.positionen[pidx].name=el.innerText.trim();}
+function s3SaveName(el,sekId,pidx){el.style.background='';const sek=findSek(sekId);if(sek&&sek.positionen[pidx])sek.positionen[pidx].name=el.innerText.trim();}
 function s3ClearDragUI(){document.querySelectorAll('tr.drag-above,.sek-hdr-row.drag-over').forEach(el=>el.classList.remove('drag-above','drag-over'));}
 function s3DragStart(event,sekId,pidx){_s3DragSrc={sekId,pidx};event.dataTransfer.effectAllowed='move';event.target.addEventListener('dragend',()=>{s3ClearDragUI();_s3DragSrc=null;},{once:true});}
 function s3RowDragOver(event,tr){if(!_s3DragSrc)return;event.preventDefault();event.stopPropagation();s3ClearDragUI();tr.classList.add('drag-above');}
-function s3RowDrop(event,tgtSekId,tgtPidx){event.preventDefault();event.stopPropagation();s3ClearDragUI();if(!_s3DragSrc)return;const{sekId:srcSekId,pidx:srcPidx}=_s3DragSrc;_s3DragSrc=null;if(srcSekId===tgtSekId&&srcPidx===tgtPidx)return;const srcSek=transformedData.sektionen.find(s=>s.id===srcSekId);const tgtSek=transformedData.sektionen.find(s=>s.id===tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(srcPidx,1);let ti=tgtPidx;if(srcSekId===tgtSekId&&srcPidx<tgtPidx)ti--;tgtSek.positionen.splice(ti,0,moved);renderStep3();}
-function s3Drop(event,tgtSekId){event.preventDefault();s3ClearDragUI();if(!_s3DragSrc)return;const{sekId:srcSekId,pidx:srcPidx}=_s3DragSrc;_s3DragSrc=null;const srcSek=transformedData.sektionen.find(s=>s.id===srcSekId);const tgtSek=transformedData.sektionen.find(s=>s.id===tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(srcPidx,1);tgtSek.positionen.push(moved);renderStep3();}
-function s3MoveTo(srcSekId,pidx,tgtSekId){const srcSek=transformedData.sektionen.find(s=>s.id===srcSekId);const tgtSek=transformedData.sektionen.find(s=>s.id===tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(pidx,1);tgtSek.positionen.push(moved);document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
-function s3MoveInSek(sekId,pidx,dir){const sek=transformedData.sektionen.find(s=>s.id===sekId);if(!sek)return;const ni=pidx+dir;if(ni<0||ni>=sek.positionen.length)return;[sek.positionen[pidx],sek.positionen[ni]]=[sek.positionen[ni],sek.positionen[pidx]];document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
-function s3ShowMover(event,sekId,pidx){event.stopPropagation();document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());const sek=transformedData.sektionen.find(s=>s.id===sekId);const canUp=pidx>0;const canDown=sek&&pidx<sek.positionen.length-1;const upDown=(canUp||canDown)?`<div style="border-bottom:1px solid rgba(91,141,238,.2);padding-bottom:4px;margin-bottom:4px">${canUp?`<button onclick="s3MoveInSek('${sekId}',${pidx},-1)">▲ Eine nach oben</button>`:''}${canDown?`<button onclick="s3MoveInSek('${sekId}',${pidx},1)">▼ Eine nach unten</button>`:''}</div>`:'';const sects=transformedData.sektionen.filter(s=>s.id!==sekId).map(s=>`<button onclick="s3MoveTo('${sekId}',${pidx},'${s.id}')">→ ${s.name}</button>`).join('');const pop=document.createElement('div');pop.className='s3-mover-popup';const r=event.target.getBoundingClientRect();pop.style.left=Math.min(r.left,window.innerWidth-180)+'px';pop.style.top=(r.bottom+4)+'px';pop.innerHTML=upDown+sects;document.body.appendChild(pop);setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),0);}
+function s3RowDrop(event,tgtSekId,tgtPidx){event.preventDefault();event.stopPropagation();s3ClearDragUI();if(!_s3DragSrc)return;const{sekId:srcSekId,pidx:srcPidx}=_s3DragSrc;_s3DragSrc=null;if(srcSekId===tgtSekId&&srcPidx===tgtPidx)return;const srcSek=findSek(srcSekId);const tgtSek=findSek(tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(srcPidx,1);let ti=tgtPidx;if(srcSekId===tgtSekId&&srcPidx<tgtPidx)ti--;tgtSek.positionen.splice(ti,0,moved);renderStep3();}
+function s3Drop(event,tgtSekId){event.preventDefault();s3ClearDragUI();if(!_s3DragSrc)return;const{sekId:srcSekId,pidx:srcPidx}=_s3DragSrc;_s3DragSrc=null;const srcSek=findSek(srcSekId);const tgtSek=findSek(tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(srcPidx,1);tgtSek.positionen.push(moved);renderStep3();}
+function s3MoveTo(srcSekId,pidx,tgtSekId){const srcSek=findSek(srcSekId);const tgtSek=findSek(tgtSekId);if(!srcSek||!tgtSek)return;const[moved]=srcSek.positionen.splice(pidx,1);tgtSek.positionen.push(moved);document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
+function s3MoveInSek(sekId,pidx,dir){const sek=findSek(sekId);if(!sek)return;const ni=pidx+dir;if(ni<0||ni>=sek.positionen.length)return;[sek.positionen[pidx],sek.positionen[ni]]=[sek.positionen[ni],sek.positionen[pidx]];document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());renderStep3();}
+function s3ShowMover(event,sekId,pidx){event.stopPropagation();document.querySelectorAll('.s3-mover-popup').forEach(el=>el.remove());const sek=findSek(sekId);const canUp=pidx>0;const canDown=sek&&pidx<sek.positionen.length-1;const upDown=(canUp||canDown)?`<div style="border-bottom:1px solid rgba(91,141,238,.2);padding-bottom:4px;margin-bottom:4px">${canUp?`<button onclick="s3MoveInSek('${sekId}',${pidx},-1)">▲ Eine nach oben</button>`:''}${canDown?`<button onclick="s3MoveInSek('${sekId}',${pidx},1)">▼ Eine nach unten</button>`:''}</div>`:'';const sects=transformedData.sektionen.filter(s=>s.id!==sekId).map(s=>`<button onclick="s3MoveTo('${sekId}',${pidx},'${s.id}')">→ ${s.name}</button>`).join('');const pop=document.createElement('div');pop.className='s3-mover-popup';const r=event.target.getBoundingClientRect();pop.style.left=Math.min(r.left,window.innerWidth-180)+'px';pop.style.top=(r.bottom+4)+'px';pop.innerHTML=upDown+sects;document.body.appendChild(pop);setTimeout(()=>document.addEventListener('click',()=>pop.remove(),{once:true}),0);}
 function goFromStep2(){
   if(importMode==='reparatur') goToRepStep();
   else goToStep3();
@@ -1753,9 +1789,22 @@ function renderStep3(){
     ?`<tr class="sek-hdr-row excl"><td colspan="7">Manuell entfernt</td></tr>`
      +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked)" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
     :'';
+  // Build tbody with optional sail headers for multi-sail
+  const isMS=transformedData.isMultiSegel;
+  let lastSegelNr=null;
+  const tbodyRows=sektionen.map(sek=>{
+    const sekKey=sek._segelNr?`${sek.id}|${sek._segelNr}`:sek.id;
+    let sailHdr='';
+    if(isMS&&sek._segelNr&&sek._segelNr!==lastSegelNr){
+      lastSegelNr=sek._segelNr;
+      const lbl=`${sek._segelNr} ${effectiveSys||soSeKuJSON.system||'SOLIDAY'}`;
+      sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
+    }
+    return sailHdr+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sekKey,i)).join('')}`;
+  }).join('');
   document.getElementById('s3sektionen').innerHTML=
     `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${displaySys} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen</span></div>`+
-    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sektionen.map(sek=>`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sek.id}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sek.id,i)).join('')}`).join('')}${exclRows}</tbody></table></div>`;
+    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${tbodyRows}${exclRows}</tbody></table></div>`;
   showView('viewStep3');setStep(3);
 }
 
@@ -1799,8 +1848,8 @@ function toggleMontage(v){
 const WANDPLATTEN_NR=new Set(['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13002077']);
 function hasWandplatten(){
   if(!transformedData) return false;
-  const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
-  return wSek?wSek.positionen.some(p=>WANDPLATTEN_NR.has(p.artikelnummer)):false;
+  return transformedData.sektionen.filter(s=>s.id==='wandbefestigungen')
+    .some(sek=>sek.positionen.some(p=>WANDPLATTEN_NR.has(p.artikelnummer)));
 }
 function goToStep4(){
   // Auto-select freistehend if no Wandplatten and user hasn't changed the default
@@ -2138,10 +2187,11 @@ function calcInstPreis(){
     apH_total+=ap*cnt*mk.ap10;
   });
 
-  // 3. Schraubfundamente
-  const fSek=transformedData?.sektionen.find(s=>s.id==='fundamente');
-  const sfCount=fSek?fSek.positionen.filter(p=>p.artikelnummer==='00E13000227')
-    .reduce((s,p)=>s+Math.round(p.menge||0),0):0;
+  // 3. Schraubfundamente (alle Sektionen für Multi-Segel)
+  const sfCount=(transformedData?.sektionen||[]).filter(s=>s.id==='fundamente')
+    .flatMap(s=>s.positionen||[])
+    .filter(p=>p.artikelnummer==='00E13000227')
+    .reduce((s,p)=>s+Math.round(p.menge||0),0);
 
   // 4. Wellenverbinder aus Matrix-Tabelle (M, FLEX, Festes Segel haben keine)
   const noVerbinder=['M','FLEX'].includes(sysShort)||sysU.startsWith('SONNENSEGEL');
@@ -2472,16 +2522,19 @@ function renderStep5(){
   const apDef=withMontage?(prices5.apPreis[wandartForAP]||0):0;
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
-  const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
   const _isWandSchelle=p=>!!(p.artikelnummer==='00E13000243'||(/wandschelle/i.test(p.name||'')&&!/gegenplatte/i.test(p.name||'')));
   const _isWandGegenpl=p=>!!(p.artikelnummer==='00E13000110'||/gegenplatte|abstandshalter/i.test(p.name||''));
-  _wandpl=wSek?wSek.positionen.filter(p=>p.artikelnummer&&!_isWandSchelle(p)&&!_isWandGegenpl(p)&&(prices5.apAnzahl[p.artikelnummer]>0||WANDPLATTEN_NR.has(p.artikelnummer))):[];
-  _wandschellen=wSek?wSek.positionen.filter(p=>p.artikelnummer&&_isWandSchelle(p)):[];
-  _wandSchGegen=wSek?wSek.positionen.filter(p=>p.artikelnummer&&_isWandGegenpl(p)):[];
-  const fSek=transformedData.sektionen.find(s=>s.id==='fundamente');
-  _bodenpl=fSek?fSek.positionen.filter(p=>p.artikelnummer&&prices5.apAnzahl[p.artikelnummer]>0&&!p._gs):[];
-  _gsFundPos=fSek?fSek.positionen.filter(p=>p._gs):[];
-  const mSek=transformedData.sektionen.find(s=>s.id==='montage');
+  // Aggregate across all sails for multi-sail (merge quantities by artikelnummer)
+  const _allWandPos=transformedData.sektionen.filter(s=>s.id==='wandbefestigungen').flatMap(s=>s.positionen||[]);
+  const _allFundPos=transformedData.sektionen.filter(s=>s.id==='fundamente').flatMap(s=>s.positionen||[]);
+  const _mergeByNr=arr=>{const m={};arr.forEach(p=>{if(!p.artikelnummer){return;}if(!m[p.artikelnummer])m[p.artikelnummer]={...p};else{m[p.artikelnummer].menge=+(m[p.artikelnummer].menge+p.menge).toFixed(4);m[p.artikelnummer].gesamt=+(m[p.artikelnummer].gesamt+p.gesamt).toFixed(2);}});return Object.values(m);};
+  const wandMerged=_mergeByNr(_allWandPos);
+  _wandpl=wandMerged.filter(p=>p.artikelnummer&&!_isWandSchelle(p)&&!_isWandGegenpl(p)&&(prices5.apAnzahl[p.artikelnummer]>0||WANDPLATTEN_NR.has(p.artikelnummer)));
+  _wandschellen=wandMerged.filter(p=>p.artikelnummer&&_isWandSchelle(p));
+  _wandSchGegen=wandMerged.filter(p=>p.artikelnummer&&_isWandGegenpl(p));
+  _bodenpl=_mergeByNr(_allFundPos).filter(p=>p.artikelnummer&&prices5.apAnzahl[p.artikelnummer]>0&&!p._gs);
+  _gsFundPos=_allFundPos.filter(p=>p._gs);
+  const mSek=transformedData.sektionen.find(s=>s.id==='montage'&&!s._segelNr)||transformedData.sektionen.find(s=>s.id==='montage');
   _gsMonPos=mSek?mSek.positionen.filter(p=>p._gs):[];
 
   const sheetOk=prices5.stoffe.length>0||prices5.stofFeste.length>0||prices5.stofSandy.length>0||prices5.anfahrtSatz>0;
@@ -2504,8 +2557,7 @@ function renderStep5(){
   (_wandschellen||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Wand+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2Wand+=a*n;totalMengeWand2+=n;});
   (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Boden+=a*n*(mk2?.ap10||0);apCnt2Boden+=a*n;totalMengeB2+=n;});
   const apH2=apH2Wand+apH2Boden,apCnt2=apCnt2Wand+apCnt2Boden;
-  const fSekD=transformedData?.sektionen.find(s=>s.id==='fundamente');
-  const sfCnt2=fSekD?fSekD.positionen.filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0):0;
+  const sfCnt2=(transformedData?.sektionen||[]).filter(s=>s.id==='fundamente').flatMap(s=>s.positionen||[]).filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0);
   const sysShort2=(sys||'').replace('SOLIDAY-','');
   const noVerb2=['M','FLEX'].includes(sysShort2)||sys.startsWith('SONNENSEGEL');
   const verbCnt2=noVerb2?0:(prices5.verbByWelle[wellenM2]||0);
@@ -2545,9 +2597,10 @@ function renderStep5(){
       const bQm=billingQm(qm);
       const stoffe=getStoffeForSys(sys,bQm,qm);
       const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
+      const sailNrLabel=transformedData.isMultiSegel?` &ndash; Segel ${sail.segel_nr||si+1}`:'';
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:center">
-          <strong>Segeltuch &ndash; ${sysLabel2}</strong>
+          <strong>Segeltuch &ndash; ${sysLabel2}${sailNrLabel}</strong>
           <span id="sailHdrQm${si}" style="font-size:14px;font-weight:700;color:var(--accent2)">${qm} m&sup2;</span>
         </div>
         <div class="s5-card-body">
@@ -2891,19 +2944,20 @@ function applyPrices5(){
   modifiedArtNrsInStep5=new Set();
   const sys=(soSeKuJSON.system||'').toUpperCase();
 
-  // 5A: Segeltuch
-  const segSek=transformedData.sektionen.find(s=>s.id==='segeltuch');
-  if(segSek){
-    let newSail=[];
+  // 5A: Segeltuch — for multi-sail each sail has its own segeltuch sektion
+  const segSeks=transformedData.sektionen.filter(s=>s.id==='segeltuch');
+  if(segSeks.length>0){
     if(_sailPos.length===0){
       const stoffe0=getStoffeForSys(sys,2);
       const si=parseInt(document.getElementById('sailStoffSel')?.value||'0');
       const p=parseFloat(document.getElementById('sailManPreis')?.value||'0')||0;
       const sn=stoffe0[si]?.name||stoffe0[0]?.name||'Austrosail Nano';
       const altDesc='Alternativ:\n'+stoffe0.map((s,fi)=>{if(fi===si)return null;const t=Math.ceil(2*s.preis);return `${fmtE(t)} ${s.name}`;}).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
-      newSail=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:altDesc,preis_einheit:p,menge:1,einheit:'Stk.',gesamt:p}];
+      const segSek=segSeks[0];
+      const nonSail=segSek.positionen.filter(pp=>!pp._gs&&!(pp.qm_segel>0));
+      segSek.positionen=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:altDesc,preis_einheit:p,menge:1,einheit:'Stk.',gesamt:p},...nonSail];
     } else {
-      newSail=_sailPos.map((sail,si)=>{
+      _sailPos.forEach((sail,si)=>{
         const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
         const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
         const qmInput=document.getElementById(`sailQm${si}`);
@@ -2918,94 +2972,108 @@ function applyPrices5(){
           const tot=Math.ceil(bQm*(allP[fi]||0));
           return `${fmtE(tot)} ${s.name}`;
         }).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
-        return{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:t,menge:1,einheit:'Stk.',gesamt:t};
+        const newPos={artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:t,menge:1,einheit:'Stk.',gesamt:t};
+        // For multi-sail: one segSek per sail (in order); for single-sail: one segSek gets all
+        const segSek=segSeks[si]||segSeks[0];
+        const nonSail=segSek.positionen.filter(pp=>!pp._gs&&!(pp.qm_segel>0));
+        if(segSeks.length>1){
+          // Multi-sail: each sektion gets its own one sail position
+          segSek.positionen=[newPos,...nonSail];
+        } else {
+          // Single-sail or fallback: accumulate all sails in one sektion
+          if(si===0) segSek.positionen=[newPos,...nonSail];
+          else segSek.positionen=[...segSek.positionen.filter(pp=>!pp._gs),newPos];
+        }
       });
     }
-    const nonSail=segSek.positionen.filter(p=>!p._gs&&!(p.qm_segel>0));
-    segSek.positionen=[...newSail,...nonSail];
   }
 
-  // 5B: Wandplatten (nur wenn Mit Montage und nicht Freistehend)
-  const wSek=transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
-  if(wSek&&fragebogen.montage!==false){
+  // 5B: Wandplatten & Wandschellen — update ALL wandbefestigungen sektionen (multi-sail)
+  const allWandSeks=transformedData.sektionen.filter(s=>s.id==='wandbefestigungen');
+  const wdesc5={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'an Holzbauweise\nbis max. 10 cm Dämmung','holz-18':'an Holzbauweise\nbis max. 18 cm Dämmung'};
+  const wa5=fragebogen.wandart==='freistehend'?'ziegel-10':(fragebogen.wandart||'ziegel-10');
+  if(allWandSeks.length>0&&fragebogen.montage!==false){
     _wandpl.forEach((pl,wi)=>{
       const apPerUnit=parseInt(document.getElementById(`wAPU${wi}`)?.value||'0')||0;
       const ap2=parseFloat(document.getElementById(`wAPP${wi}`)?.value||'0')||0;
-      const cnt=Math.max(1,Math.round(pl.menge||1));
-      const auf=apPerUnit*cnt*ap2;
-      const pos=wSek.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
-      if(pos){
-        const ng=Math.ceil(pl.gesamt+auf);
-        pos.gesamt=ng;
-        pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
-        const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'an Holzbauweise\nbis max. 10 cm Dämmung','holz-18':'an Holzbauweise\nbis max. 18 cm Dämmung'};
-        const wa=fragebogen.wandart==='freistehend'?'ziegel-10':(fragebogen.wandart||'ziegel-10');
-        pos.beschreibung=wdesc[wa]||wdesc['ziegel-10'];
-        pos._modified=true;
-        if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
-      }
+      const auf=apPerUnit*Math.max(1,Math.round(pl.menge||1))*ap2;
+      const ng=Math.ceil(pl.gesamt+auf);
+      allWandSeks.forEach(wsk=>{
+        const pos=wsk.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
+        if(pos){
+          // Proportional gesamt for each sail's quantity
+          const singleNg=Math.ceil(pos.gesamt+(apPerUnit*Math.max(1,Math.round(pos.menge||1))*ap2));
+          pos.gesamt=singleNg;
+          pos.preis_einheit=pos.menge>0?+(singleNg/pos.menge).toFixed(4):pos.preis_einheit;
+          pos.beschreibung=wdesc5[wa5]||wdesc5['ziegel-10'];
+          pos._modified=true;
+          if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
+        }
+      });
     });
-  }
-  // 5B: Wandschellen (nur wenn Mit Montage und nicht Freistehend)
-  if(wSek&&fragebogen.montage!==false){
     _wandschellen.forEach((pl,wi)=>{
       const apPerUnit=parseInt(document.getElementById(`wsAPU${wi}`)?.value||'0')||0;
       const ap2=parseFloat(document.getElementById(`wsAPP${wi}`)?.value||'0')||0;
-      const cnt=Math.max(1,Math.round(pl.menge||1));
-      const auf=apPerUnit*cnt*ap2;
-      const pos=wSek.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
-      if(pos){
-        const ng=Math.ceil(pl.gesamt+auf);
-        pos.gesamt=ng;
-        pos.preis_einheit=pl.menge>0?+(ng/pl.menge).toFixed(4):pl.preis_einheit;
-        const wdesc={'ziegel-10':'inkl. Klebeanker an Wand (bis max. 10 cm Dämmung)','ziegel-18':'inkl. Klebeanker an Wand (bis max. 18 cm Dämmung)','holz-10':'an Holzbauweise\nbis max. 10 cm Dämmung','holz-18':'an Holzbauweise\nbis max. 18 cm Dämmung'};
-        const wa=fragebogen.wandart==='freistehend'?'ziegel-10':(fragebogen.wandart||'ziegel-10');
-        pos.beschreibung=wdesc[wa]||wdesc['ziegel-10'];
-        pos._modified=true;
-        if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
-      }
+      allWandSeks.forEach(wsk=>{
+        const pos=wsk.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
+        if(pos){
+          const singleNg=Math.ceil(pos.gesamt+(apPerUnit*Math.max(1,Math.round(pos.menge||1))*ap2));
+          pos.gesamt=singleNg;
+          pos.preis_einheit=pos.menge>0?+(singleNg/pos.menge).toFixed(4):pos.preis_einheit;
+          pos.beschreibung=wdesc5[wa5]||wdesc5['ziegel-10'];
+          pos._modified=true;
+          if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
+        }
+      });
     });
   }
-  // 5B: Bodenplatten (nur wenn Mit Montage; auch bei Freistehend)
-  const fSek2=transformedData.sektionen.find(s=>s.id==='fundamente');
-  if(fSek2){
+  // 5B: Bodenplatten — update ALL fundamente sektionen (multi-sail)
+  const allFundSeks=transformedData.sektionen.filter(s=>s.id==='fundamente');
+  if(allFundSeks.length>0){
     if(fragebogen.montage!==false){
       const bpPreis=prices5.apPreis['ziegel-10']||38;
       _bodenpl.forEach(pl=>{
         const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
         const aufPerUnit=+(apPerUnit*bpPreis).toFixed(2);
-        const newUnitP=+(pl.preis_einheit+aufPerUnit).toFixed(2);
-        const pos=fSek2.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
-        if(pos){
-          pos.preis_einheit=Math.ceil(newUnitP);
-          pos.gesamt=pos.preis_einheit*Math.max(1,Math.round(pl.menge));
-          pos.beschreibung=`inkl. ${apPerUnit} Klebeanker`;
-          pos._modified=true;
-          if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
-        }
+        allFundSeks.forEach(fsk=>{
+          const pos=fsk.positionen.find(p=>p.artikelnummer===pl.artikelnummer);
+          if(pos){
+            const newUnitP=+(pos.preis_einheit+aufPerUnit).toFixed(2);
+            pos.preis_einheit=Math.ceil(newUnitP);
+            pos.gesamt=pos.preis_einheit*Math.max(1,Math.round(pos.menge));
+            pos.beschreibung=`inkl. ${apPerUnit} Klebeanker`;
+            pos._modified=true;
+            if(pos.artikelnummer) modifiedArtNrsInStep5.add(pos.artikelnummer);
+          }
+        });
       });
     }
     // Eigenleistung Fundamente
     _gsFundPos.forEach((orig,fi)=>{
       const p=parseFloat(document.getElementById(`fgP${fi}`)?.value||'0')||0;
-      const pos=fSek2?.positionen.find(pp=>pp.artikelnummer===orig.artikelnummer);
-      if(pos){pos.preis_einheit=p;pos.gesamt=+(p*(pos.menge||1)).toFixed(2);}
+      allFundSeks.forEach(fsk=>{
+        const pos=fsk.positionen.find(pp=>pp.artikelnummer===orig.artikelnummer);
+        if(pos){pos.preis_einheit=p;pos.gesamt=+(p*(pos.menge||1)).toFixed(2);}
+      });
     });
   }
-  // Schraubfundament: SoSeKu-Preis aus Sheet
-  if(prices5.schraubfundament>0&&fSek2){
-    const sfPos=fSek2.positionen.find(p=>p.artikelnummer==='00E13000227');
-    if(sfPos){
-      const sfG=+(sfPos.menge*(prices5.schraubfundament)).toFixed(2);
-      sfPos.preis_einheit=prices5.schraubfundament;
-      sfPos.gesamt=sfG;
-      sfPos._modified=true;
-      modifiedArtNrsInStep5.add('00E13000227');
-    }
+  const fSek2=allFundSeks[0]||null;
+  // Schraubfundament: SoSeKu-Preis aus Sheet (alle Sektionen)
+  if(prices5.schraubfundament>0&&allFundSeks.length>0){
+    allFundSeks.forEach(fsk=>{
+      const sfPos=fsk.positionen.find(p=>p.artikelnummer==='00E13000227');
+      if(sfPos){
+        const sfG=+(sfPos.menge*(prices5.schraubfundament)).toFixed(2);
+        sfPos.preis_einheit=prices5.schraubfundament;
+        sfPos.gesamt=sfG;
+        sfPos._modified=true;
+        modifiedArtNrsInStep5.add('00E13000227');
+      }
+    });
   }
 
   // 5C: Montage
-  const mSek=transformedData.sektionen.find(s=>s.id==='montage');
+  const mSek=transformedData.sektionen.find(s=>s.id==='montage'&&!s._segelNr)||transformedData.sektionen.find(s=>s.id==='montage');
   if(mSek){
     const isCCS=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys);
     _gsMonPos.forEach((orig,mi)=>{
@@ -3029,19 +3097,27 @@ function applyPrices5(){
 // === STEP 6 ===
 function buildSevdeskPositions(){
   const rows=[];
-  for(const sek of transformedData.sektionen){
-    rows.push({type:'section',name:sek.name});
-    for(const p of sek.positionen){
-      rows.push({
-        type:'pos',
-        name:p.name,
-        beschreibung:p.beschreibung||'',
-        menge:Number((p.menge||1).toFixed(4)),
-        einheit:p.einheit||'Stk.',
-        preis_einheit:Number(p.preis_einheit||0),
-        gesamt:Number(p.gesamt||0),
-        artikelnummer:p.artikelnummer||''
+  const addPos=p=>rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});
+  if(transformedData.isMultiSegel){
+    const sysFull=transformedData.effectiveSys||soSeKuJSON.system||'SOLIDAY-C';
+    const segelNrs=transformedData.segelNrs||[];
+    segelNrs.forEach(nr=>{
+      rows.push({type:'section',name:`${nr} ${sysFull}`});
+      transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
+        rows.push({type:'section',name:sek.name});
+        sek.positionen.forEach(addPos);
       });
+    });
+    // Shared montage (no _segelNr)
+    const monSek=transformedData.sektionen.find(s=>s.id==='montage'&&!s._segelNr)||transformedData.sektionen.find(s=>s.id==='montage');
+    if(monSek){
+      rows.push({type:'section',name:monSek.name});
+      monSek.positionen.forEach(addPos);
+    }
+  } else {
+    for(const sek of transformedData.sektionen){
+      rows.push({type:'section',name:sek.name});
+      sek.positionen.forEach(addPos);
     }
   }
   return rows;
