@@ -295,7 +295,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 18:40 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 19:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -484,12 +484,14 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
             <div class="zone-item sel" id="t2Card" onclick="selTermineF(2)"><div class="zone-num">2 Termine</div></div>
             <div class="zone-item" id="t3Card" onclick="selTermineF(3)"><div class="zone-num">3 Termine</div></div>
           </div>
+          <div id="terminEmpfTxt" style="min-height:22px"></div>
         </div>
         <div class="fg-col">
           <div class="fg-title">Extras</div>
           <div class="zone-grid">
             <div class="zone-item" id="dachCard" onclick="toggleDach()"><div class="zone-num">Dachterrasse</div><div class="zone-time">Aufschlag wird hinzugef&uuml;gt</div></div>
             <div class="zone-item" id="eigenCard" onclick="toggleEigenleistung()"><div class="zone-num">Eigenleistung</div><div class="zone-time">Fundamente in Eigenleistung</div></div>
+            <div class="zone-item" id="waufpCard" onclick="toggleWandaufpreis()"><div class="zone-num">Wandaufpreis</div><div class="zone-time">Sonderkonfiguration</div></div>
           </div>
         </div>
         <div class="fg-col">
@@ -906,7 +908,8 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 // === STATE ===
 let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
-let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,extractAttempts=0,maxStep=0;
+let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,extractAttempts=0,maxStep=0;
+let _terminPreload={done:false,mk:null,stundensatz:0,apAnzahl:{},verbByWelle:{},sys:''};
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
 let importMode='segelsystem'; // 'segelsystem' | 'reparatur'
@@ -1813,6 +1816,7 @@ function renderStep3(){
 function selZone(n){
   selZoneNr=n;
   document.querySelectorAll('#zoneGrid .zone-item').forEach((el,i)=>el.classList.toggle('sel',i+1===n));
+  _updateTerminEmpfehlung();
 }
 function selWand(v){
   selWandart=v;
@@ -1826,10 +1830,15 @@ function toggleEigenleistung(){
   selEigenleistung=!selEigenleistung;
   document.getElementById('eigenCard').classList[selEigenleistung?'add':'remove']('sel');
 }
+function toggleWandaufpreis(){
+  selWandaufpreis=!selWandaufpreis;
+  document.getElementById('waufpCard').classList[selWandaufpreis?'add':'remove']('sel');
+}
 function selTermineF(n){
   selTermine=n;
   document.getElementById('t2Card').classList.toggle('sel',n===2);
   document.getElementById('t3Card').classList.toggle('sel',n===3);
+  _updateTerminEmpfehlung();
 }
 function selAnfahrtSatz(voll){
   selAnfahrtVoll=voll;
@@ -1859,10 +1868,73 @@ function goToStep4(){
   document.querySelectorAll('#wandGrid .zone-item').forEach(el=>el.classList.toggle('sel',el.dataset.v===selWandart));
   document.getElementById('dachCard').classList[selDach?'add':'remove']('sel');
   document.getElementById('eigenCard').classList[selEigenleistung?'add':'remove']('sel');
+  document.getElementById('waufpCard').classList[selWandaufpreis?'add':'remove']('sel');
   document.getElementById('mitMontCard').classList[selMontage?'add':'remove']('sel');
   document.getElementById('ohneMontCard').classList[selMontage?'remove':'add']('sel');
   document.getElementById('montageOptions').style.display=selMontage?'grid':'none';
   showView('viewStep4');setStep(4);
+  _loadTerminPreload();
+}
+
+// Terminempfehlung: async preload montage data when entering Step 4
+async function _loadTerminPreload(){
+  const sys=(soSeKuJSON?.system||'').toUpperCase();
+  if(_terminPreload.done&&_terminPreload.sys===sys){_updateTerminEmpfehlung();return;}
+  _terminPreload={done:false,mk:null,stundensatz:0,apAnzahl:{},verbByWelle:{},sys};
+  document.getElementById('terminEmpfTxt').innerHTML='<span style="font-size:11px;color:var(--muted)">⏳ Berechnung läuft…</span>';
+  try{
+    let mR=await fetchSheetTabAll('Montage Kalkulation');
+    if(mR.length<=1) mR=await fetchSheetTabAll('Montage Zeitbausteine');
+    if(mR.length<=1) mR=await fetchSheetTabAll('Montage');
+    const [pR,apR,vR]=await Promise.all([
+      fetchSheetTabAll('SoSeKu - Preisliste'),
+      fetchSheetTabAll('Ankerpunkt Anzahl Verzeichnis'),
+      fetchSheetTabAll('Wellenverbinder Verzeichnis')
+    ]);
+    _terminPreload.mk=parseMontKalkMatrix(mR,sys);
+    pR.forEach(r=>{
+      const rs=(r[0]||'').toString().toLowerCase().replace(/\s+/g,'');
+      if(!_terminPreload.stundensatz&&!rs.includes('anfahrt')&&(rs.includes('stundensatz')||rs.includes('stdteam')||rs.includes('teamstd'))){
+        for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){_terminPreload.stundensatz=v;break;}}
+      }
+    });
+    if(apR.length>1) apR.slice(1).forEach(r=>{const nr=(r[1]||'').trim(),cnt=parseInt(r[2])||0;if(nr&&cnt>0)_terminPreload.apAnzahl[nr]=cnt;});
+    _terminPreload.verbByWelle=parseVerbinderMatrix(vR,sys);
+  }catch(e){}
+  _terminPreload.done=true;
+  _updateTerminEmpfehlung();
+}
+function _calcTerminEmpfehlung(zone){
+  const mk=_terminPreload.mk;
+  if(!mk||!mk.ok||!_terminPreload.stundensatz) return null;
+  const sys=(soSeKuJSON?.system||'').toUpperCase();
+  const wellenM=soSeKuJSON?.wellenlaenge_aufrollsystem_mm?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0;
+  const sailCount=Math.max(1,(transformedData?.sektionen||[]).filter(s=>s.id==='segeltuch').length||1);
+  const sailH=mk.grundpreis+Math.max(0,sailCount-1)*(mk.weiteresSegel||0);
+  const uses18=(selWandart||'').includes('18');
+  let apH=0;
+  (transformedData?.sektionen||[]).filter(s=>s.id==='wandbefestigungen').flatMap(s=>s.positionen||[])
+    .filter(p=>p.artikelnummer&&WANDPLATTEN_NR.has(p.artikelnummer))
+    .forEach(p=>{apH+=(_terminPreload.apAnzahl[p.artikelnummer]||0)*Math.max(1,Math.round(p.menge||1))*(uses18?mk.ap18:mk.ap10);});
+  const sfCount=(transformedData?.sektionen||[]).filter(s=>s.id==='fundamente').flatMap(s=>s.positionen||[])
+    .filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0);
+  const sysS={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX'}[sys]||sys.replace('SOLIDAY-','');
+  const noVerb=['M','FLEX'].includes(sysS)||sys.startsWith('SONNENSEGEL');
+  const verbCount=noVerb?0:(_terminPreload.verbByWelle[wellenM]||0);
+  const totalH=sailH+apH+sfCount*(mk.schraubfund||0)+verbCount*(mk.verbZuschlag||0);
+  const anfahrtH=((ZONE_MIN[zone||2]||0)*2)/60;
+  const empfohlene=Math.max(1,Math.ceil(totalH/Math.max(0.1,8-anfahrtH)));
+  return{totalH,anfahrtH,empfohlene};
+}
+function _updateTerminEmpfehlung(){
+  const el=document.getElementById('terminEmpfTxt');
+  if(!el) return;
+  if(!_terminPreload.done){el.innerHTML='';return;}
+  const res=_calcTerminEmpfehlung(selZoneNr);
+  if(!res){el.innerHTML='';return;}
+  const warn=res.empfohlene>selTermine;
+  const col=warn?'#ffb300':'var(--accent2)';
+  el.innerHTML=`<div style="font-size:11px;color:${col};padding:5px 0 0 2px">${warn?'⚠ ':'✓ '}Empfehlung: <strong style="color:${col}">${res.empfohlene} Termine</strong> &nbsp;&middot;&nbsp; ${fmt(res.totalH)} Std. Montage &middot; ${fmt(res.anfahrtH)} Std. Anfahrt/Termin</div>`;
 }
 
 // === STEP 5 ===
@@ -1877,6 +1949,7 @@ async function initStep5(){
     termine:selTermine,
     dachterrasse:selDach,
     eigenleistung:selEigenleistung,
+    wandaufpreis:selWandaufpreis,
     montage:selMontage,
     anfahrtVoll:selAnfahrtVoll,
     freitext:document.getElementById('fgFrei').value
@@ -1984,7 +2057,7 @@ async function loadPrices5(){
     stoffe:[],stofFeste:[],stofSandy:[],
     apPreis:{},apAnzahl:{},
     anfahrtSatz:0,fracht:{},
-    stundensatz:0,dachterrasse:0,eigenleistung:0,schraubfundament:0,
+    stundensatz:0,dachterrasse:0,eigenleistung:0,wandaufpreis:0,schraubfundament:0,
     // Montage Zeitbausteine (Matrix): parsed values für aktuelles System
     montKalkParsed:null,
     // Wellenverbinder Verzeichnis (Matrix): wellenM → Anzahl Verbinder für aktuelles System
@@ -2037,6 +2110,7 @@ async function loadPrices5(){
     else if(key==='vorfracht') prices5.fracht['VORFRACHT']=preis;
     else if(key==='versand') prices5.fracht['VERSAND']=preis;
     else if(key==='eigenleistung'||descL.includes('einweisung fundamente')) prices5.eigenleistung=preis;
+    else if(key==='wandaufpreis'||key.includes('aufpreiswand')||descL.includes('aufpreis wandbefestigung')) prices5.wandaufpreis=preis;
     else if(key.includes('anfahrt')&&key.includes('stundensatz')) prices5.anfahrtSatz=preis;
     else if(key==='stundensatz'||key.includes('stundensatz')) prices5.stundensatz=preis;
   });
@@ -2728,6 +2802,20 @@ function renderStep5(){
       h+=`</div></div>`;
     }
   }
+  // WANDAUFPREIS card (when toggled in Fragebogen)
+  if(fragebogen.wandaufpreis){
+    const wap=prices5.wandaufpreis||0;
+    h+=`<div class="s5-card" style="margin-top:12px">
+      <div class="s5-card-hdr"><strong>Aufpreis Wandbefestigung</strong><span style="color:var(--accent2)">Sonderkonfiguration</span></div>
+      <div class="s5-card-body">
+        <div class="s5-irow">
+          <span class="s5-lbl">Aufpreis</span>
+          <input type="number" class="s5-inp" id="waufpInp" value="${wap.toFixed(2)}" step="0.01" min="0" style="width:90px">
+          <span class="s5-unit">&euro; gesamt</span>
+        </div>
+      </div>
+    </div>`;
+  }
   h+=`</div>`; // close s5-section Wandbefestigungen
   h+=`</div>`; // close col 2
 
@@ -3027,6 +3115,14 @@ function applyPrices5(){
         }
       });
     });
+    // Wandaufpreis (Sonderkonfiguration): add to first wandSek
+    if(fragebogen.wandaufpreis&&allWandSeks.length>0){
+      const wpVal=parseFloat(document.getElementById('waufpInp')?.value||'0')||prices5.wandaufpreis||0;
+      const firstWsk=allWandSeks[0];
+      if(!firstWsk.positionen.find(p=>p.artikelnummer==='WAND-AUFPREIS')){
+        firstWsk.positionen.push({artikelnummer:'WAND-AUFPREIS',name:'Aufpreis Wandbefestigung - Sonderkonfiguration',beschreibung:'',preis_einheit:wpVal,menge:1,einheit:'pauschal',gesamt:wpVal,_gs:true});
+      }
+    }
   }
   // 5B: Bodenplatten — update ALL fundamente sektionen (multi-sail)
   const allFundSeks=transformedData.sektionen.filter(s=>s.id==='fundamente');
