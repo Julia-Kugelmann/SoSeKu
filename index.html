@@ -295,7 +295,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 18:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 18:25 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1209,7 +1209,10 @@ function renderStep2(){
     extractAttempts=0;
     const totalQm=d.positionen.reduce((s,p)=>s+(p.qm_segel||0),0);
     const qmStr=totalQm>0?` &nbsp;·&nbsp; ${totalQm.toLocaleString('de-DE',{maximumFractionDigits:2})} m² Segel`:'';
-    badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen${qmStr}</div>`;
+    const _segelNrs2=[...new Set(d.positionen.map(p=>Number(p.segel_nr)||1))];
+    const _multiSail2=_segelNrs2.length>1;
+    badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen${qmStr}</div>`
+      +(_multiSail2?`<div class="val-ok" style="margin-left:8px">&#10003; ${_segelNrs2.length} Segel erkannt</div>`:'');
   }
   // Warn if multiple DIFFERENT systems detected (same-system multi-sail is supported)
   const _aufrollPos=d.positionen.filter(p=>isAufrollsystem(p.artikelnummer||''));
@@ -1217,9 +1220,6 @@ function renderStep2(){
   const _isMultiSegel=_segelNrs.length>1;
   const _multiSysWarn=_aufrollPos.length>=2&&!_isMultiSegel;
   document.getElementById('s2info').innerHTML=
-    (_isMultiSegel?`<div style="background:rgba(56,217,169,.1);border:1px solid rgba(56,217,169,.3);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:var(--accent2)">
-      <strong>✓ ${_segelNrs.length} Segel erkannt</strong>
-    </div>`:'')+
     (_multiSysWarn?`<div style="background:rgba(255,160,0,.15);border:1px solid rgba(255,160,0,.5);border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:12px;color:#ffb300">
       <strong>⚠ Mehrere Systeme erkannt</strong> — Dieses PDF enthält ${_aufrollPos.length} Aufrollsysteme (${_aufrollPos.map(p=>p.name||p.artikelnummer).join(' + ')}).<br>
       Das Tool unterstützt aktuell <strong>ein System pro Angebot</strong>. Bitte trenne die Systeme in Soliday in separate Angebote auf und importiere sie einzeln.
@@ -3102,7 +3102,10 @@ function buildSevdeskPositions(){
   if(transformedData.isMultiSegel){
     const sysFull=transformedData.effectiveSys||soSeKuJSON.system||'SOLIDAY-C';
     const segelNrs=transformedData.segelNrs||[];
-    segelNrs.forEach(nr=>{
+    // Append </br> to the last position row added (for blank line before a header)
+    const addBreak=()=>{for(let i=rows.length-1;i>=0;i--){if(rows[i].type==='pos'){rows[i].beschreibung=(rows[i].beschreibung||'')+'</br>';break;}}};
+    segelNrs.forEach((nr,idx)=>{
+      if(idx>0)addBreak();
       const _sysLbl=sysFull.replace(/-/g,' ');
       rows.push({type:'section',name:`${_sysLbl} - elektrisch aufrollbar - Segel ${nr}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
@@ -3113,6 +3116,7 @@ function buildSevdeskPositions(){
     // Shared montage (no _segelNr)
     const monSek=transformedData.sektionen.find(s=>s.id==='montage'&&!s._segelNr)||transformedData.sektionen.find(s=>s.id==='montage');
     if(monSek){
+      addBreak();
       rows.push({type:'section',name:monSek.name});
       monSek.positionen.forEach(addPos);
     }
