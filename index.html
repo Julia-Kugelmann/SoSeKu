@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 15:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 15:55 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -729,6 +729,15 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
       <div class="adr-sub">Grobe Sch&auml;tzung der Arbeitszeit &middot; alle Preise aus dem Google Sheet</div>
     </div>
 
+    <!-- Reparatur-Art: Bausteine als eigene Box -->
+    <div class="s5-card" style="margin-bottom:14px">
+      <div class="s5-card-hdr"><strong>Reparatur-Art</strong><span>Bausteine aus Google Sheet</span></div>
+      <div class="s5-card-body" style="padding-bottom:12px">
+        <div id="repBausteinePicks" class="rep-preset-grid" style="margin-bottom:0"></div>
+        <div id="repBausteineEmpty" class="hidden" style="font-size:12px;color:var(--muted)">Noch keine Bausteine im Sheet &mdash; Tab &ldquo;Reparaturen Bausteine&rdquo; (Spalte A: Name, Spalte B: Std.) anlegen.</div>
+      </div>
+    </div>
+
     <div class="rep-grid">
       <div class="s5-card" style="grid-area:team">
         <div class="s5-card-hdr"><strong>Team &amp; Arbeitszeit</strong><span>grobe Sch&auml;tzung</span></div>
@@ -741,14 +750,9 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
             </div>
           </div>
           <div class="s5-irow">
-            <span class="s5-lbl">Gesch&auml;tzte Arbeitszeit</span>
-            <input type="number" class="s5-inp s5-w70" id="repStunden" value="1" min="0" step="0.25" oninput="repCalc()">
+            <span class="s5-lbl">Zus&auml;tzliche Stunden</span>
+            <input type="number" class="s5-inp s5-w70" id="repStunden" value="0" min="0" step="0.25" oninput="repCalc()">
             <span class="s5-unit">Std.</span>
-          </div>
-          <div class="s5-irow" style="flex-direction:column;align-items:stretch;gap:8px">
-            <span class="s5-lbl">Reparatur-Bausteine</span>
-            <div class="mc-pick-row" id="repBausteinePicks"></div>
-            <div id="repBausteineEmpty" class="hidden" style="font-size:11px;color:var(--muted)">Noch keine Bausteine im Sheet hinterlegt &mdash; Tab &quot;Reparatur Bausteine&quot; (Spalte A: Name, Spalte B: Std.) anlegen.</div>
           </div>
         </div>
       </div>
@@ -2615,7 +2619,7 @@ async function initReparaturMode(){
       }
     });
     // Reparatur-Bausteine direkt aus "Reparaturen Bausteine" Tab
-    _repBQty={};
+    _repBQty={};_repBSel={};
     try{
       const bR=await fetchSheetTabAll('Reparaturen Bausteine');
       bR.forEach(r=>{
@@ -2646,29 +2650,26 @@ function renderRepBausteine(){
       const qty=_repBQty[i]||0;
       const sel=qty>0;
       const calcStd=sel&&b.weitereStd&&qty>1?b.std+(qty-1)*b.weitereStd:b.std;
-      const label=sel&&b.weitereStd&&qty>1?`${fmt(calcStd)} Std. (${fmt(b.std)}+${qty-1}×${fmt(b.weitereStd)})`:` ${fmt(b.std)} Std.`;
-      return `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;vertical-align:top;margin:0 2px 4px">
-        <div class="mc-pick${sel?' sel':''}" data-i="${i}" style="min-width:100px">${b.name}<br><small>${label}</small></div>
-        <div style="display:flex;align-items:center;gap:5px">
-          <button class="rep-qty-btn" onclick="repBQty(${i},-1)">&#8722;</button>
-          <span class="rep-qty-val">${qty}</span>
-          <button class="rep-qty-btn" onclick="repBQty(${i},1)">&#43;</button>
-        </div>
-      </div>`;
+      const stdLabel=sel&&b.weitereStd&&qty>1?`${fmt(calcStd)} Std. (${fmt(b.std)}+${qty-1}×${fmt(b.weitereStd)})`:`${fmt(b.std)} Std.`;
+      const qtyRow=`<div class="rep-qty-row"><button class="rep-qty-btn" onclick="repBQty(${i},-1)">&#8722;</button><span class="rep-qty-val">${qty}</span><button class="rep-qty-btn" onclick="repBQty(${i},1)">&#43;</button></div>`;
+      return `<div class="rep-preset-item"><div class="zone-item${sel?' sel':''}" onclick="repBToggle(${i})"><div class="zone-num">${b.name}</div><div class="zone-time">${stdLabel}</div></div>${qtyRow}</div>`;
     }
-    return `<div class="mc-pick" data-i="${i}" onclick="repToggleBaustein(this)">${b.name} (${fmt(b.std)} Std.)</div>`;
+    const sel2=!!_repBSel[i];
+    return `<div class="rep-preset-item"><div class="zone-item${sel2?' sel':''}" onclick="repBToggle(${i})"><div class="zone-num">${b.name}</div><div class="zone-time">${fmt(b.std)} Std.</div></div></div>`;
   }).join('');
 }
-function repToggleBaustein(el){
-  el.classList.toggle('sel');
-  repCalc();
+function repBToggle(idx){
+  const b=rep.bausteine[idx];
+  if(b&&b.hatMenge){_repBQty[idx]=(_repBQty[idx]||0)>0?0:1;}
+  else{_repBSel[idx]=!_repBSel[idx];}
+  renderRepBausteine();repCalc();
 }
+function repToggleBaustein(el){repBToggle(+el.dataset.i);}
 function repBQty(idx,delta){
   _repBQty[idx]=Math.max(0,(_repBQty[idx]||0)+delta);
-  renderRepBausteine();
-  repCalc();
+  renderRepBausteine();repCalc();
 }
-let _repBQty={};
+let _repBQty={},_repBSel={};
 function repPick(containerId,el){
   document.querySelectorAll(`#${containerId} .mc-pick`).forEach(p=>p.classList.toggle('sel',p===el));
   repCalc();
@@ -2679,8 +2680,7 @@ function repCalc(){
   const manualStd=Math.max(0,parseFloat((document.getElementById('repStunden')||{}).value)||0);
   const bausteinStd=rep.bausteine.reduce((s,b,i)=>{
     if(b.hatMenge){const qty=_repBQty[i]||0;return qty>0?s+b.std+(qty-1)*(b.weitereStd||0):s;}
-    const el=document.querySelector(`#repBausteinePicks .mc-pick[data-i="${i}"]`);
-    return el&&el.classList.contains('sel')?s+b.std:s;
+    return _repBSel[i]?s+b.std:s;
   },0);
   const totalStd=manualStd+bausteinStd;
   const zone=parseInt((document.getElementById('repZone')||{}).value)||2;
