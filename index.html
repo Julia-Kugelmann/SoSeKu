@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 16:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 16:25 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -760,16 +760,16 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
       <div class="s5-card" style="grid-area:anfahrt">
         <div class="s5-card-hdr"><strong>Anfahrt</strong><span>Zone &middot; Satz</span></div>
         <div class="s5-card-body">
-          <div class="s5-irow">
+          <div class="s5-irow" style="flex-direction:column;align-items:stretch;gap:8px">
             <span class="s5-lbl">Anfahrtszone</span>
-            <select class="s5-inp" id="repZone" style="text-align:left" onchange="repCalc()">
-              <option value="1">Zone 1 &ndash; bis 15 min</option>
-              <option value="2" selected>Zone 2 &ndash; bis 30 min</option>
-              <option value="3">Zone 3 &ndash; bis 45 min</option>
-              <option value="4">Zone 4 &ndash; bis 60 min</option>
-              <option value="5">Zone 5 &ndash; bis 75 min</option>
-              <option value="6">Zone 6 &ndash; bis 90 min</option>
-            </select>
+            <div class="zone-grid" id="repZoneGrid" style="grid-template-columns:repeat(3,1fr)">
+              <div class="zone-item" data-z="1" onclick="repSelZone(1)"><div class="zone-num">Zone 1</div><div class="zone-time">bis 15 min</div></div>
+              <div class="zone-item sel" data-z="2" onclick="repSelZone(2)"><div class="zone-num">Zone 2</div><div class="zone-time">bis 30 min</div></div>
+              <div class="zone-item" data-z="3" onclick="repSelZone(3)"><div class="zone-num">Zone 3</div><div class="zone-time">bis 45 min</div></div>
+              <div class="zone-item" data-z="4" onclick="repSelZone(4)"><div class="zone-num">Zone 4</div><div class="zone-time">bis 60 min</div></div>
+              <div class="zone-item" data-z="5" onclick="repSelZone(5)"><div class="zone-num">Zone 5</div><div class="zone-time">bis 75 min</div></div>
+              <div class="zone-item" data-z="6" onclick="repSelZone(6)"><div class="zone-num">Zone 6</div><div class="zone-time">bis 90 min</div></div>
+            </div>
           </div>
           <div class="s5-irow">
             <span class="s5-lbl">Anfahrt-Satz</span>
@@ -2669,7 +2669,12 @@ function repBQty(idx,delta){
   _repBQty[idx]=Math.max(0,(_repBQty[idx]||0)+delta);
   renderRepBausteine();repCalc();
 }
-let _repBQty={},_repBSel={};
+let _repBQty={},_repBSel={},_repStdZone=2;
+function repSelZone(z){
+  _repStdZone=z;
+  document.querySelectorAll('#repZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===z));
+  repCalc();
+}
 function repPick(containerId,el){
   document.querySelectorAll(`#${containerId} .mc-pick`).forEach(p=>p.classList.toggle('sel',p===el));
   repCalc();
@@ -2683,7 +2688,7 @@ function repCalc(){
     return _repBSel[i]?s+b.std:s;
   },0);
   const totalStd=manualStd+bausteinStd;
-  const zone=parseInt((document.getElementById('repZone')||{}).value)||2;
+  const zone=_repStdZone||2;
   const anfahrtVoll=mcPickVal('repAnfahrtPicks','0')==='1';
 
   // Team mit 1 Person: halber Team-Stundensatz (kein separater Sheet-Wert vorhanden)
@@ -2700,7 +2705,7 @@ function repCalc(){
   document.getElementById('repStatus').textContent=ok?'':'⚠ Preisdaten unvollständig — Google Sheet prüfen';
 
   let t1=`<h4>Arbeitszeit</h4><div class="mc-tile-sm">`;
-  t1+=`<div class="mc-row"><span>Gesch&auml;tzte Arbeitszeit</span><span>${fmt(manualStd)} Std.</span></div>`;
+  if(manualStd>0)t1+=`<div class="mc-row"><span>Zus&auml;tzliche Stunden</span><span>${fmt(manualStd)} Std.</span></div>`;
   rep.bausteine.forEach((b,i)=>{
     if(b.hatMenge){const qty=_repBQty[i]||0;if(qty>0){const h=b.std+(qty-1)*(b.weitereStd||0);t1+=`<div class="mc-row"><span>${b.name}${qty>1?` &times;${qty}`:''}</span><span>${fmt(h)} Std.</span></div>`;}}
     else if(_repBSel[i])t1+=`<div class="mc-row"><span>${b.name}</span><span>${fmt(b.std)} Std.</span></div>`;
