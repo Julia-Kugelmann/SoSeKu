@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 14:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 14:20 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1650,19 +1650,40 @@ async function _repLoadAndRenderPresets(){
   if(!rep.presetsLoaded){
     const grid=document.getElementById('repPresetGrid');
     if(grid)grid.innerHTML='<span style="color:var(--muted);font-size:12px">Lade…</span>';
-    try{
-      const rows=await fetchSheetTabAll('Reparatur Presets');
-      rep.presets=[];
-      rows.forEach(r=>{
-        const name=(r[0]||'').trim();
-        if(!name)return;
-        const std=parseDE(r[1])||0;
-        const termine=parseInt(r[2])||1;
-        const hatMenge=/^(1|ja|true|yes)/i.test((r[3]||'').trim());
-        const weitereStd=parseDE(r[4])||0;
-        rep.presets.push({name,std,termine,hatMenge,weitereStd});
-      });
-    }catch(e){}
+    let rawRows=[];
+    // Try dedicated tab first, fall back to Reparaturen-Sektion in Montage Kalkulation
+    for(const tab of['Reparatur Presets','Montage Kalkulation','Montage Zeitbausteine','Montage']){
+      try{
+        const r=await fetchSheetTabAll(tab);
+        if(tab==='Reparatur Presets'){
+          if(r.length>0){rawRows=r;break;}
+        } else {
+          // extract rows after "Reparaturen" header
+          let inRep=false;
+          for(const row of r){
+            const a=(row[0]||'').trim();
+            if(!inRep){if(/reparatur/i.test(a))inRep=true;continue;}
+            if(a)rawRows.push(row);
+          }
+          if(rawRows.length)break;
+        }
+      }catch(e){}
+    }
+    // Parse: "weiteres"-Zeilen werden automatisch als weitereStd des Vorgängers erkannt
+    rep.presets=[];
+    for(const r of rawRows){
+      const name=(r[0]||'').trim();
+      if(!name)continue;
+      const std=parseDE(r[1])||0;
+      if(/weiteres/i.test(name)&&rep.presets.length>0){
+        const prev=rep.presets[rep.presets.length-1];
+        prev.hatMenge=true;
+        prev.weitereStd=std;
+        continue;
+      }
+      const termine=/reinigung/i.test(name)?2:1;
+      rep.presets.push({name,std,termine,hatMenge:false,weitereStd:0});
+    }
     rep.presetsLoaded=true;
   }
   renderRepPresets();
