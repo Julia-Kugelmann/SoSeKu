@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 13:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 14:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1659,7 +1659,8 @@ async function _repLoadAndRenderPresets(){
         const std=parseDE(r[1])||0;
         const termine=parseInt(r[2])||1;
         const hatMenge=/^(1|ja|true|yes)/i.test((r[3]||'').trim());
-        rep.presets.push({name,std,termine,hatMenge});
+        const weitereStd=parseDE(r[4])||0;
+        rep.presets.push({name,std,termine,hatMenge,weitereStd});
       });
     }catch(e){}
     rep.presetsLoaded=true;
@@ -1677,8 +1678,12 @@ function renderRepPresets(){
     const sel=i in _repPresetSel;
     const qty=_repPresetSel[i]||1;
     const termLabel=p.termine>1?` · ${p.termine} Termine`:'';
+    const calcStd=sel&&p.hatMenge&&p.weitereStd&&qty>1?p.std+(qty-1)*p.weitereStd:p.std;
+    const stdLabel=sel&&p.hatMenge&&p.weitereStd&&qty>1
+      ?`${fmt(calcStd)} Std. (${fmt(p.std)}+${qty-1}×${fmt(p.weitereStd)})`
+      :`${fmt(p.std)} Std.${!sel&&p.weitereStd?` / +${fmt(p.weitereStd)}`:''}`;
     const qtyRow=sel&&p.hatMenge?`<div class="rep-qty-row"><button class="rep-qty-btn" onclick="event.stopPropagation();repPresetQty(${i},-1)">&#8722;</button><span class="rep-qty-val">${qty}</span><button class="rep-qty-btn" onclick="event.stopPropagation();repPresetQty(${i},1)">&#43;</button></div>`:'';
-    return `<div class="rep-preset-item"><div class="zone-item${sel?' sel':''}" onclick="repStepTogglePreset(${i})"><div class="zone-num">${p.name}</div><div class="zone-time">${fmt(p.std)} Std.${termLabel}</div></div>${qtyRow}</div>`;
+    return `<div class="rep-preset-item"><div class="zone-item${sel?' sel':''}" onclick="repStepTogglePreset(${i})"><div class="zone-num">${p.name}</div><div class="zone-time">${stdLabel}${termLabel}</div></div>${qtyRow}</div>`;
   }).join('');
 }
 function repStepTogglePreset(idx){
@@ -1695,7 +1700,7 @@ function repPresetQty(idx,delta){
   repStepCalc();
 }
 function _repSyncStundenFromPresets(){
-  const totalStd=Object.entries(_repPresetSel).reduce((s,[i,qty])=>s+(rep.presets[+i]?.std||0)*qty,0);
+  const totalStd=Object.entries(_repPresetSel).reduce((s,[i,qty])=>{const p=rep.presets[+i];if(!p)return s;return s+(p.std+(qty-1)*(p.weitereStd||0));},0);
   const inp=document.getElementById('repStepStunden');
   if(inp&&totalStd>0)inp.value=totalStd;
 }
