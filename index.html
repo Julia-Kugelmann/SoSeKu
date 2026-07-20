@@ -270,8 +270,8 @@ tr.rep-auto-row td{background:rgba(255,152,0,.07)}
 tr.rep-auto-row td:last-child{color:rgba(255,152,0,.95);font-weight:700}
 tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:700;color:rgba(255,152,0,.9);background:rgba(255,152,0,.12);border:1px solid rgba(255,152,0,.3);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.06em}
 .rep-preset-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
-.rep-preset-item{display:flex;flex-direction:column;align-items:stretch}
-.rep-preset-item .zone-item{min-width:170px}
+.rep-preset-item{display:flex;flex-direction:column;width:170px}
+.rep-preset-item .zone-item{width:100%}
 .rep-qty-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:5px}
 .rep-qty-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);cursor:pointer;font-size:15px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0}
 .rep-qty-val{font-size:13px;font-weight:700;min-width:22px;text-align:center}
@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 21:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 21:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -762,7 +762,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
         <div class="s5-card-body">
           <div class="s5-irow" style="flex-direction:column;align-items:flex-start;gap:8px">
             <span class="s5-lbl">Anfahrtszone</span>
-            <div id="repZoneGrid" style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+            <div id="repZoneGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
               <div class="zone-item" data-z="1" onclick="repSelZone(1)"><div class="zone-num">Zone 1</div><div class="zone-time">bis 15 min</div></div>
               <div class="zone-item sel" data-z="2" onclick="repSelZone(2)"><div class="zone-num">Zone 2</div><div class="zone-time">bis 30 min</div></div>
               <div class="zone-item" data-z="3" onclick="repSelZone(3)"><div class="zone-num">Zone 3</div><div class="zone-time">bis 45 min</div></div>
