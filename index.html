@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 02:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 03:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -427,25 +427,31 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 
 <!-- STEP 3 -->
 <div id="viewStep3" class="hidden">
-  <div class="s3-header">
-    <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:18px">
-      <div id="s3sum" style="flex:1"></div>
-      <div id="s3segelToggle"></div>
-    </div>
-  </div>
-  <div class="s3-content">
-    <div id="s3sektionen"></div>
-    <div class="chat-wrap">
-      <div class="chat-lbl">Korrektur-Hinweis (l&ouml;st Neuextraktion aus):</div>
-      <div class="chat-row">
-        <textarea id="chatStep3" placeholder="z.B. Wandplatte geh&ouml;rt zu Wandbefestigungen"></textarea>
-        <button class="btn btn-s" onclick="retransform()">&circlearrowleft; Nochmal</button>
+  <div style="display:flex;gap:20px;align-items:flex-start">
+    <div style="flex:1;min-width:0">
+      <div class="s3-header">
+        <div id="s3sum" style="margin-bottom:18px"></div>
+      </div>
+      <div class="s3-content">
+        <div id="s3sektionen"></div>
+        <div class="chat-wrap">
+          <div class="chat-lbl">Korrektur-Hinweis (l&ouml;st Neuextraktion aus):</div>
+          <div class="chat-row">
+            <textarea id="chatStep3" placeholder="z.B. Wandplatte geh&ouml;rt zu Wandbefestigungen"></textarea>
+            <button class="btn btn-s" onclick="retransform()">&circlearrowleft; Nochmal</button>
+          </div>
+        </div>
+      </div>
+      <div class="btn-row" style="justify-content:flex-start;margin-top:20px">
+        <button class="btn btn-s" onclick="showView('viewStep2');setStep(2)">&larr; Zur&uuml;ck</button>
       </div>
     </div>
-  </div>
-  <div class="btn-row">
-    <button class="btn btn-s" onclick="showView('viewStep2');setStep(2)">&larr; Zur&uuml;ck</button>
-    <button class="btn btn-p" onclick="goToStep4()">Weiter &rarr; Fragebogen</button>
+    <div style="display:flex;flex-direction:column;justify-content:space-between;align-self:stretch;flex-shrink:0">
+      <div id="s3segelToggle"></div>
+      <div style="margin-top:auto;padding-top:20px">
+        <button class="btn btn-p" style="width:100%" onclick="goToStep4()">Weiter &rarr; Fragebogen</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1898,7 +1904,7 @@ function renderStep3(){
   const _sumAdj=transformedData._sumAdjust||0;
   const check=skSum+remSum+teu+_sumAdj;
   const ok=Math.abs(check-solidayTotal)<0.02;
-  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+(_sumAdj>0?`<span class='op'>+</span><span class='lbl2'>pflegeset</span><span class='v'>${fmtE(_sumAdj)}</span>`:'');
+  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+(_sumAdj>0?`<span class='op'>+</span><span class='lbl2'>zusammengef.</span><span class='v'>${fmtE(_sumAdj)}</span>`:'');
   document.getElementById('s3sum').innerHTML=
     `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div><div class='s3-big' style='color:${ok?"var(--accent2)":"var(--error)"}'>${fmtE(check)}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
   const posCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
@@ -1976,7 +1982,7 @@ function _buildZusammengefasstData(){
         }
         return;
       }
-      if(!pos.artikelnummer){if(!sektMap[id].positionen.find(p=>!p.artikelnummer&&p.name===pos.name))sektMap[id].positionen.push({...pos});return;}
+      if(!pos.artikelnummer){const ex=sektMap[id].positionen.find(p=>!p.artikelnummer&&p.name===pos.name);if(!ex){sektMap[id].positionen.push({...pos,_mergedSegelCount:1});}else if(pos._gs&&ex._gs){_sumAdjust=+(_sumAdjust+(pos.gesamt||0)).toFixed(2);ex._mergedSegelCount=(ex._mergedSegelCount||1)+1;ex.menge=ex._mergedSegelCount;}return;}
       const ex=sektMap[id].positionen.find(p=>p.artikelnummer===pos.artikelnummer);
       if(ex){ex.menge=+(ex.menge+pos.menge).toFixed(4);ex.gesamt=+(ex.gesamt+pos.gesamt).toFixed(2);}
       else sektMap[id].positionen.push({...pos});
