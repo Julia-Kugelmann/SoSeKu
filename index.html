@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 03:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 04:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1561,6 +1561,11 @@ function _transformiereKern(json){
     '00E13002149':40,'00E13001965':40,'00E13000042':40, // Pulleys
     '00E13000417':50,'00E13000026':50,'00E13000066':50,'00E13000127':50 // Rest
   };
+  // Feste Segel: kein Aufrollsystem → Segelsystem-Inhalte in Zubehör verschieben
+  if(!map.segelsystem.some(p=>p._isAufroll||isAufrollsystem(p.artikelnummer))){
+    map.zubehoer.push(...map.segelsystem);
+    map.segelsystem=[];
+  }
   map.zubehoer.sort((a,b)=>(_ZUB_KEY[a.artikelnummer]||99)-(_ZUB_KEY[b.artikelnummer]||99));
   // Wandbefestigungen: Wandplatten → Wandschellen → Gegenplatten → Design-Wandhalterungen → Sonstiges
   const _WAND_KEY={'00E13000709':10,'00E13000711':10,'00E13000046':10,'00E13002080':10,
