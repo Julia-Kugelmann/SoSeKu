@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 02:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 02:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1593,8 +1593,11 @@ function transformiere(json){
   const savedMontage=fragebogen.montage;
   fragebogen.montage=false; // no montage per-sail
   const _PFLEGE=new Set(['00E13001325','00E13001321']);
+  const segelTypes={};
   segelNrs.forEach((nr,nrIdx)=>{
-    const groupJson={...json,positionen:(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr)};
+    const groupPos=(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
+    segelTypes[nr]=groupPos.some(p=>isAufrollsystem(p.artikelnummer||''))?'aufrollbar':'fest';
+    const groupJson={...json,positionen:groupPos};
     const res=_transformiereKern(groupJson);
     const seks=res.sektionen.filter(s=>s.id!=='montage');
     if(nrIdx>0){
@@ -1610,11 +1613,10 @@ function transformiere(json){
     if(res.effectiveSys)effectiveSys=res.effectiveSys;
   });
   fragebogen.montage=savedMontage;
-  // Shared montage from full json
   const monRes=_transformiereKern(json);
   const monSek=monRes.sektionen.find(s=>s.id==='montage');
   if(monSek)allSektionen.push(monSek);
-  return{sektionen:allSektionen,removedPositionen:allRemoved,effectiveSys,isMultiSegel:true,segelNrs};
+  return{sektionen:allSektionen,removedPositionen:allRemoved,effectiveSys,isMultiSegel:true,segelNrs,segelTypes};
 }
 
 // Compound sekId helper for multi-sail drag/drop: 'sekId|segelNr' or plain 'sekId'
@@ -1943,7 +1945,9 @@ function _applyTransformReset(json){
   const _sails=(json.positionen||[]).filter(p=>p.qm_segel>0);
   if(_sails.length>1){
     const _qms=_sails.map(p=>p.qm_segel);
-    _segelZusammenfassen=Math.max(..._qms)-Math.min(..._qms)<=5;
+    const _types=Object.values(_transformedDataOrig.segelTypes||{});
+    const _sameType=_types.length===0||_types.every(t=>t===_types[0]);
+    _segelZusammenfassen=_sameType&&Math.max(..._qms)-Math.min(..._qms)<=5;
   }else{_segelZusammenfassen=false;}
   if(_segelZusammenfassen)transformedData=_buildZusammengefasstData();
 }
@@ -1999,11 +2003,20 @@ function _renderSegelToggle(){
   const minQm=Math.min(...qms);
   const maxQm=Math.max(...qms);
   const range=Math.round((maxQm-minQm)*100)/100;
-  const canMerge=range<=5;
+  const types=Object.values((_transformedDataOrig||transformedData).segelTypes||{});
+  const sameType=types.length===0||types.every(t=>t===types[0]);
+  const canMerge=sameType&&range<=5;
+  let noMergeReason='';
+  if(!sameType){
+    const typeCounts=types.reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{});
+    noMergeReason=Object.entries(typeCounts).map(([t,n])=>`${n}× ${t}`).join(' + ')+' &rarr; Einzeln';
+  } else if(range>5){
+    noMergeReason=`${minQm.toFixed(1)}&ndash;${maxQm.toFixed(1)} m&sup2;, Diff. ${range.toFixed(1)} m&sup2; &gt; 5 m&sup2; &rarr; Einzeln`;
+  }
   if(!canMerge){
     el.innerHTML=`<div style="display:flex;flex-direction:column;gap:4px;min-width:152px">
       <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${sails.length} Segel erkannt</div>
-      <div style="font-size:11px;color:var(--muted);line-height:1.5">${minQm.toFixed(1)}&ndash;${maxQm.toFixed(1)} m&sup2;<br>Differenz ${range.toFixed(1)} m&sup2; &gt; 5 m&sup2; &rarr; Einzeln</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.6">${noMergeReason}</div>
     </div>`;
     return;
   }
