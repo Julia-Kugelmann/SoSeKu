@@ -295,7 +295,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-17 19:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 11:20 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1742,7 +1742,7 @@ function buildRepSevdeskPositions(){
     const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
     const anfahrt=calcAnfahrtPreis(_repZone,1,satz);
     const mp=arbeit+anfahrt;
-    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:`${_repTeam===2?'2 Monteure':'1 Monteur'} · ${fmt(std)} Std. · Zone ${_repZone}`,menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
+    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
   }
   rows.push({type:'pos',name:vName,beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:v,gesamt:v,artikelnummer:_repVersandTyp});
   return rows;
