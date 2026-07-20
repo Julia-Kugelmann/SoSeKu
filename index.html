@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 14:35 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 15:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2630,33 +2630,25 @@ async function initReparaturMode(){
         for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){rep.stundensatz=v;break;}}
       }
     });
-    // Reparatur-Bausteine: gleiche Quelle wie Presets (Reparaturen-Sektion aus Montage Kalkulation)
+    // Reparatur-Bausteine: Reparaturen-Sektion aus Montage Kalkulation Tab
     let rawRows=[];
-    for(const tab of['Reparatur Bausteine','Reparatur Presets','Montage Kalkulation','Montage Zeitbausteine','Montage']){
+    for(const tab of['Montage Kalkulation','Montage Zeitbausteine','Montage']){
       try{
         const r=await fetchSheetTabAll(tab);
-        if(tab==='Reparatur Bausteine'||tab==='Reparatur Presets'){
-          // nur verwenden wenn erste Zeile keine Stoff-/Systemdaten sind
-          const firstVal=(r[0]&&r[0][0]||'').toString().toLowerCase();
-          const looksLikeFabric=/austronet|austrosail|lotus|sonder/i.test(firstVal);
-          const looksLikeSystem=/fix segel|flex|soliday|one|c\/cs/i.test(firstVal);
-          if(r.length>0&&!looksLikeFabric&&!looksLikeSystem){rawRows=r;break;}
-        } else {
-          let inRep=false;
-          for(const row of r){
-            const a=(row[0]||'').trim();
-            if(!inRep){if(/reparatur/i.test(a))inRep=true;continue;}
-            if(a)rawRows.push(row);
-          }
-          if(rawRows.length)break;
+        let inRep=false;
+        for(const row of r){
+          const a=(row[0]||'').trim();
+          if(!inRep){if(/reparatur/i.test(a))inRep=true;continue;}
+          if(a)rawRows.push(row);
         }
+        if(rawRows.length)break;
       }catch(e){}
     }
     rawRows.forEach(r=>{
       const name=(r[0]||'').trim();
       if(!name)return;
       let std=0;
-      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>0&&v<50){std=v;break;}}
+      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>0&&v<20){std=v;break;}}
       if(std>0)rep.bausteine.push({name,std});
     });
     rep.loaded=true;
