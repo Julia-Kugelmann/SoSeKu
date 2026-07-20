@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 23:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 00:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -428,6 +428,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <!-- STEP 3 -->
 <div id="viewStep3" class="hidden">
   <div class="s3-header">
+    <div id="s3segelToggle"></div>
     <div class="sum-compare" id="s3sum"></div>
   </div>
   <div class="s3-content">
@@ -440,12 +441,9 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
       </div>
     </div>
   </div>
-  <div class="btn-row" style="align-items:flex-end">
+  <div class="btn-row">
     <button class="btn btn-s" onclick="showView('viewStep2');setStep(2)">&larr; Zur&uuml;ck</button>
-    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
-      <div id="s3segelToggle"></div>
-      <button class="btn btn-p" onclick="goToStep4()">Weiter &rarr; Fragebogen</button>
-    </div>
+    <button class="btn btn-p" onclick="goToStep4()">Weiter &rarr; Fragebogen</button>
   </div>
 </div>
 
@@ -1179,17 +1177,24 @@ async function processFile(file,correctionHint){
     prog.style.width='25%';sub.textContent='Extraktions-Prompt wird geladen...';
     let prompt=await fetchSheetTab('Extraktion-Prompt')||DEFAULT_PROMPT;
     if(correctionHint)prompt+=`\n\nKorrekturhinweis: ${correctionHint}`;
-    prog.style.width='35%';sub.textContent='Claude Haiku analysiert Positionen...';
-    let data,usedSonnet=false;
+    const pdfSizeKB=Math.round(pdfBase64.length*0.75/1024);
+    const useLargeModel=pdfSizeKB>200;
+    if(useLargeModel)prog.style.width='35%',sub.textContent=`Großes PDF (${pdfSizeKB} KB) – Claude Sonnet...`;
+    else prog.style.width='35%',sub.textContent='Claude Haiku analysiert Positionen...';
+    let data,usedSonnet=useLargeModel;
     const trySonnet=async(reason)=>{
       prog.style.width='45%';sub.textContent=`${reason} – wechsle zu Claude Sonnet...`;
       usedSonnet=true;
       return callClaude(pdfBase64,'claude-sonnet-4-6',prompt);
     };
-    try{data=await callClaude(pdfBase64,'claude-haiku-4-5-20251001',prompt);}
-    catch(e){
-      if(e.isContextError)data=await trySonnet('Großes Angebot');
-      else throw e;
+    if(useLargeModel){
+      data=await callClaude(pdfBase64,'claude-sonnet-4-6',prompt);
+    }else{
+      try{data=await callClaude(pdfBase64,'claude-haiku-4-5-20251001',prompt);}
+      catch(e){
+        if(e.isContextError)data=await trySonnet('Großes Angebot');
+        else throw e;
+      }
     }
     // Truncation: stop_reason=max_tokens even on HTTP 200
     if(!usedSonnet&&data.stop_reason==='max_tokens')data=await trySonnet('Antwort zu lang');
@@ -1876,11 +1881,10 @@ function renderStep3(){
   const skSum=sektionen.reduce((s,sek)=>s+sek.positionen.reduce((ss,p)=>ss+(p.gesamt||0),0),0);
   // _transferred = Preis transferiert (nicht wirklich entfernt), nicht doppelt zählen
   const remSum=removedPositionen.filter(p=>!p._transferred).reduce((s,p)=>s+(p.gesamt||0),0);
-  const check=skSum+remSum+teu;
+  const _sumAdj=transformedData._sumAdjust||0;
+  const check=skSum+remSum+teu+_sumAdj;
   const ok=Math.abs(check-solidayTotal)<0.02;
-  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'');
-  document.getElementById('s3sum').innerHTML=
-    `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div><div class='s3-big' style='color:${ok?"var(--accent2)":"var(--error)"}'>${fmtE(check)}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
+  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+(_sumAdj>0?`<span class='op'>+</span><span class='lbl2'>pflegeset</span><span class='v'>${fmtE(_sumAdj)}</span>`:'');
   const posCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
   const manExcl=removedPositionen.filter(p=>manualWeglass.has(String(p.pos)));
   const _cb=(p)=>p.pos!=null&&!p._gs
@@ -1889,7 +1893,7 @@ function renderStep3(){
   const _row=(p,sekId='',pidx=0)=>`<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''} ondragover="s3RowDragOver(event,this)" ondrop="s3RowDrop(event,'${sekId}',${pidx})">` +
     `<td>${_cb(p)}</td>` +
     `<td>${!p._gs?`<span class="s3-move-btn" onclick="s3ShowMover(event,'${sekId}',${pidx})" title="Verschieben">⇅</span>`:''}${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
-    `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'Ø Preis aus Schritt 5'}</div>`:''}</td>` +
+    `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'&#216; Preis aus Schritt 5'}${(p._mergedSegelCount||0)>1?' &ndash; '+p._mergedSegelCount+' Segel zusammengefasst':''}</div>`:''}</td>` +
     `<td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td>` +
     `<td style="color:var(--muted)">${p.einheit||'–'}</td>` +
     `<td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td>` +
@@ -1938,16 +1942,28 @@ function _buildZusammengefasstData(){
     const id=sek.id;
     if(!sektMap[id]){sektMap[id]={...sek,positionen:[],_segelNr:undefined};order.push(id);}
     sek.positionen.forEach(pos=>{
-      if(pos.qm_segel>0){if(!sektMap[id].positionen.find(p=>p.qm_segel>0))sektMap[id].positionen.push({...pos});return;}
+      if(pos.qm_segel>0){
+        const ex=sektMap[id].positionen.find(p=>p.qm_segel>0);
+        if(!ex){sektMap[id].positionen.push({...pos,_mergedSegelCount:1});}
+        else{ex._mergedSegelCount=(ex._mergedSegelCount||1)+1;}
+        return;
+      }
       if(!pos.artikelnummer){if(!sektMap[id].positionen.find(p=>!p.artikelnummer&&p.name===pos.name))sektMap[id].positionen.push({...pos});return;}
       const ex=sektMap[id].positionen.find(p=>p.artikelnummer===pos.artikelnummer);
       if(ex){ex.menge=+(ex.menge+pos.menge).toFixed(4);ex.gesamt=+(ex.gesamt+pos.gesamt).toFixed(2);}
       else sektMap[id].positionen.push({...pos});
     });
   });
-  Object.values(sektMap).forEach(sek=>sek.positionen.forEach(p=>{if(PFLEGESET.has(p.artikelnummer)&&p.menge>1){p.menge=1;p.gesamt=p.preis_einheit;}}));
-  return {...orig,sektionen:order.map(id=>sektMap[id]),isMultiSegel:false};
+  let _sumAdjust=0;
+  Object.values(sektMap).forEach(sek=>sek.positionen.forEach(p=>{
+    if(PFLEGESET.has(p.artikelnummer)&&p.menge>1){
+      _sumAdjust=+(_sumAdjust+(p.gesamt-p.preis_einheit)).toFixed(2);
+      p.menge=1;p.gesamt=p.preis_einheit;
+    }
+  }));
+  return {...orig,sektionen:order.map(id=>sektMap[id]),isMultiSegel:false,_sumAdjust};
 }
+
 function _renderSegelToggle(){
   const sails=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
   const el=document.getElementById('s3segelToggle');
@@ -1956,17 +1972,20 @@ function _renderSegelToggle(){
   const totalQm=sails.reduce((s,p)=>s+p.qm_segel,0);
   const avgQm=Math.round(totalQm/sails.length*100)/100;
   const billQm=Math.round((avgQm+2)*100)/100;
-  el.innerHTML=`<div style="display:flex;align-items:center;gap:8px">
-    <span style="font-size:12px;color:var(--muted);white-space:nowrap">${sails.length} Segel:</span>
-    <div class="zone-item${!_segelZusammenfassen?' sel':''}" style="min-width:80px;cursor:pointer" onclick="segelZusammenSet(false)">
-      <div class="zone-num">Einzeln</div>
-    </div>
-    <div class="zone-item${_segelZusammenfassen?' sel':''}" style="min-width:140px;cursor:pointer" onclick="segelZusammenSet(true)">
-      <div class="zone-num">Zusammenfassen</div>
-      <div class="zone-time">∅ ${avgQm.toFixed(2)} m² → ${billQm.toFixed(2)} m²</div>
+  el.innerHTML=`<div style="background:rgba(91,141,238,.06);border:1px solid rgba(91,141,238,.15);border-radius:10px;padding:10px 14px;margin-bottom:14px">
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">${sails.length} Segel erkannt</div>
+    <div style="display:flex;gap:8px">
+      <div class="zone-item${!_segelZusammenfassen?' sel':''}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(false)">
+        <div class="zone-num">Einzeln</div>
+      </div>
+      <div class="zone-item${_segelZusammenfassen?' sel':''}" style="flex:2;cursor:pointer" onclick="segelZusammenSet(true)">
+        <div class="zone-num">Zusammenfassen</div>
+        <div class="zone-time">∅ ${avgQm.toFixed(2)} m² → ${billQm.toFixed(2)} m²</div>
+      </div>
     </div>
   </div>`;
 }
+
 function segelZusammenSet(v){
   _segelZusammenfassen=v;
   transformedData=v?_buildZusammengefasstData():JSON.parse(JSON.stringify(_transformedDataOrig||transformedData));
