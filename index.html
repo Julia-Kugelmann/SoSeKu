@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 15:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 15:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1650,40 +1650,24 @@ async function _repLoadAndRenderPresets(){
   if(!rep.presetsLoaded){
     const grid=document.getElementById('repPresetGrid');
     if(grid)grid.innerHTML='<span style="color:var(--muted);font-size:12px">Lade…</span>';
-    let rawRows=[];
-    // Try dedicated tab first, fall back to Reparaturen-Sektion in Montage Kalkulation
-    for(const tab of['Reparatur Presets','Montage Kalkulation','Montage Zeitbausteine','Montage']){
-      try{
-        const r=await fetchSheetTabAll(tab);
-        if(tab==='Reparatur Presets'){
-          if(r.length>0){rawRows=r;break;}
-        } else {
-          // extract rows after "Reparaturen" header
-          let inRep=false;
-          for(const row of r){
-            const a=(row[0]||'').trim();
-            if(!inRep){if(/reparatur/i.test(a))inRep=true;continue;}
-            if(a)rawRows.push(row);
-          }
-          if(rawRows.length)break;
-        }
-      }catch(e){}
-    }
-    // Parse: "weiteres"-Zeilen werden automatisch als weitereStd des Vorgängers erkannt
+    // Gleicher Tab wie Standalone-Kalkulator
     rep.presets=[];
-    for(const r of rawRows){
-      const name=(r[0]||'').trim();
-      if(!name)continue;
-      const std=parseDE(r[1])||0;
-      if(/weiteres/i.test(name)&&rep.presets.length>0){
-        const prev=rep.presets[rep.presets.length-1];
-        prev.hatMenge=true;
-        prev.weitereStd=std;
-        continue;
-      }
-      const termine=/reinigung/i.test(name)?2:1;
-      rep.presets.push({name,std,termine,hatMenge:false,weitereStd:0});
-    }
+    try{
+      const rows=await fetchSheetTabAll('Reparaturen Bausteine');
+      rows.forEach(r=>{
+        const name=(r[0]||'').trim();
+        if(!name||/reparaturen/i.test(name))return;
+        const std=parseDE(r[1])||0;
+        if(!std)return;
+        if(/weiteres/i.test(name)&&rep.presets.length>0){
+          const prev=rep.presets[rep.presets.length-1];
+          prev.hatMenge=true;prev.weitereStd=std;
+        } else {
+          const termine=/reinigung/i.test(name)?2:1;
+          rep.presets.push({name,std,termine,hatMenge:false,weitereStd:0});
+        }
+      });
+    }catch(e){}
     rep.presetsLoaded=true;
   }
   renderRepPresets();
@@ -2630,27 +2614,23 @@ async function initReparaturMode(){
         for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>=20){rep.stundensatz=v;break;}}
       }
     });
-    // Reparatur-Bausteine: Reparaturen-Sektion aus Montage Kalkulation Tab
-    let rawRows=[];
-    for(const tab of['Montage Kalkulation','Montage Zeitbausteine','Montage']){
-      try{
-        const r=await fetchSheetTabAll(tab);
-        let inRep=false;
-        for(const row of r){
-          const a=(row[0]||'').trim();
-          if(!inRep){if(/reparatur/i.test(a))inRep=true;continue;}
-          if(a)rawRows.push(row);
+    // Reparatur-Bausteine direkt aus "Reparaturen Bausteine" Tab
+    _repBQty={};
+    try{
+      const bR=await fetchSheetTabAll('Reparaturen Bausteine');
+      bR.forEach(r=>{
+        const name=(r[0]||'').trim();
+        if(!name||/reparaturen/i.test(name))return; // Header überspringen
+        const std=parseDE(r[1])||0;
+        if(!std)return;
+        if(/weiteres/i.test(name)&&rep.bausteine.length>0){
+          const prev=rep.bausteine[rep.bausteine.length-1];
+          prev.hatMenge=true;prev.weitereStd=std;
+        } else {
+          rep.bausteine.push({name,std,hatMenge:false,weitereStd:0});
         }
-        if(rawRows.length)break;
-      }catch(e){}
-    }
-    rawRows.forEach(r=>{
-      const name=(r[0]||'').trim();
-      if(!name)return;
-      let std=0;
-      for(let c=1;c<r.length;c++){const v=parseDE(r[c]);if(v>0&&v<20){std=v;break;}}
-      if(std>0)rep.bausteine.push({name,std});
-    });
+      });
+    }catch(e){}
     rep.loaded=true;
     document.getElementById('repStatus').textContent='';
   }
@@ -2661,12 +2641,34 @@ function renderRepBausteine(){
   const c=document.getElementById('repBausteinePicks'),empty=document.getElementById('repBausteineEmpty');
   if(!rep.bausteine.length){c.innerHTML='';empty.classList.remove('hidden');return;}
   empty.classList.add('hidden');
-  c.innerHTML=rep.bausteine.map((b,i)=>`<div class="mc-pick" data-i="${i}" onclick="repToggleBaustein(this)">${b.name} (${fmt(b.std)} Std.)</div>`).join('');
+  c.innerHTML=rep.bausteine.map((b,i)=>{
+    if(b.hatMenge){
+      const qty=_repBQty[i]||0;
+      const sel=qty>0;
+      const calcStd=sel&&b.weitereStd&&qty>1?b.std+(qty-1)*b.weitereStd:b.std;
+      const label=sel&&b.weitereStd&&qty>1?`${fmt(calcStd)} Std. (${fmt(b.std)}+${qty-1}×${fmt(b.weitereStd)})`:` ${fmt(b.std)} Std.`;
+      return `<div style="display:inline-flex;flex-direction:column;align-items:center;gap:4px;vertical-align:top;margin:0 2px 4px">
+        <div class="mc-pick${sel?' sel':''}" data-i="${i}" style="min-width:100px">${b.name}<br><small>${label}</small></div>
+        <div style="display:flex;align-items:center;gap:5px">
+          <button class="rep-qty-btn" onclick="repBQty(${i},-1)">&#8722;</button>
+          <span class="rep-qty-val">${qty}</span>
+          <button class="rep-qty-btn" onclick="repBQty(${i},1)">&#43;</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="mc-pick" data-i="${i}" onclick="repToggleBaustein(this)">${b.name} (${fmt(b.std)} Std.)</div>`;
+  }).join('');
 }
 function repToggleBaustein(el){
   el.classList.toggle('sel');
   repCalc();
 }
+function repBQty(idx,delta){
+  _repBQty[idx]=Math.max(0,(_repBQty[idx]||0)+delta);
+  renderRepBausteine();
+  repCalc();
+}
+let _repBQty={};
 function repPick(containerId,el){
   document.querySelectorAll(`#${containerId} .mc-pick`).forEach(p=>p.classList.toggle('sel',p===el));
   repCalc();
@@ -2675,7 +2677,11 @@ function repCalc(){
   if(!rep.loaded) return;
   const team=parseInt(mcPickVal('repTeamPicks','2'))||2;
   const manualStd=Math.max(0,parseFloat((document.getElementById('repStunden')||{}).value)||0);
-  const bausteinStd=[...document.querySelectorAll('#repBausteinePicks .mc-pick.sel')].reduce((s,el)=>s+(rep.bausteine[+el.dataset.i]?.std||0),0);
+  const bausteinStd=rep.bausteine.reduce((s,b,i)=>{
+    if(b.hatMenge){const qty=_repBQty[i]||0;return qty>0?s+b.std+(qty-1)*(b.weitereStd||0):s;}
+    const el=document.querySelector(`#repBausteinePicks .mc-pick[data-i="${i}"]`);
+    return el&&el.classList.contains('sel')?s+b.std:s;
+  },0);
   const totalStd=manualStd+bausteinStd;
   const zone=parseInt((document.getElementById('repZone')||{}).value)||2;
   const anfahrtVoll=mcPickVal('repAnfahrtPicks','0')==='1';
