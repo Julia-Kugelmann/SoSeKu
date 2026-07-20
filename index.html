@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 23:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 23:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3225,6 +3225,9 @@ function applyPrices5(){
         });
       });
       transformedData.sektionen=transformedData.sektionen.filter(s=>s.id!=='segeltuch'||s===base);
+      // Bei zusammengefassten Segeln: Reinigungsset immer nur 1×
+      const PFLEGESET=new Set(['00E13001325','00E13001321']);
+      base.positionen.forEach(p=>{if(PFLEGESET.has(p.artikelnummer)&&p.menge>1){p.menge=1;p.gesamt=p.preis_einheit;}});
     }
   }
   const segSeks=transformedData.sektionen.filter(s=>s.id==='segeltuch');
