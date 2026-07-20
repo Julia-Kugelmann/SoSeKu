@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 22:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 23:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -432,6 +432,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
   </div>
   <div class="s3-content">
     <div id="s3sektionen"></div>
+    <div id="s3segelToggle"></div>
     <div class="chat-wrap">
       <div class="chat-lbl">Korrektur-Hinweis (l&ouml;st Neuextraktion aus):</div>
       <div class="chat-row">
@@ -934,6 +935,7 @@ let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtS
 let importMode='segelsystem'; // 'segelsystem' | 'reparatur'
 let repStep={montageAn:false,stunden:1,team:2,zone:2,anfahrtVoll:false};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
+let _segelZusammenfassen=false;
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
 
@@ -1911,8 +1913,35 @@ function renderStep3(){
   document.getElementById('s3sektionen').innerHTML=
     `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${displaySys} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen</span></div>`+
     `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${tbodyRows}${exclRows}</tbody></table></div>`;
+  _renderSegelToggle();
   showView('viewStep3');setStep(3);
 }
+
+function _renderSegelToggle(){
+  const sails=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
+  const el=document.getElementById('s3segelToggle');
+  if(!el)return;
+  if(sails.length<=1){el.innerHTML='';return;}
+  const totalQm=sails.reduce((s,p)=>s+p.qm_segel,0);
+  const avgQm=Math.round(totalQm/sails.length*100)/100;
+  const billQm=Math.round((avgQm+2)*100)/100;
+  const sailList=sails.map(p=>p.qm_segel.toFixed(2)+' m²').join(' · ');
+  el.innerHTML=`<div class="s5-card" style="margin:10px 0 0">
+    <div class="s5-card-hdr"><strong>${sails.length} Segel erkannt</strong><span>${sailList}</span></div>
+    <div class="s5-card-body" style="padding-bottom:12px">
+      <div class="rep-preset-grid" style="gap:8px;margin:0">
+        <div class="zone-item${!_segelZusammenfassen?' sel':''}" style="min-width:130px;cursor:pointer" onclick="segelZusammenSet(false)">
+          <div class="zone-num">Einzeln</div><div class="zone-time">${sails.length} Positionen</div>
+        </div>
+        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="min-width:130px;cursor:pointer" onclick="segelZusammenSet(true)">
+          <div class="zone-num">Zusammenfassen</div>
+          <div class="zone-time">∅ ${avgQm.toFixed(2)} m² → ${billQm.toFixed(2)} m²</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function segelZusammenSet(v){_segelZusammenfassen=v;_renderSegelToggle();}
 
 // === STEP 4 ===
 function selZone(n){
@@ -2740,6 +2769,11 @@ function renderStep5(){
   const apDef=withMontage?(prices5.apPreis[wandartForAP]||0):0;
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
+  if(_segelZusammenfassen&&_sailPos.length>1){
+    const _sqms=_sailPos.map(p=>p.qm_segel);
+    const _avgQm=Math.round(_sqms.reduce((a,b)=>a+b,0)/_sqms.length*100)/100;
+    _sailPos=[{..._sailPos[0],qm_segel:_avgQm,_merged:_sqms.length,_mergedSrc:_sqms}];
+  }
   const _isWandSchelle=p=>!!(p.artikelnummer==='00E13000243'||(/wandschelle/i.test(p.name||'')&&!/gegenplatte/i.test(p.name||'')));
   const _isWandGegenpl=p=>!!(p.artikelnummer==='00E13000110'||/gegenplatte|abstandshalter/i.test(p.name||''));
   // Aggregate across all sails for multi-sail (merge quantities by artikelnummer)
@@ -2815,11 +2849,12 @@ function renderStep5(){
       const bQm=billingQm(qm);
       const stoffe=getStoffeForSys(sys,bQm,qm);
       const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
-      const sailNrLabel=transformedData.isMultiSegel?` &ndash; Segel ${sail.segel_nr||si+1}`:'';
+      const sailNrLabel=sail._merged?` &ndash; ${sail._merged} Segel zusammengefasst`:(transformedData.isMultiSegel?` &ndash; Segel ${sail.segel_nr||si+1}`:'');
+      const sailQmPrefix=sail._merged?'∅ ':'';
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:center">
           <strong>Segeltuch &ndash; ${sysLabel2}${sailNrLabel}</strong>
-          <span id="sailHdrQm${si}" style="font-size:14px;font-weight:700;color:var(--accent2)">${qm} m&sup2;</span>
+          <span id="sailHdrQm${si}" style="font-size:14px;font-weight:700;color:var(--accent2)">${sailQmPrefix}${qm} m&sup2;</span>
         </div>
         <div class="s5-card-body">
           <div class="s5-irow" style="margin-bottom:10px">
@@ -3177,6 +3212,21 @@ function applyPrices5(){
   const sys=(soSeKuJSON.system||'').toUpperCase();
 
   // 5A: Segeltuch — for multi-sail each sail has its own segeltuch sektion
+  // Zusammenfassen: consolidate all segeltuch sektionen into first, merge non-sail positions by Art.-Nr.
+  if(_segelZusammenfassen&&_sailPos.length===1&&_sailPos[0]._merged){
+    const allSegSeks=transformedData.sektionen.filter(s=>s.id==='segeltuch');
+    if(allSegSeks.length>1){
+      const base=allSegSeks[0];
+      allSegSeks.slice(1).forEach(sek=>{
+        sek.positionen.filter(p=>!(p.qm_segel>0)).forEach(ep=>{
+          const ex=ep.artikelnummer?base.positionen.find(p=>p.artikelnummer&&p.artikelnummer===ep.artikelnummer):null;
+          if(ex){ex.menge=+(ex.menge+ep.menge).toFixed(4);ex.gesamt=+(ex.gesamt+ep.gesamt).toFixed(2);}
+          else base.positionen.push({...ep});
+        });
+      });
+      transformedData.sektionen=transformedData.sektionen.filter(s=>s.id!=='segeltuch'||s===base);
+    }
+  }
   const segSeks=transformedData.sektionen.filter(s=>s.id==='segeltuch');
   if(segSeks.length>0){
     if(_sailPos.length===0){
