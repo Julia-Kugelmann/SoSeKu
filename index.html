@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 03:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 03:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2019,23 +2019,20 @@ function _renderSegelToggle(){
   } else if(range>5){
     noMergeReason=`${minQm.toFixed(1)}&ndash;${maxQm.toFixed(1)} m&sup2;, Diff. ${range.toFixed(1)} m&sup2; &gt; 5 m&sup2; &rarr; Einzeln`;
   }
+  const _box=(inner)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;justify-content:space-between;height:100%;box-sizing:border-box;min-width:240px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">${sails.length} Segel erkannt</div>${inner}</div>`;
   if(!canMerge){
-    el.innerHTML=`<div style="display:flex;flex-direction:column;gap:4px;min-width:152px">
-      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">${sails.length} Segel erkannt</div>
-      <div style="font-size:11px;color:var(--muted);line-height:1.6">${noMergeReason}</div>
-    </div>`;
+    el.innerHTML=_box(`<div style="font-size:11px;color:var(--muted);line-height:1.6">${noMergeReason}</div>`);
     return;
   }
-  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px;min-width:152px">
-    <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">${sails.length} Segel erkannt</div>
-    <div class="zone-item${!_segelZusammenfassen?' sel':''}" style="width:100%;cursor:pointer;box-sizing:border-box" onclick="segelZusammenSet(false)">
+  el.innerHTML=_box(`<div style="display:flex;gap:8px">
+    <div class="zone-item${!_segelZusammenfassen?' sel':''}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(false)">
       <div class="zone-num">Einzeln</div>
     </div>
-    <div class="zone-item${_segelZusammenfassen?' sel':''}" style="width:100%;cursor:pointer;box-sizing:border-box" onclick="segelZusammenSet(true)">
+    <div class="zone-item${_segelZusammenfassen?' sel':''}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(true)">
       <div class="zone-num">Zusammenfassen</div>
-      <div class="zone-time">∅ ${avgQm.toFixed(2)} m² → ${billQm.toFixed(2)} m²</div>
+      <div class="zone-time">&#216; ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div>
     </div>
-  </div>`;
+  </div>`);
 }
 
 function segelZusammenSet(v){
