@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 16:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 16:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2701,7 +2701,10 @@ function repCalc(){
 
   let t1=`<h4>Arbeitszeit</h4><div class="mc-tile-sm">`;
   t1+=`<div class="mc-row"><span>Gesch&auml;tzte Arbeitszeit</span><span>${fmt(manualStd)} Std.</span></div>`;
-  if(bausteinStd>0) t1+=`<div class="mc-row"><span>Reparatur-Bausteine</span><span>${fmt(bausteinStd)} Std.</span></div>`;
+  rep.bausteine.forEach((b,i)=>{
+    if(b.hatMenge){const qty=_repBQty[i]||0;if(qty>0){const h=b.std+(qty-1)*(b.weitereStd||0);t1+=`<div class="mc-row"><span>${b.name}${qty>1?` &times;${qty}`:''}</span><span>${fmt(h)} Std.</span></div>`;}}
+    else if(_repBSel[i])t1+=`<div class="mc-row"><span>${b.name}</span><span>${fmt(b.std)} Std.</span></div>`;
+  });
   t1+=`<div class="mc-total"><span>Arbeitszeit gesamt</span><span>${fmt(totalStd)} Std.</span></div></div>`;
 
   let t2=`<h4>Preise</h4><div class="mc-tile-sm">`;
