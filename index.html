@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 23:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 23:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -432,7 +432,6 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
   </div>
   <div class="s3-content">
     <div id="s3sektionen"></div>
-    <div id="s3segelToggle"></div>
     <div class="chat-wrap">
       <div class="chat-lbl">Korrektur-Hinweis (l&ouml;st Neuextraktion aus):</div>
       <div class="chat-row">
@@ -441,9 +440,12 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
       </div>
     </div>
   </div>
-  <div class="btn-row">
+  <div class="btn-row" style="align-items:flex-end">
     <button class="btn btn-s" onclick="showView('viewStep2');setStep(2)">&larr; Zur&uuml;ck</button>
-    <button class="btn btn-p" onclick="goToStep4()">Weiter &rarr; Fragebogen</button>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+      <div id="s3segelToggle"></div>
+      <button class="btn btn-p" onclick="goToStep4()">Weiter &rarr; Fragebogen</button>
+    </div>
   </div>
 </div>
 
@@ -935,7 +937,7 @@ let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtS
 let importMode='segelsystem'; // 'segelsystem' | 'reparatur'
 let repStep={montageAn:false,stunden:1,team:2,zone:2,anfahrtVoll:false};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
-let _segelZusammenfassen=false;
+let _segelZusammenfassen=false,_transformedDataOrig=null;
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
 
@@ -1619,7 +1621,7 @@ function goFromStep2(){
   if(importMode==='reparatur') goToRepStep();
   else goToStep3();
 }
-function goToStep3(){transformedData=transformiere(soSeKuJSON);renderStep3();}
+function goToStep3(){_applyTransformReset(soSeKuJSON);renderStep3();}
 
 // ══════════════════════════════════════════════════════════════════════
 // REPARATUR-PFAD im Import-Tool
@@ -1857,13 +1859,13 @@ function goRepToRunden(){
 function toggleManualWeglass(posNr,checked){
   if(checked) manualWeglass.delete(String(posNr));
   else manualWeglass.add(String(posNr));
-  transformedData=transformiere(soSeKuJSON);
+  _applyTransformKeep(soSeKuJSON);
   renderStep3();
 }
 async function retransform(){
   const hint=document.getElementById('chatStep3').value.trim();
   if(hint){extractAttempts=0;await processFile(null,hint);}
-  else{transformedData=transformiere(soSeKuJSON);renderStep3();}
+  else{_applyTransformReset(soSeKuJSON);renderStep3();}
 }
 
 function renderStep3(){
@@ -1917,6 +1919,35 @@ function renderStep3(){
   showView('viewStep3');setStep(3);
 }
 
+function _applyTransformReset(json){
+  transformedData=transformiere(json);
+  _transformedDataOrig=JSON.parse(JSON.stringify(transformedData));
+  _segelZusammenfassen=false;
+}
+function _applyTransformKeep(json){
+  const orig=transformiere(json);
+  _transformedDataOrig=JSON.parse(JSON.stringify(orig));
+  transformedData=_segelZusammenfassen?_buildZusammengefasstData():orig;
+}
+function _buildZusammengefasstData(){
+  const orig=_transformedDataOrig;
+  if(!orig)return transformedData;
+  const sektMap={},order=[];
+  const PFLEGESET=new Set(['00E13001325','00E13001321']);
+  orig.sektionen.forEach(sek=>{
+    const id=sek.id;
+    if(!sektMap[id]){sektMap[id]={...sek,positionen:[],_segelNr:undefined};order.push(id);}
+    sek.positionen.forEach(pos=>{
+      if(pos.qm_segel>0){if(!sektMap[id].positionen.find(p=>p.qm_segel>0))sektMap[id].positionen.push({...pos});return;}
+      if(!pos.artikelnummer){if(!sektMap[id].positionen.find(p=>!p.artikelnummer&&p.name===pos.name))sektMap[id].positionen.push({...pos});return;}
+      const ex=sektMap[id].positionen.find(p=>p.artikelnummer===pos.artikelnummer);
+      if(ex){ex.menge=+(ex.menge+pos.menge).toFixed(4);ex.gesamt=+(ex.gesamt+pos.gesamt).toFixed(2);}
+      else sektMap[id].positionen.push({...pos});
+    });
+  });
+  Object.values(sektMap).forEach(sek=>sek.positionen.forEach(p=>{if(PFLEGESET.has(p.artikelnummer)&&p.menge>1){p.menge=1;p.gesamt=p.preis_einheit;}}));
+  return {...orig,sektionen:order.map(id=>sektMap[id]),isMultiSegel:false};
+}
 function _renderSegelToggle(){
   const sails=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
   const el=document.getElementById('s3segelToggle');
@@ -1925,23 +1956,22 @@ function _renderSegelToggle(){
   const totalQm=sails.reduce((s,p)=>s+p.qm_segel,0);
   const avgQm=Math.round(totalQm/sails.length*100)/100;
   const billQm=Math.round((avgQm+2)*100)/100;
-  const sailList=sails.map(p=>p.qm_segel.toFixed(2)+' m²').join(' · ');
-  el.innerHTML=`<div class="s5-card" style="margin:10px 0 0">
-    <div class="s5-card-hdr"><strong>${sails.length} Segel erkannt</strong><span>${sailList}</span></div>
-    <div class="s5-card-body" style="padding-bottom:12px">
-      <div class="rep-preset-grid" style="gap:8px;margin:0">
-        <div class="zone-item${!_segelZusammenfassen?' sel':''}" style="min-width:130px;cursor:pointer" onclick="segelZusammenSet(false)">
-          <div class="zone-num">Einzeln</div><div class="zone-time">${sails.length} Positionen</div>
-        </div>
-        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="min-width:130px;cursor:pointer" onclick="segelZusammenSet(true)">
-          <div class="zone-num">Zusammenfassen</div>
-          <div class="zone-time">∅ ${avgQm.toFixed(2)} m² → ${billQm.toFixed(2)} m²</div>
-        </div>
-      </div>
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:8px">
+    <span style="font-size:12px;color:var(--muted);white-space:nowrap">${sails.length} Segel:</span>
+    <div class="zone-item${!_segelZusammenfassen?' sel':''}" style="min-width:80px;cursor:pointer" onclick="segelZusammenSet(false)">
+      <div class="zone-num">Einzeln</div>
+    </div>
+    <div class="zone-item${_segelZusammenfassen?' sel':''}" style="min-width:140px;cursor:pointer" onclick="segelZusammenSet(true)">
+      <div class="zone-num">Zusammenfassen</div>
+      <div class="zone-time">∅ ${avgQm.toFixed(2)} m² → ${billQm.toFixed(2)} m²</div>
     </div>
   </div>`;
 }
-function segelZusammenSet(v){_segelZusammenfassen=v;_renderSegelToggle();}
+function segelZusammenSet(v){
+  _segelZusammenfassen=v;
+  transformedData=v?_buildZusammengefasstData():JSON.parse(JSON.stringify(_transformedDataOrig||transformedData));
+  renderStep3();
+}
 
 // === STEP 4 ===
 function selZone(n){
@@ -2090,7 +2120,7 @@ async function initStep5(){
     freitext:document.getElementById('fgFrei').value
   };
   // Re-transform with current fragebogen (applies montage/eigenleistung settings)
-  transformedData=transformiere(soSeKuJSON);
+  _applyTransformKeep(soSeKuJSON);
   // Skip sheet reload if prices already loaded (back-nav from step 5)
   const pricesLoaded=prices5.stoffe.length>0||prices5.anfahrtSatz>0||prices5.preislisteZeilen>0;
   if(pricesLoaded){
@@ -3211,25 +3241,7 @@ function applyPrices5(){
   modifiedArtNrsInStep5=new Set();
   const sys=(soSeKuJSON.system||'').toUpperCase();
 
-  // 5A: Segeltuch — for multi-sail each sail has its own segeltuch sektion
-  // Zusammenfassen: consolidate all segeltuch sektionen into first, merge non-sail positions by Art.-Nr.
-  if(_segelZusammenfassen&&_sailPos.length===1&&_sailPos[0]._merged){
-    const allSegSeks=transformedData.sektionen.filter(s=>s.id==='segeltuch');
-    if(allSegSeks.length>1){
-      const base=allSegSeks[0];
-      allSegSeks.slice(1).forEach(sek=>{
-        sek.positionen.filter(p=>!(p.qm_segel>0)).forEach(ep=>{
-          const ex=ep.artikelnummer?base.positionen.find(p=>p.artikelnummer&&p.artikelnummer===ep.artikelnummer):null;
-          if(ex){ex.menge=+(ex.menge+ep.menge).toFixed(4);ex.gesamt=+(ex.gesamt+ep.gesamt).toFixed(2);}
-          else base.positionen.push({...ep});
-        });
-      });
-      transformedData.sektionen=transformedData.sektionen.filter(s=>s.id!=='segeltuch'||s===base);
-      // Bei zusammengefassten Segeln: Reinigungsset immer nur 1×
-      const PFLEGESET=new Set(['00E13001325','00E13001321']);
-      base.positionen.forEach(p=>{if(PFLEGESET.has(p.artikelnummer)&&p.menge>1){p.menge=1;p.gesamt=p.preis_einheit;}});
-    }
-  }
+  // 5A: Segeltuch — transformedData already has merged sektionen if _segelZusammenfassen=true
   const segSeks=transformedData.sektionen.filter(s=>s.id==='segeltuch');
   if(segSeks.length>0){
     if(_sailPos.length===0){
@@ -3421,7 +3433,7 @@ function buildSevdeskPositions(){
   return rows;
 }
 function goToStep6(){
-  transformedData=transformiere(soSeKuJSON);
+  _applyTransformKeep(soSeKuJSON);
   applyPrices5();
   sevdeskPositions=buildSevdeskPositions();
   renderStep6();
