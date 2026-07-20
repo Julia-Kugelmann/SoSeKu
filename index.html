@@ -269,6 +269,12 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 tr.rep-auto-row td{background:rgba(255,152,0,.07)}
 tr.rep-auto-row td:last-child{color:rgba(255,152,0,.95);font-weight:700}
 tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:700;color:rgba(255,152,0,.9);background:rgba(255,152,0,.12);border:1px solid rgba(255,152,0,.3);border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.06em}
+.rep-preset-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px}
+.rep-preset-item{display:flex;flex-direction:column;align-items:center}
+.rep-preset-item .zone-item{min-width:110px;width:100%}
+.rep-qty-row{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:5px}
+.rep-qty-btn{width:26px;height:26px;border:1px solid var(--border);border-radius:7px;background:var(--surface);color:var(--text);cursor:pointer;font-size:15px;line-height:1;display:inline-flex;align-items:center;justify-content:center;padding:0}
+.rep-qty-val{font-size:13px;font-weight:700;min-width:22px;text-align:center}
 @media(hover:hover){.mc-trash:hover{border-color:#ff6b6b;background:rgba(255,107,107,.18)}}
 /* Step 6 */
 .s6-totals{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin:18px 0}
@@ -295,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 11:20 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-20 13:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -804,6 +810,14 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 
     <!-- RIGHT: two vertical blocks -->
     <div class="rep-split-r">
+
+      <!-- BLOCK 0: Reparatur-Art -->
+      <div class="rep-block" id="repPresetBlock">
+        <div class="rep-block-title">Reparatur-Art</div>
+        <div id="repPresetGrid" class="rep-preset-grid">
+          <span style="color:var(--muted);font-size:12px">Lade&hellip;</span>
+        </div>
+      </div>
 
       <!-- BLOCK 1: Montage -->
       <div class="rep-block">
@@ -1605,10 +1619,12 @@ function goToStep3(){transformedData=transformiere(soSeKuJSON);renderStep3();}
 // REPARATUR-PFAD im Import-Tool
 // ══════════════════════════════════════════════════════════════════════
 let _repMontageAn=false,_repZone=2,_repAnfahrtVoll=false;
+let _repPresetSel={};
 
 async function goToRepStep(){
   document.getElementById('stepsBar').classList.add('hidden');
   _repMontageAn=false;_repZone=2;_repAnfahrtVoll=false;_repTeam=2;_repVersandTyp='VERSAND';
+  _repPresetSel={};
   // Reset picks to defaults
   document.querySelectorAll('#repStepZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===2));
   document.getElementById('repMontageOhne').classList.add('sel');
@@ -1627,7 +1643,75 @@ async function goToRepStep(){
   if(!prices5.stundensatz){
     await loadPrices5();
   }
+  _repLoadAndRenderPresets();
   repStepCalc();
+}
+async function _repLoadAndRenderPresets(){
+  if(!rep.presetsLoaded){
+    const grid=document.getElementById('repPresetGrid');
+    if(grid)grid.innerHTML='<span style="color:var(--muted);font-size:12px">Lade…</span>';
+    try{
+      const rows=await fetchSheetTabAll('Reparatur Presets');
+      rep.presets=[];
+      rows.forEach(r=>{
+        const name=(r[0]||'').trim();
+        if(!name)return;
+        const std=parseDE(r[1])||0;
+        const termine=parseInt(r[2])||1;
+        const hatMenge=/^(1|ja|true|yes)/i.test((r[3]||'').trim());
+        rep.presets.push({name,std,termine,hatMenge});
+      });
+    }catch(e){}
+    rep.presetsLoaded=true;
+  }
+  renderRepPresets();
+}
+function renderRepPresets(){
+  const grid=document.getElementById('repPresetGrid');
+  if(!grid)return;
+  if(!rep.presets||!rep.presets.length){
+    grid.innerHTML='<span style="color:var(--muted);font-size:12px">Keine Presets konfiguriert</span>';
+    return;
+  }
+  grid.innerHTML=rep.presets.map((p,i)=>{
+    const sel=i in _repPresetSel;
+    const qty=_repPresetSel[i]||1;
+    const termLabel=p.termine>1?` · ${p.termine} Termine`:'';
+    const qtyRow=sel&&p.hatMenge?`<div class="rep-qty-row"><button class="rep-qty-btn" onclick="event.stopPropagation();repPresetQty(${i},-1)">&#8722;</button><span class="rep-qty-val">${qty}</span><button class="rep-qty-btn" onclick="event.stopPropagation();repPresetQty(${i},1)">&#43;</button></div>`:'';
+    return `<div class="rep-preset-item"><div class="zone-item${sel?' sel':''}" onclick="repStepTogglePreset(${i})"><div class="zone-num">${p.name}</div><div class="zone-time">${fmt(p.std)} Std.${termLabel}</div></div>${qtyRow}</div>`;
+  }).join('');
+}
+function repStepTogglePreset(idx){
+  if(idx in _repPresetSel)delete _repPresetSel[idx];
+  else _repPresetSel[idx]=1;
+  renderRepPresets();
+  _repSyncStundenFromPresets();
+  repStepCalc();
+}
+function repPresetQty(idx,delta){
+  _repPresetSel[idx]=Math.max(1,(_repPresetSel[idx]||1)+delta);
+  renderRepPresets();
+  _repSyncStundenFromPresets();
+  repStepCalc();
+}
+function _repSyncStundenFromPresets(){
+  const totalStd=Object.entries(_repPresetSel).reduce((s,[i,qty])=>s+(rep.presets[+i]?.std||0)*qty,0);
+  const inp=document.getElementById('repStepStunden');
+  if(inp&&totalStd>0)inp.value=totalStd;
+}
+function _repCalcPresetTermine(){
+  const keys=Object.keys(_repPresetSel);
+  if(!keys.length)return 1;
+  return Math.max(1,...keys.map(i=>rep.presets[+i]?.termine||1));
+}
+function _repPresetName(){
+  const entries=Object.entries(_repPresetSel);
+  if(!entries.length)return 'Montage inkl. Anfahrt';
+  return entries.map(([i,qty])=>{
+    const p=rep.presets[+i];
+    if(!p)return '';
+    return p.hatMenge&&qty>1?`${p.name} ×${qty}`:p.name;
+  }).filter(Boolean).join(' · ');
 }
 function renderRepStepPositions(){
   const d=soSeKuJSON;
@@ -1696,14 +1780,16 @@ function repStepCalc(){
     const teamRate=_repTeam===2?prices5.stundensatz:(prices5.stundensatz/2);
     arbeit=teamRate?Math.round(std*teamRate*100)/100:0;
     const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
-    anfahrt=calcAnfahrtPreis(_repZone,1,satz);
+    const _pTermine=_repCalcPresetTermine();
+    anfahrt=calcAnfahrtPreis(_repZone,_pTermine,satz);
     montagePreis=arbeit+anfahrt;
     // Inline preview in right column
     const vorschau=document.getElementById('repMontageVorschau');
     if(vorschau){
+      const termLabel=_pTermine>1?` · ${_pTermine} Termine`:'';
       vorschau.innerHTML=
         `<div class="rep-sum-row"><span>Arbeitszeit</span><strong>${fmt(std)} Std. &times; ${fmtE(teamRate)} = ${fmtE(arbeit)}</strong></div>`+
-        `<div class="rep-sum-row"><span>Anfahrt Zone ${_repZone}</span><strong>${fmtE(anfahrt)}</strong></div>`+
+        `<div class="rep-sum-row"><span>Anfahrt Zone ${_repZone}${termLabel}</span><strong>${fmtE(anfahrt)}</strong></div>`+
         `<div class="rep-sum-total"><span>Montage gesamt</span><strong>${fmtE(montagePreis)}</strong></div>`;
     }
   }
@@ -1713,7 +1799,8 @@ function repStepCalc(){
   if(_repMontageAn){
     const std=Math.max(0,parseFloat(document.getElementById('repStepStunden')?.value)||0);
     const mRow=document.createElement('tr');mRow.className='rep-auto-row';
-    mRow.innerHTML=`<td>–</td><td></td><td>Montage inkl. Anfahrt<span class="rep-auto-badge">auto</span><div style="font-size:10px;color:rgba(255,152,0,.7);margin-top:2px">${_repTeam===2?'2 Monteure':'1 Monteur'} · ${fmt(std)} Std. · Zone ${_repZone}</div></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(montagePreis)}</td><td class="num-r">${fmt(montagePreis)}</td>`;
+    const _mName=_repPresetName();
+    mRow.innerHTML=`<td>–</td><td></td><td>${_mName}<span class="rep-auto-badge">auto</span><div style="font-size:10px;color:rgba(255,152,0,.7);margin-top:2px">${_repTeam===2?'2 Monteure':'1 Monteur'} · ${fmt(std)} Std. · Zone ${_repZone}</div></td><td class="num-r">1,00</td><td style="color:var(--muted)">pauschal</td><td class="num-r">${fmt(montagePreis)}</td><td class="num-r">${fmt(montagePreis)}</td>`;
     tbody.appendChild(mRow);
   }
   const vRow=document.createElement('tr');vRow.className='rep-auto-row';
@@ -1722,7 +1809,7 @@ function repStepCalc(){
   const pdfNetto=Number(soSeKuJSON?.netto_gesamt||0);
   const gesamt=pdfNetto+versand+montagePreis;
   let h=`<div class="mc-posrow"><span>Positionen aus PDF (Netto)</span><strong>${fmtE(pdfNetto)}</strong></div>`;
-  if(_repMontageAn) h+=`<div class="mc-posrow" style="color:rgba(255,152,0,.9)"><span>Montage inkl. Anfahrt</span><strong>${fmtE(montagePreis)}</strong></div>`;
+  if(_repMontageAn) h+=`<div class="mc-posrow" style="color:rgba(255,152,0,.9)"><span>${_repPresetName()}</span><strong>${fmtE(montagePreis)}</strong></div>`;
   h+=`<div class="mc-posrow" style="color:rgba(255,152,0,.9)"><span>${versandName}</span><strong>${fmtE(versand)}</strong></div>`;
   h+=`<div class="mc-grandtotal"><span>Netto gesamt</span><strong>${fmtE(gesamt)}</strong></div>`;
   document.getElementById('repStepPostableBody').innerHTML=h;
@@ -1740,9 +1827,9 @@ function buildRepSevdeskPositions(){
     const teamRate=_repTeam===2?prices5.stundensatz:(prices5.stundensatz/2);
     const arbeit=teamRate?Math.round(std*teamRate*100)/100:0;
     const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
-    const anfahrt=calcAnfahrtPreis(_repZone,1,satz);
+    const anfahrt=calcAnfahrtPreis(_repZone,_repCalcPresetTermine(),satz);
     const mp=arbeit+anfahrt;
-    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
+    rows.push({type:'pos',name:_repPresetName(),beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
   }
   rows.push({type:'pos',name:vName,beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:v,gesamt:v,artikelnummer:_repVersandTyp});
   return rows;
@@ -2503,7 +2590,7 @@ function mcCalc(){
 // REPARATUR-MONTAGE KALKULATOR (Standalone-Modus, ?mode=reparatur)
 // Grobe Arbeitszeit-Schätzung statt detaillierter Stunden-Bausteine.
 // ══════════════════════════════════════════════════════════════════════
-let rep={loaded:false,stundensatz:0,anfahrtSatz:0,bausteine:[]};
+let rep={loaded:false,stundensatz:0,anfahrtSatz:0,bausteine:[],presets:[],presetsLoaded:false};
 async function initReparaturMode(){
   if(!rep.loaded){
     document.getElementById('repStatus').textContent='Lade Preisdaten...';
