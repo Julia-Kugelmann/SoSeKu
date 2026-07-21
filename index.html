@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 04:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 05:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -938,6 +938,8 @@ let importMode='segelsystem'; // 'segelsystem' | 'reparatur'
 let repStep={montageAn:false,stunden:1,team:2,zone:2,anfahrtVoll:false};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 let _segelZusammenfassen=false,_transformedDataOrig=null;
+let _aeroCleat=false,_aeroCleatViereck=null,_aeroCleatDreieck=null;
+let _aeroPreis={done:false,seilspanner:29,seil:2.7,schaekel:6.7,schnapp:6.8};
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
 
@@ -1395,6 +1397,16 @@ const NR2SEK={};
 
 function isAufrollsystem(nr){
   return/^(78V|70001B|71001B|78E|70E)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
+}
+function _hasFesteSegel(){
+  const st=(_transformedDataOrig||transformedData)?.segelTypes;
+  if(st&&Object.keys(st).length>0)return Object.values(st).some(t=>t==='fest');
+  return !(soSeKuJSON?.positionen||[]).some(p=>isAufrollsystem(p.artikelnummer||''));
+}
+function _festSegelCount(){
+  const st=(_transformedDataOrig||transformedData)?.segelTypes||{};
+  const fc=Object.values(st).filter(t=>t==='fest').length;
+  return fc||(_hasFesteSegel()?1:0);
 }
 function aufrollName(nr,sys,welleM){
   const wm=nr.match(/(\d+)$/);
@@ -1901,9 +1913,10 @@ function renderStep3(){
   // _transferred = Preis transferiert (nicht wirklich entfernt), nicht doppelt zählen
   const remSum=removedPositionen.filter(p=>!p._transferred).reduce((s,p)=>s+(p.gesamt||0),0);
   const _sumAdj=transformedData._sumAdjust||0;
-  const check=skSum+remSum+teu+_sumAdj;
+  const _aeroAdj=transformedData._aeroSumAdjust||0;
+  const check=skSum+remSum+teu+_sumAdj+_aeroAdj;
   const ok=Math.abs(check-solidayTotal)<0.02;
-  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+(_sumAdj>0?`<span class='op'>+</span><span class='lbl2'>zusammengef.</span><span class='v'>${fmtE(_sumAdj)}</span>`:'');
+  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+(_sumAdj>0?`<span class='op'>+</span><span class='lbl2'>zusammengef.</span><span class='v'>${fmtE(_sumAdj)}</span>`:'')+(_aeroAdj!==0?`<span class='op'>${_aeroAdj<0?'-':'+'}</span><span class='lbl2'>aero</span><span class='v'>${fmtE(Math.abs(_aeroAdj))}</span>`:'');
   document.getElementById('s3sum').innerHTML=
     `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div><div class='s3-big' style='color:${ok?"var(--accent2)":"var(--error)"}'>${fmtE(check)}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
   const posCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
@@ -1954,6 +1967,7 @@ function _applyTransformReset(json){
     const _sameType=_types.length===0||_types.every(t=>t===_types[0]);
     _segelZusammenfassen=_sameType&&Math.max(..._qms)-Math.min(..._qms)<=5;
   }else{_segelZusammenfassen=false;}
+  _aeroCleat=false;_aeroCleatViereck=null;_aeroCleatDreieck=null;
   if(_segelZusammenfassen)transformedData=_buildZusammengefasstData();
 }
 function _applyTransformKeep(json){
@@ -2003,47 +2017,125 @@ function _buildZusammengefasstData(){
   return {...orig,sektionen:order.map(id=>sektMap[id]),isMultiSegel:false,_sumAdjust};
 }
 
+async function _loadAeroCleatPreise(){
+  if(_aeroPreis.done)return;
+  try{
+    const rows=await fetchSheetTabAll('Aero Clamcleat - Spannsystem');
+    rows.forEach(r=>{
+      const nm=(r[0]||'').toLowerCase().replace(/\s/g,'');
+      const p=parseDE(r[1]);
+      if(!isNaN(p)&&p>0){
+        if(nm.includes('seilspanner'))_aeroPreis.seilspanner=p;
+        else if(nm.includes('dyneema'))_aeroPreis.seil=p;
+        else if(nm.includes('schnellverschluss'))_aeroPreis.schaekel=p;
+        else if(nm.includes('schnappsch'))_aeroPreis.schnapp=p;
+      }
+    });
+  }catch(e){}
+  _aeroPreis.done=true;
+  if(_aeroCleat){transformedData=_buildAeroCleatData();renderStep3();}
+  else _renderSegelToggle();
+}
+function _buildAeroCleatData(){
+  const base=JSON.parse(JSON.stringify(transformedData));
+  const viereck=_aeroCleatViereck!==null?_aeroCleatViereck:_festSegelCount();
+  const dreieck=_aeroCleatDreieck!==null?_aeroCleatDreieck:0;
+  const punkte=viereck*4+dreieck*3;
+  let removedSum=0;
+  base.sektionen.forEach(sek=>{
+    const rm=sek.positionen.filter(p=>/karabiner|spanngurt/i.test(p.name||''));
+    removedSum=+(removedSum+rm.reduce((s,p)=>s+(p.gesamt||0),0)).toFixed(2);
+    sek.positionen=sek.positionen.filter(p=>!/karabiner|spanngurt/i.test(p.name||''));
+  });
+  const pr=_aeroPreis;
+  const np=[
+    {artikelnummer:'AEROCLEAT',name:'AeroClamcleat - Seilspanner',beschreibung:'',menge:punkte,einheit:'Stk.',preis_einheit:pr.seilspanner,gesamt:+(punkte*pr.seilspanner).toFixed(2)},
+    {artikelnummer:'AEROSEIL',name:'Dyneema Seil 4mm',beschreibung:'',menge:punkte*3,einheit:'lfm',preis_einheit:pr.seil,gesamt:+(punkte*3*pr.seil).toFixed(2)},
+    {artikelnummer:'AEROSCHAEKEL',name:'Schäkel mit Schnellverschluss Edelstahl',beschreibung:'',menge:punkte,einheit:'Stk.',preis_einheit:pr.schaekel,gesamt:+(punkte*pr.schaekel).toFixed(2)},
+    {artikelnummer:'AEROSCHNAPP',name:'Schnappschäkel Edelstahl',beschreibung:'',menge:punkte,einheit:'Stk.',preis_einheit:pr.schnapp,gesamt:+(punkte*pr.schnapp).toFixed(2)},
+  ];
+  const aeroSum=+np.reduce((s,p)=>s+p.gesamt,0).toFixed(2);
+  let zub=base.sektionen.find(s=>s.id==='zubehoer');
+  if(zub)zub.positionen.push(...np);
+  else base.sektionen.push({id:'zubehoer',name:'Zubehör',positionen:np});
+  base._aeroSumAdjust=+(removedSum-aeroSum).toFixed(2);
+  base._aeroCleat=true;
+  return base;
+}
 function _renderSegelToggle(){
   const sails=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
   const el=document.getElementById('s3segelToggle');
   if(!el)return;
-  if(sails.length<=1){el.innerHTML='';return;}
-  const qms=sails.map(p=>p.qm_segel);
-  const totalQm=qms.reduce((a,b)=>a+b,0);
-  const avgQm=Math.round(totalQm/sails.length*100)/100;
-  const billQm=Math.round((avgQm+2)*100)/100;
-  const minQm=Math.min(...qms);
-  const maxQm=Math.max(...qms);
-  const range=Math.round((maxQm-minQm)*100)/100;
-  const types=Object.values((_transformedDataOrig||transformedData).segelTypes||{});
-  const sameType=types.length===0||types.every(t=>t===types[0]);
-  const canMerge=sameType&&range<=5;
-  let noMergeReason='';
-  if(!sameType){
-    const typeCounts=types.reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{});
-    noMergeReason=Object.entries(typeCounts).map(([t,n])=>`${n}× ${t}`).join(' + ')+' &rarr; Einzeln';
-  } else if(range>5){
-    noMergeReason=`${minQm.toFixed(1)}&ndash;${maxQm.toFixed(1)} m&sup2;, Diff. ${range.toFixed(1)} m&sup2; &gt; 5 m&sup2; &rarr; Einzeln`;
+  const hasMult=sails.length>1;
+  const hasFest=_hasFesteSegel();
+  if(!hasMult&&!hasFest){el.innerHTML='';return;}
+  if(hasFest&&!_aeroPreis.done)_loadAeroCleatPreise();
+  let sections='';
+  if(hasMult){
+    const qms=sails.map(p=>p.qm_segel);
+    const totalQm=qms.reduce((a,b)=>a+b,0);
+    const avgQm=Math.round(totalQm/sails.length*100)/100;
+    const billQm=Math.round((avgQm+2)*100)/100;
+    const minQm=Math.min(...qms);
+    const maxQm=Math.max(...qms);
+    const range=Math.round((maxQm-minQm)*100)/100;
+    const types=Object.values((_transformedDataOrig||transformedData).segelTypes||{});
+    const sameType=types.length===0||types.every(t=>t===types[0]);
+    const canMerge=sameType&&range<=5;
+    const segelHdr=`<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt</div>`;
+    if(!canMerge){
+      let reason='';
+      if(!sameType){const tc=types.reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{});reason=Object.entries(tc).map(([t,n])=>`${n}\xD7 ${t}`).join(' + ')+' → Einzeln';}
+      else reason=`${minQm.toFixed(1)}–${maxQm.toFixed(1)} m\xB2, Diff. ${range.toFixed(1)} m\xB2`;
+      sections+=segelHdr+`<div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:4px">${reason}</div>`;
+    }else{
+      sections+=segelHdr+`<div style="display:flex;gap:8px;margin-bottom:4px">
+        <div class="zone-item${_segelZusammenfassen?'':' sel'}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(false)"><div class="zone-num">Einzeln</div></div>
+        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
+      </div>`;
+    }
   }
-  const _box=(inner)=>`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;flex-direction:column;justify-content:space-between;height:100%;box-sizing:border-box;min-width:240px"><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">${sails.length} Segel erkannt</div>${inner}</div>`;
-  if(!canMerge){
-    el.innerHTML=_box(`<div style="font-size:11px;color:var(--muted);line-height:1.6">${noMergeReason}</div>`);
-    return;
+  if(hasFest){
+    const sep=hasMult?`<div style="border-top:1px solid var(--border);margin:10px 0 12px"></div>`:'<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Aero Clamcleat</div>';
+    const festCount=_festSegelCount();
+    const viereck=_aeroCleatViereck!==null?_aeroCleatViereck:festCount;
+    const dreieck=_aeroCleatDreieck!==null?_aeroCleatDreieck:0;
+    const punkte=viereck*4+dreieck*3;
+    const aeroBtn=_aeroCleat
+      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:8px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:12px">&#10003; Aktiv</div><div class="zone-time">Karabiner ersetzt</div></div>`
+      :`<div class="zone-item" style="cursor:pointer;margin-bottom:8px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:12px">Aero Clamcleat</div><div class="zone-time">Karabiner ersetzen</div></div>`;
+    const shapePicker=_aeroCleat?`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--muted)">Viereck</span>
+      <input id="aeroVierInput" type="number" min="0" value="${viereck}" style="width:36px;padding:2px 4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:11px;text-align:center" oninput="aeroCleatUpdateShape(this.value,document.getElementById('aeroTriInput').value)">
+      <span style="font-size:11px;color:var(--muted)">Dreieck</span>
+      <input id="aeroTriInput" type="number" min="0" value="${dreieck}" style="width:36px;padding:2px 4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:11px;text-align:center" oninput="aeroCleatUpdateShape(document.getElementById('aeroVierInput').value,this.value)">
+      <span style="font-size:11px;color:var(--accent);font-weight:600">${punkte} Pkt.</span>
+    </div>`:'';
+    if(hasMult)sections+=sep+`<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Aero Clamcleat</div>`;
+    else sections+=sep;
+    sections+=aeroBtn+shapePicker;
   }
-  el.innerHTML=_box(`<div style="display:flex;gap:8px">
-    <div class="zone-item${!_segelZusammenfassen?' sel':''}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(false)">
-      <div class="zone-num">Einzeln</div>
-    </div>
-    <div class="zone-item${_segelZusammenfassen?' sel':''}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(true)">
-      <div class="zone-num">Zusammenfassen</div>
-      <div class="zone-time">&#216; ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div>
-    </div>
-  </div>`);
+  el.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;height:100%;box-sizing:border-box;min-width:240px">${sections}</div>`;
 }
 
 function segelZusammenSet(v){
   _segelZusammenfassen=v;
   transformedData=v?_buildZusammengefasstData():JSON.parse(JSON.stringify(_transformedDataOrig||transformedData));
+  if(_aeroCleat)transformedData=_buildAeroCleatData();
+  renderStep3();
+}
+function aeroCleatSet(v){
+  _aeroCleat=v;
+  if(!v){_aeroCleatViereck=null;_aeroCleatDreieck=null;}
+  if(_segelZusammenfassen)transformedData=_buildZusammengefasstData();
+  else transformedData=JSON.parse(JSON.stringify(_transformedDataOrig));
+  if(v)transformedData=_buildAeroCleatData();
+  renderStep3();
+}
+function aeroCleatUpdateShape(vi,di){
+  _aeroCleatViereck=Math.max(0,parseInt(vi)||0);
+  _aeroCleatDreieck=Math.max(0,parseInt(di)||0);
+  transformedData=_buildAeroCleatData();
   renderStep3();
 }
 
