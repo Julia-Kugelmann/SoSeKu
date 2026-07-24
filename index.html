@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 16:55 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 17:25 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3061,7 +3061,9 @@ function repCalc(){
 }
 
 function renderStep5(){
-  const sys=(soSeKuJSON.system||'').toUpperCase();
+  let sys=(soSeKuJSON.system||'').toUpperCase();
+  // Fallback: if system not extracted, infer from data
+  if(!sys) sys=(soSeKuJSON.wellenlaenge_aufrollsystem_mm||0)>0?'SOLIDAY':'SONNENSEGEL-MASS';
   const sysLabel2=sys.startsWith('SOLIDAY-')?'Soliday '+sys.replace('SOLIDAY-',''):sys.startsWith('SONNENSEGEL')?sys.replace('SONNENSEGEL-','Sonnensegel '):sys;
   const withMontage=fragebogen.montage!==false;
   const wandartForAP=(fragebogen.wandart==='freistehend'||!fragebogen.wandart)?'ziegel-10':fragebogen.wandart;
@@ -3094,7 +3096,7 @@ function renderStep5(){
   const mkInfo=mk?.ok?`GP ${mk.grundpreis}h · SF ${mk.schraubfund}h · AP10 ${mk.ap10}h`:'Montage-Tab nicht gefunden';
   // Debug bar at bottom of screen
   const dbgBar=document.getElementById('s5debugBar');
-  if(dbgBar) dbgBar.innerHTML=`<span style="color:${sheetOk?'var(--accent2)':'var(--warn)'}">${sheetOk?'✓':'!'} Sheet</span>&ensp;${sheetOk?`${prices5.stoffe.length} Stoffe · Anfahrt: ${prices5.anfahrtSatz}€/h · ${mkInfo} · Verbinder: ${vvK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · PL: ${prices5.preislisteZeilen||0}Z · Std: ${prices5.stundensatz}€ · Dach: ${prices5.dachterrasse}€ · SF: ${prices5.schraubfundament}€`:'Preisdaten nicht geladen — Sheet ID prüfen'}`;
+  if(dbgBar) dbgBar.innerHTML=`<span style="color:${sheetOk?'var(--accent2)':'var(--warn)'}">${sheetOk?'✓':'!'} Sheet</span>&ensp;${sheetOk?`sys:${sys||"?"} · AR:${prices5.stoffe.length} · FE:${prices5.stofFeste.length} · Anfahrt: ${prices5.anfahrtSatz}€/h · ${mkInfo} · Verbinder: ${vvK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · PL: ${prices5.preislisteZeilen||0}Z · Std: ${prices5.stundensatz}€ · Dach: ${prices5.dachterrasse}€ · SF: ${prices5.schraubfundament}€`:'Preisdaten nicht geladen — Sheet ID prüfen'}`;
   let h=``;
 
   // Calc breakdown for INST card
@@ -3344,9 +3346,9 @@ function renderStep5(){
     const zoneTimeMap2={1:'bis 15 min',2:'bis 30 min',3:'bis 45 min',4:'bis 60 min',5:'bis 75 min',6:'bis 90 min'};
     const zT2=zoneTimeMap2[fragebogen.zone||2]||'';
     const tAnz2=fragebogen.termine||2;
-    const _s5TermEmpf=_calcTerminEmpfehlung(fragebogen.zone||2);
-    const _s5H=_s5TermEmpf?(selManualH!==null?selManualH:_s5TermEmpf.totalH):0;
-    const _s5AH=_s5TermEmpf?_s5TermEmpf.anfahrtH:((ZONE_MIN[fragebogen.zone||2]||0)*2/60);
+    // Use totalH2 from prices5 (already loaded) — _calcTerminEmpfehlung needs Montage sidebar open first
+    const _s5H=selManualH!==null?selManualH:totalH2;
+    const _s5AH=((ZONE_MIN[fragebogen.zone||2]||0)*2)/60;
     const _s5Empf=_s5H>0?Math.max(2,Math.ceil(_s5H/Math.max(0.1,8-_s5AH))):0;
     const _s5Warn=_s5Empf>0&&_s5Empf>tAnz2;
     const _s5Col=_s5Warn?'#ffb300':'var(--accent2)';
