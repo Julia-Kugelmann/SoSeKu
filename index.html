@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 19:21 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 19:26 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2337,25 +2337,28 @@ function genS5TermBreakdown(hwH,sailH,ah,selN,empN,col){
   let html=(warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+c+'">'+empN+' Termine</strong> &middot; '+fmt(th)+' Std.';
   if(th>0&&selN>0){
     const effH=Math.max(0.1,8-ah);
-    let remHw=hwH,remSail=sailH;
+    // Last day = ONLY sail. Remaining (selN-1) days = hardware, compressed if needed.
+    const hwDaysNeeded=hwH>0?Math.ceil(hwH/effH):0;
+    const hwSlots=Math.min(hwDaysNeeded,selN-1); // hw days actually used
+    let remHw=hwH;
     for(let d=1;d<=selN;d++){
       const isLast=d===selN;
       let wHw=0,wSail=0;
-      if(remHw>0){
-        wHw=isLast?remHw:Math.min(remHw,effH);
+      if(isLast){
+        wSail=sailH; // last day: ONLY sail
+      }else if(d<=hwSlots){
+        const hwDaysLeft=hwSlots-(d-1); // remaining hw slots incl. today
+        wHw=hwDaysLeft===1?remHw:Math.min(remHw,effH); // last hw slot: pack all
         remHw=Math.max(0,remHw-wHw);
-        if(isLast&&remSail>0){wSail=remSail;remSail=0;}
-      }else if(remSail>0){
-        wSail=isLast?remSail:Math.min(remSail,effH);
-        remSail=Math.max(0,remSail-wSail);
       }
+      // else: empty gap day (between hw and sail when selN > empN)
       const wH=wHw+wSail;
-      const dim=wH<0.05?';opacity:.35':'';
-      const dayTot=wH+ah;
-      const workStr=wHw>0&&wSail>0
-        ?fmt(wHw)+'&thinsp;Std. Hardware &plus; '+fmt(wSail)+'&thinsp;Std. Segeltuch'
-        :fmt(wH)+'&thinsp;'+(wHw>0?'Std. Hardware':'Std. Segeltuch');
-      html+='<div style="padding-left:10px;font-size:10px;font-weight:400'+dim+'">Termin '+d+': <strong>'+fmt(dayTot)+'</strong>&thinsp;Std. = '+workStr+' &plus; '+fmt(ah)+'&thinsp;Std. Anfahrt</div>';
+      const isEmpty=wH<0.05;
+      const dayTot=isEmpty?0:wH+ah;
+      const dim=isEmpty?';opacity:.35':'';
+      const workStr=isEmpty?'&ndash;':wHw>0?fmt(wHw)+'&thinsp;Std. Hardware':fmt(wSail)+'&thinsp;Std. Segeltuch';
+      const anfahrtStr=isEmpty?'':' &plus; '+fmt(ah)+'&thinsp;Std. Anfahrt';
+      html+='<div style="padding-left:10px;font-size:10px;font-weight:400'+dim+'">Termin '+d+': <strong>'+fmt(dayTot)+'</strong>&thinsp;Std. = '+workStr+anfahrtStr+'</div>';
     }
   }
   return html;
@@ -3361,7 +3364,9 @@ function renderStep5(){
     if(totalMengeWand2>0)plateParts.push(`${totalMengeWand2}x Wandplatte`);
     if(totalMengeB2>0)plateParts.push(`${totalMengeB2}x Bodenplatte`);
     const sfHdr=sfCnt2>0?`${sfCnt2}x Erdschraube`:'';
-    const hdrChips=[`${wellenM2}m Welle`,plateParts.join(' '),sfHdr].filter(Boolean).join('<br>');
+    const sailHdr=sailCount2>1?`<span style="color:#ffb300">${sailCount2}× Segel</span>`:'';
+    const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
+    const hdrChips=[welleHdr,sailHdr,plateParts.join(' '),sfHdr].filter(Boolean).join('<br>');
     h+=`<div class="s5-card">
       <div class="s5-card-hdr" style="align-items:flex-start">
         <strong>${instPos.name}</strong>
