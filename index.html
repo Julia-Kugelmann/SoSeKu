@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 12:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 13:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -928,6 +928,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=true,extractAttempts=0,maxStep=0;
+let selManualH=null;
 let _terminPreload={done:false,mk:null,stundensatz:0,apAnzahl:{},verbByWelle:{},sys:''};
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
@@ -2273,20 +2274,50 @@ function _calcTerminEmpfehlung(zone){
   const sysS={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX'}[sys]||sys.replace('SOLIDAY-','');
   const noVerb=['M','FLEX'].includes(sysS)||sys.startsWith('SONNENSEGEL');
   const verbCount=noVerb?0:(_terminPreload.verbByWelle[wellenM]||0);
-  const totalH=sailH+apH+sfCount*(mk.schraubfund||0)+verbCount*(mk.verbZuschlag||0);
+  const sfH=sfCount*(mk.schraubfund||0);
+  const verbH=verbCount*(mk.verbZuschlag||0);
+  const totalH=sailH+apH+sfH+verbH;
   const anfahrtH=((ZONE_MIN[zone||2]||0)*2)/60;
   const empfohlene=Math.max(2,Math.ceil(totalH/Math.max(0.1,8-anfahrtH)));
-  return{totalH,anfahrtH,empfohlene};
+  return{sailH,apH,sfH,verbH,totalH,anfahrtH,empfohlene};
+}
+function changeManualH(delta){
+  const res=_calcTerminEmpfehlung(selZoneNr);
+  const base=selManualH!==null?selManualH:(res?.totalH||0);
+  selManualH=Math.max(0,Math.round((base+delta)*2)/2);
+  _updateTerminEmpfehlung();
 }
 function _updateTerminEmpfehlung(){
   const el=document.getElementById('terminEmpfTxt');
-  if(!el) return;
-  if(!_terminPreload.done){el.innerHTML='<div style="font-size:11px;color:var(--muted);padding:5px 0 0 2px">&#8987; Berechnung läuft…</div>';return;}
+  if(!el)return;
+  const pmBtn='width:22px;height:22px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:14px;line-height:1;padding:0;vertical-align:middle';
+  if(!_terminPreload.done){el.innerHTML='<div style="font-size:11px;color:var(--muted);padding:5px 0 2px">&#8987; Berechnung läuft…</div>';return;}
   const res=_calcTerminEmpfehlung(selZoneNr);
-  if(!res){el.innerHTML='<div style="font-size:11px;color:var(--muted);padding:5px 0 0 2px">Mind. 2 Termine &ndash; Segeltuch wird separat montiert</div>';return;}
-  const warn=res.empfohlene>selTermine;
+  const calcH=res?.totalH||0;
+  const h=selManualH!==null?selManualH:calcH;
+  const anfahrtH=res?.anfahrtH||((ZONE_MIN[selZoneNr]||0)*2/60);
+  const empfohlene=h>0?Math.max(2,Math.ceil(h/Math.max(0.1,8-anfahrtH))):2;
+  const warn=h>0&&empfohlene>selTermine;
   const col=warn?'#ffb300':'var(--accent2)';
-  el.innerHTML=`<div style="font-size:11px;color:${col};padding:5px 0 0 2px">${warn?'&#9888; ':'&#10003; '}Empfehlung: <strong style="color:${col}">${res.empfohlene} Termine</strong> &nbsp;&middot;&nbsp; ${fmt(res.totalH)} Std. &middot; ${fmt(res.anfahrtH)} Std. Anfahrt &middot; mind. 2 (Segeltuch separat)</div>`;
+  let out='<div style="padding:5px 0 2px">';
+  if(h>0)out+=`<div style="font-size:11px;color:${col};margin-bottom:4px">${warn?'&#9888;':'&#10003;'} Empfehlung: <strong style="color:${col}">${empfohlene} Termine</strong> · ${fmt(anfahrtH)} Std. Anfahrt · mind. 2</div>`;
+  if(res&&selManualH===null){
+    const parts=[];
+    if(res.sailH)parts.push(`${fmt(res.sailH)} Std. Segel`);
+    if(res.apH)parts.push(`${fmt(res.apH)} Std. Ankerpunkte`);
+    if(res.sfH)parts.push(`${fmt(res.sfH)} Std. Fundamente`);
+    if(res.verbH)parts.push(`${fmt(res.verbH)} Std. Verbinder`);
+    if(parts.length)out+=`<div style="font-size:10px;color:var(--muted);margin-bottom:4px">${parts.join(' + ')}</div>`;
+  }
+  const isManual=selManualH!==null;
+  out+='<div style="display:flex;align-items:center;gap:6px;margin-top:2px">'+
+    '<span style="font-size:10px;color:var(--muted)">Stunden:</span>'+
+    `<button style="${pmBtn}" onclick="changeManualH(-0.5)">&#8722;</button>`+
+    `<span style="font-size:12px;font-weight:700;color:${isManual?'var(--accent)':'var(--text)'};min-width:32px;text-align:center">${fmt(h)}</span>`+
+    `<button style="${pmBtn}" onclick="changeManualH(0.5)">+</button>`+
+    (isManual?'<span style="font-size:10px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="selManualH=null;_updateTerminEmpfehlung()">&#8635; auto</span>':'')+
+    '</div></div>';
+  el.innerHTML=out;
 }
 
 // === STEP 5 ===
