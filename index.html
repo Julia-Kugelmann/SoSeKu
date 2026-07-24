@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 18:25 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 18:48 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -925,6 +925,8 @@ let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=true,extractAttempts=0,maxStep=0;
 let selManualH=null;
 let _s5CachedTotalH=0; // cached from renderStep5 for selS5Termine
+let _s5CachedSailH=0;
+let _s5CachedHardwareH=0;
 let _terminPreload={done:false,mk:null,stundensatz:0,apAnzahl:{},verbByWelle:{},sys:''};
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
@@ -2218,13 +2220,15 @@ function selS5Termine(n){
   const sp=_gsMonPos.find(p=>p.artikelnummer==='SERV-LOG');
   if(sp){const mi=_gsMonPos.indexOf(sp);const inp=document.getElementById('mP'+mi);if(inp){inp.value=useP.toFixed(2);updGv('mP'+mi);updMonSum();}}
   const te=_calcTerminEmpfehlung(z);
-  const th=selManualH!==null?selManualH:(te?te.totalH:_s5CachedTotalH);
   const ah=te?te.anfahrtH:((ZONE_MIN[z]||0)*2/60);
-  const emp=th>0?Math.max(2,Math.ceil(th/Math.max(0.1,8-ah))):0;
+  const effH5=Math.max(0.1,8-ah);
+  const hwH5=te?te.hwH:_s5CachedHardwareH;
+  const sH5=te?te.sailH:_s5CachedSailH;
+  const emp=hwH5+sH5>0?Math.max(2,Math.ceil(hwH5/effH5)+Math.ceil(sH5/effH5)):0;
   const warn=emp>0&&emp>n;
   const col=warn?'#ffb300':'var(--accent2)';
   const empEl=document.getElementById('s5termEmpf');
-  if(empEl){empEl.innerHTML=genS5TermBreakdown(th,ah,n,emp,col);empEl.style.color='#ffb300';}
+  if(empEl){empEl.innerHTML=genS5TermBreakdown(hwH5,sH5,ah,n,emp,col);empEl.style.color='#ffb300';}
   // Update mcTerminePicks in Montage Kalkulator too
   document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(n)));
 }
@@ -2312,26 +2316,31 @@ function _calcTerminEmpfehlung(zone){
   const verbCount=noVerb?0:(_terminPreload.verbByWelle[wellenM]||0);
   const sfH=sfCount*(mk.schraubfund||0);
   const verbH=verbCount*(mk.verbZuschlag||0);
-  const totalH=sailH+apH+sfH+verbH;
+  const hwH=apH+sfH+verbH;
+  const totalH=sailH+hwH;
   const anfahrtH=((ZONE_MIN[zone||2]||0)*2)/60;
-  const empfohlene=Math.max(2,Math.ceil(totalH/Math.max(0.1,8-anfahrtH)));
-  return{sailH,apH,sfH,verbH,totalH,anfahrtH,empfohlene};
+  const effH=Math.max(0.1,8-anfahrtH);
+  const empfohlene=Math.max(2,Math.ceil(hwH/effH)+Math.ceil(sailH/effH));
+  return{sailH,apH,sfH,verbH,hwH,totalH,anfahrtH,empfohlene};
 }
 // Generate per-term hour breakdown HTML for Terminempfehlung
-function genS5TermBreakdown(th,ah,selN,empN,col){
+// Hardware days first, then sail installation days
+function genS5TermBreakdown(hwH,sailH,ah,selN,empN,col){
+  const th=hwH+sailH;
   if(!empN&&!th)return'';
   const warn=empN>0&&empN>selN;
   const c='#ffb300';
   let html=(warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+c+'">'+empN+' Termine</strong> &middot; '+fmt(th)+' Std.';
   if(th>0&&selN>0){
-    const effH=Math.max(0,8-ah);
-    let rem=th;
+    const effH=Math.max(0.1,8-ah);
+    let remHw=hwH,remSail=sailH;
     for(let d=1;d<=selN;d++){
-      const wH=Math.min(rem,effH);
-      rem=Math.max(0,rem-wH);
+      let wH=0,lbl='';
+      if(remHw>0){wH=Math.min(remHw,effH);remHw=Math.max(0,remHw-wH);lbl='Std. Hardware';}
+      else if(remSail>0){wH=Math.min(remSail,effH);remSail=Math.max(0,remSail-wH);lbl='Std. Segeltuch';}
       const dim=wH<0.05?';opacity:.35':'';
       const dayTot=wH+ah;
-      html+='<div style="padding-left:10px;font-size:10px;font-weight:400'+dim+'">Termin '+d+': <strong>'+fmt(dayTot)+'</strong>&thinsp;Std. = '+fmt(wH)+'&thinsp;Std. Montage &plus; '+fmt(ah)+'&thinsp;Std. Anfahrt</div>';
+      html+='<div style="padding-left:10px;font-size:10px;font-weight:400'+dim+'">Termin '+d+': <strong>'+fmt(dayTot)+'</strong>&thinsp;Std. = '+fmt(wH)+'&thinsp;'+lbl+' &plus; '+fmt(ah)+'&thinsp;Std. Anfahrt</div>';
     }
   }
   return html;
@@ -3134,8 +3143,11 @@ function renderStep5(){
   const sysShort2=(sys||'').replace('SOLIDAY-','');
   const noVerb2=['M','FLEX'].includes(sysShort2)||sys.startsWith('SONNENSEGEL');
   const verbCnt2=noVerb2?0:(prices5.verbByWelle[wellenM2]||0);
-  const totalH2=sailH2+apH2+sfCnt2*(mk2?.schraubfund||0)+verbCnt2*(mk2?.verbZuschlag||0);
+  const hwH2=apH2+sfCnt2*(mk2?.schraubfund||0)+verbCnt2*(mk2?.verbZuschlag||0);
+  const totalH2=sailH2+hwH2;
   _s5CachedTotalH=totalH2; // cache for selS5Termine button switching
+  _s5CachedSailH=sailH2;
+  _s5CachedHardwareH=hwH2;
   const apRate2=uses18?(mk2?.ap18||0):(mk2?.ap10||0);
 
   // Separate _gsMonPos by role
@@ -3183,14 +3195,14 @@ function renderStep5(){
           <span id="sailHdrQm${si}" style="font-size:14px;font-weight:700;color:var(--accent2)">${sailQmPrefix}${qm.toFixed(2)} m&sup2;</span>
         </div>
         <div class="s5-card-body">
-          <div class="s5-irow" style="margin-bottom:10px">
+          <div class="s5-irow" style="margin-bottom:${sail._merged>1?'4px':'10px'}">
             <span class="s5-lbl">Segelgröße</span>
             <input type="number" class="s5-inp s5-w70" id="sailQm${si}" value="${qm}" step="0.01" min="0.01" oninput="updSail(${si})" style="text-align:right">
             <span class="s5-unit">m&sup2;</span>
           </div>
+          ${sail._merged>1?(()=>{const origQms=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0).map(p=>p.qm_segel);const sum=origQms.reduce((a,b)=>a+b,0);return`<div style="font-size:9px;color:var(--muted);padding:0 0 8px;line-height:1.6">${origQms.map(q=>q.toFixed(2)).join(' + ')} m² ÷ ${origQms.length} = ø ${qm.toFixed(2)} m²</div>`;})():''}
           ${soltisFiltered?`<div style="font-size:10px;color:var(--warn);margin-bottom:6px">* Soltis 92 nicht verfügbar (Segelgröße > 55 m²)</div>`:''}
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Stoff &amp; Preis/m&sup2;</div>
-          ${isFest?`<div style="display:flex;justify-content:flex-end;gap:14px;font-size:9px;color:var(--muted);margin-bottom:5px;opacity:.7"><span>&#9679; Einrechnen</span><span>&#9744; Alternativ</span></div>`:''}
           ${stoffe.map((s,fi)=>`
             <label class="s5-radio-row">
               <input type="radio" name="sail${si}st" value="${fi}" ${fi===defaultStoffIdx(sys,stoffe)?'checked':''} onchange="updSail(${si})">
@@ -3367,13 +3379,13 @@ function renderStep5(){
     const zoneTimeMap2={1:'bis 15 min',2:'bis 30 min',3:'bis 45 min',4:'bis 60 min',5:'bis 75 min',6:'bis 90 min'};
     const zT2=zoneTimeMap2[fragebogen.zone||2]||'';
     const tAnz2=fragebogen.termine||2;
-    // Use totalH2 from prices5 (already loaded) — _calcTerminEmpfehlung needs Montage sidebar open first
-    const _s5H=selManualH!==null?selManualH:totalH2;
+    // Use hwH2/sailH2 computed above — hardware days first, then sail days
     const _s5AH=((ZONE_MIN[fragebogen.zone||2]||0)*2)/60;
-    const _s5Empf=_s5H>0?Math.max(2,Math.ceil(_s5H/Math.max(0.1,8-_s5AH))):0;
+    const _s5EffH=Math.max(0.1,8-_s5AH);
+    const _s5Empf=hwH2+sailH2>0?Math.max(2,Math.ceil(hwH2/_s5EffH)+Math.ceil(sailH2/_s5EffH)):0;
     const _s5Warn=_s5Empf>0&&_s5Empf>tAnz2;
     const _s5Col=_s5Warn?'#ffb300':'var(--accent2)';
-    const _s5EmpfHtml=genS5TermBreakdown(_s5H,_s5AH,tAnz2,_s5Empf,_s5Col);
+    const _s5EmpfHtml=genS5TermBreakdown(hwH2,sailH2,_s5AH,tAnz2,_s5Empf,_s5Col);
     const _s5TBtns=[2,3,4].map(n=>'<div class="mc-pick s5-termineBtn'+(tAnz2===n?' sel':'')+'" data-v="'+n+'" onclick="selS5Termine('+n+')">'+n+' Termine</div>').join('');
     h+=`<div class="s5-card" style="margin-top:16px">
       <div class="s5-card-hdr" style="align-items:flex-start">
