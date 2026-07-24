@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 14:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 15:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2090,7 +2090,7 @@ function _renderSegelToggle(){
     const types=Object.values((_transformedDataOrig||transformedData).segelTypes||{});
     const sameType=types.length===0||types.every(t=>t===types[0]);
     const canMerge=sameType;
-    const segelHdr=`<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt</div>`;
+    const segelHdr=`<div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt</div>`;
     if(!canMerge){
       let reason='';
       if(!sameType){const tc=types.reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{});reason=Object.entries(tc).map(([t,n])=>`${n}\xD7 ${t}`).join(' + ')+' → Einzeln';}
@@ -2099,7 +2099,7 @@ function _renderSegelToggle(){
     }else{
       sections+=segelHdr+`<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">
         <div class="zone-item${_segelZusammenfassen?'':' sel'}" style="cursor:pointer" onclick="segelZusammenSet(false)"><div class="zone-num">Einzeln</div></div>
-        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
+        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time" style="color:#555">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
       </div>`;
     }
   }
@@ -2120,18 +2120,18 @@ function _renderSegelToggle(){
       </div>
     </div>`;
     const aeroBtn=_aeroCleat
-      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:11px">&#10003; Spannsystem aktiv</div><div class="zone-time">Karabiner ersetzt &mdash; deaktivieren</div></div>`
-      :`<div class="zone-item" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:11px">Spannsystem aktivieren</div><div class="zone-time">ersetzt Karabiner</div></div>`;
+      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:11px">&#10003; Aero Clamcleat Spannsystem aktiv</div><div class="zone-time" style="color:#555">Karabiner ersetzt &mdash; deaktivieren</div></div>`
+      :`<div class="zone-item" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:11px">Spannsystem aktivieren</div><div class="zone-time" style="color:#555">ersetzt Karabiner</div></div>`;
     const shapePicker=_aeroCleat?
       pmRow('Viereck',viereck,`aeroCleatUpdateShape(${viereck-1},${dreieck},null)`,`aeroCleatUpdateShape(${viereck+1},${dreieck},null)`,false)+
       pmRow('Dreieck',dreieck,`aeroCleatUpdateShape(${viereck},${dreieck-1},null)`,`aeroCleatUpdateShape(${viereck},${dreieck+1},null)`,false)+
       `<div style="border-top:1px solid var(--border);margin:6px 0 8px"></div>`+
       pmRow('Punkte',punkte,`aeroCleatUpdateShape(${viereck},${dreieck},${punkte-1})`,`aeroCleatUpdateShape(${viereck},${dreieck},${punkte+1})`,true)
       :'';
-    sections+=sep+`<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Clamcleat Seilspannsystem</div>`;
+    sections+=sep+`<div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Spannsystem</div>`;
     sections+=aeroBtn+shapePicker;
   }
-  el.innerHTML=`<div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;font-size:9px">Optionen</div>`+sections;
+  el.innerHTML=`<div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:10px;font-size:10px">Optionen</div>`+sections;
 }
 
 function segelZusammenSet(v){
@@ -2180,9 +2180,7 @@ function toggleWandaufpreis(){
 }
 function selTermineF(n){
   selTermine=n;
-  document.getElementById('t2Card').classList.toggle('sel',n===2);
-  document.getElementById('t3Card').classList.toggle('sel',n===3);
-  document.getElementById('t4Card').classList.toggle('sel',n===4);
+  ['t2Card','t3Card','t4Card'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('sel',el.id==='t'+n+'Card');});
   _updateTerminEmpfehlung();
 }
 function selAnfahrtSatz(voll){
@@ -2211,9 +2209,7 @@ function goToStep4(){
   if(transformedData&&!hasWandplatten()&&selWandart==='ziegel-10') selWandart='freistehend';
   // Sync UI to current JS state (in case state changed while away)
   document.querySelectorAll('#wandGrid .zone-item').forEach(el=>el.classList.toggle('sel',el.dataset.v===selWandart));
-  document.getElementById('t2Card').classList.toggle('sel',selTermine===2);
-  document.getElementById('t3Card').classList.toggle('sel',selTermine===3);
-  document.getElementById('t4Card').classList.toggle('sel',selTermine===4);
+  ['t2Card','t3Card','t4Card'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('sel',el.id==='t'+selTermine+'Card');});
   document.getElementById('dachCard').classList[selDach?'add':'remove']('sel');
   document.getElementById('eigenCard').classList[selEigenleistung?'add':'remove']('sel');
   document.getElementById('waufpCard').classList[selWandaufpreis?'add':'remove']('sel');
