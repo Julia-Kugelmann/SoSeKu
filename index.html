@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 23:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 00:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3831,6 +3831,16 @@ function buildSevdeskPositions(){
 function goToStep6(){
   // Start from Step 3 snapshot (clean, with AeroCleat/zusammengefasst, no prices)
   if(stepState[3])transformedData=JSON.parse(JSON.stringify(stepState[3]));
+  // Update SERV-LOG name/beschreibung with current zone and termine selections
+  const _gz=fragebogen.zone||selZoneNr||2;
+  const _gn=fragebogen.termine||selTermine||2;
+  (transformedData.sektionen||[]).forEach(sek=>{
+    const sp=(sek.positionen||[]).find(p=>p.artikelnummer==='SERV-LOG');
+    if(sp){
+      sp.name=`Service & Logistik (Zone ${_gz}${_gn>2?` – ${_gn} Termine`:''})`;
+      sp.beschreibung=_gn>2?`${_gn} Termine (Grund-, Vor- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale`:'2 Termine (Grund- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale';
+    }
+  });
   applyPrices5();
   stepState[5]=JSON.parse(JSON.stringify(transformedData));
   sevdeskPositions=buildSevdeskPositions();
