@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 03:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 03:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1461,6 +1461,7 @@ function aufrollName(nr,sys,welleM,artName){
 function assignSek(p){
   const nr=p.artikelnummer;
   if(p.qm_segel>0)return'segeltuch';
+  if(p._isFlexWelle)return'segeltuch';
   if(p._isMotorKabel)return'segelsystem';
   if(p._isAufroll)return'segelsystem';
   if(NR2SEK[nr])return NR2SEK[nr];
@@ -1508,9 +1509,15 @@ function _transformiereKern(json){
     else if(FRACHT_NR.includes(p2.artikelnummer)){if(NAMEN[p2.artikelnummer])p2.name=NAMEN[p2.artikelnummer];p2.einheit='pauschal';}
     else if(NAMEN[p2.artikelnummer]){p2.name=NAMEN[p2.artikelnummer];}
     else{
-      const an=isAufrollsystem(p2.artikelnummer)?aufrollName(p2.artikelnummer,sys,welleM,p2.name):null;
+      const _isAufr=isAufrollsystem(p2.artikelnummer);
+      // FLEX: multiple aufroll components — keep original Soliday names (don't rename to "Segelsystem")
+      const an=(_isAufr&&sys!=='SOLIDAY-FLEX')?aufrollName(p2.artikelnummer,sys,welleM,p2.name):null;
       if(an){p2.name=an;}
-      else{
+      else if(_isAufr&&sys==='SOLIDAY-FLEX'){
+        // Route Wickelwelle articles to Segeltuch (name has "welle" but not "system"/"aufroll")
+        const _fn=(p2.name||'').toLowerCase();
+        if(_fn.includes('welle')&&!_fn.includes('system')&&!_fn.includes('aufroll'))p2._isFlexWelle=true;
+      }else if(!_isAufr){
         const pn=pylonName(p2.artikelnummer);
         if(pn){p2.name=pn;}
         else{
@@ -3696,7 +3703,7 @@ function applyPrices5(){
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
         const _isFestSail=sys.startsWith('SONNENSEGEL');
-        const _upfAlt=n=>{const nl=n.toLowerCase();if(nl.includes('austrosail')||nl.includes(' pes'))return' - UPF 50+';if(nl.includes('soltis')||nl.includes('950'))return' - UPF 11-25*';if(nl.includes('960'))return' - UPF 20-50*';return'';};
+        const _upfAlt=n=>{const nl=n.toLowerCase();if(nl.includes('austrosail')||nl.includes('lotus')||nl.includes(' pes'))return' - UPF 50+';if(nl.includes('soltis')||nl.includes('950'))return' - UPF 11-25*';if(nl.includes('960'))return' - UPF 20-50*';return'';};
         const _fmtGeld=n=>Math.round(n).toLocaleString('de-DE')+',- €';
         let desc;
         if(_isFestSail){
