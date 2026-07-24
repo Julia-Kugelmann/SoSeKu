@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 20:35 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 20:40 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3623,8 +3623,7 @@ function applyPrices5(){
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
         const _isFestSail=sys.startsWith('SONNENSEGEL');
-        const _upfAlt=n=>{const nl=n.toLowerCase();if(nl.includes('austrosail')||nl.includes(' pes')||nl.includes('chillsail'))return' - UPF 50+';if(nl.includes('soltis')||nl.includes('950'))return' - UPF 11-25*';if(nl.includes('960'))return' - UPF 20-50*';return'';};
-        const _upfName=n=>{const nl=n.toLowerCase();if(nl.includes('austrosail')||nl.includes(' pes')||nl.includes('chillsail'))return' - UPF 50+';if(nl.includes('soltis')||nl.includes('950'))return' - UPF 11-25';if(nl.includes('960'))return' - UPF 20-50';return'';};
+        const _upfAlt=n=>{const nl=n.toLowerCase();if(nl.includes('austrosail')||nl.includes(' pes'))return' - UPF 50+';if(nl.includes('soltis')||nl.includes('950'))return' - UPF 11-25*';if(nl.includes('960'))return' - UPF 20-50*';return'';};
         const _fmtGeld=n=>Math.round(n).toLocaleString('de-DE')+',- €';
         let desc;
         if(_isFestSail){
@@ -3633,7 +3632,7 @@ function applyPrices5(){
             if(!document.getElementById(`sAlt${si}_${fi}`)?.checked)return null;
             return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name+_upfAlt(s.name);
           }).filter(Boolean);
-          const hasUPFStar=altLines.some(l=>l.includes('*'));
+          const hasUPFStar=_upfAlt(sn).includes('*')||altLines.some(l=>l.includes('*'));
           desc='mit eingenähtem Gurtband und D-Ringen\nSeitenkanten konkav';
           if(altLines.length>0){desc+='\nAlternativ:\n'+altLines.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';if(hasUPFStar)desc+='\n*abhängig von Farbe';}
           else desc+='\nFarbe nach Wahl aus Farbfächer des Herstellers';
@@ -3642,11 +3641,11 @@ function applyPrices5(){
             if(fi===sel)return null;
             return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name+_upfAlt(s.name);
           }).filter(Boolean);
-          const hasUPFStar2=altLines2.some(l=>l.includes('*'));
+          const hasUPFStar2=_upfAlt(sn).includes('*')||altLines2.some(l=>l.includes('*'));
           desc='Alternativ:\n'+altLines2.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
           if(hasUPFStar2)desc+='\n*abhängig von Farbe';
         }
-        const newPos={artikelnummer:'',name:`Segeltuch - ${sn}${_upfName(sn)}`,beschreibung:desc,preis_einheit:unitT,menge:multiplier,einheit:'Stk.',gesamt:totalT};
+        const newPos={artikelnummer:'',name:`Segeltuch - ${sn}${_upfAlt(sn)}`,beschreibung:desc,preis_einheit:unitT,menge:multiplier,einheit:'Stk.',gesamt:totalT};
         // For multi-sail: one segSek per sail (in order); for single-sail: one segSek gets all
         const segSek=segSeks[si]||segSeks[0];
         const nonSail=segSek.positionen.filter(pp=>!pp._gs&&!(pp.qm_segel>0));
