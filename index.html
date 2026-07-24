@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 21:40 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 22:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2260,14 +2260,17 @@ function hasWandplatten(){
     .some(sek=>sek.positionen.some(p=>WANDPLATTEN_NR.has(p.artikelnummer)));
 }
 function backToStep3(){
-  // Restore clean Step 3 state (before prices were applied in Step 5/6)
+  // Restore Step 3 state — downstream states stay valid until Step 3 actually changes
   if(stepState[3])transformedData=JSON.parse(JSON.stringify(stepState[3]));
-  delete stepState[4];delete stepState[5];
   showView('viewStep3');setStep(3);_renderSegelToggle();
 }
 function forwardToStep4(){
-  // Leaving Step 3 forward: save snapshot, clear downstream stale states
-  if(transformedData){stepState[3]=JSON.parse(JSON.stringify(transformedData));delete stepState[4];delete stepState[5];}
+  if(transformedData){
+    const prev=stepState[3]?JSON.stringify(stepState[3]):null;
+    stepState[3]=JSON.parse(JSON.stringify(transformedData));
+    // Only invalidate downstream if Step 3 content actually changed
+    if(prev!==JSON.stringify(stepState[3])){delete stepState[4];delete stepState[5];}
+  }
   goToStep4();
 }
 function goToStep4(){
@@ -2433,8 +2436,10 @@ async function initStep5(){
     anfahrtVoll:selAnfahrtVoll,
     freitext:document.getElementById('fgFrei').value
   };
+  const _prevFb=stepState[4]?JSON.stringify(stepState[4]):null;
   stepState[4]=JSON.parse(JSON.stringify(fragebogen));
-  delete stepState[5];
+  // Only invalidate Step 5 if fragebogen actually changed
+  if(_prevFb!==JSON.stringify(stepState[4])){delete stepState[5];}
   // Sync mcTerminePicks with current selTermine
   document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(selTermine)));
   // Restore Step 3 snapshot (preserves AeroCleat, zusammengefasst etc.)
