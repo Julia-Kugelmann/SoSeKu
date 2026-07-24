@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 17:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 17:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3117,7 +3117,8 @@ function renderStep5(){
       const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
       const sailNrLabel=sail._merged?` &ndash; ${sail._merged} Segel zusammengefasst`:(transformedData.isMultiSegel?` &ndash; Segel ${sail.segel_nr||si+1}`:'');
       const sailQmPrefix=sail._merged?'∅ ':'';
-    const multLabel=(sail._merged||1)>1?sail._merged+'× ':'';
+    const stkCount=sail._merged||1;
+    const stkExtra=stkCount>1?'<span id="sUnit'+si+'" style="font-size:13px;font-weight:700;color:var(--accent2)">&ndash;</span><span style="font-size:10px;color:var(--muted)">&nbsp;/Stk.&nbsp;&rarr;&nbsp;'+stkCount+'&times;&nbsp;</span>':'';
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:center">
           <strong>Segeltuch &ndash; ${sysLabel2}${sailNrLabel}</strong>
@@ -3139,7 +3140,8 @@ function renderStep5(){
               <span class="s5-unit">&euro;/m&sup2;</span>
             </label>`).join('')}
           <div class="s5-calc">
-            <span style="color:var(--muted)">${multLabel}(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
+            <span style="color:var(--muted)">(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
+            ${stkExtra}
             <strong id="sT${si}">&ndash;</strong><span id="sTraw${si}" class="s5-raw"></span>
           </div>
         </div>
