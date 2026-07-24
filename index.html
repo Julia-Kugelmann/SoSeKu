@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-21 06:35 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 11:20 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2090,9 +2090,9 @@ function _renderSegelToggle(){
       else reason=`${minQm.toFixed(1)}–${maxQm.toFixed(1)} m\xB2, Diff. ${range.toFixed(1)} m\xB2`;
       sections+=segelHdr+`<div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:4px">${reason}</div>`;
     }else{
-      sections+=segelHdr+`<div style="display:flex;gap:8px;margin-bottom:4px">
-        <div class="zone-item${_segelZusammenfassen?'':' sel'}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(false)"><div class="zone-num">Einzeln</div></div>
-        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="flex:1;cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
+      sections+=segelHdr+`<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">
+        <div class="zone-item${_segelZusammenfassen?'':' sel'}" style="cursor:pointer" onclick="segelZusammenSet(false)"><div class="zone-num">Einzeln</div></div>
+        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
       </div>`;
     }
   }
@@ -4208,7 +4208,7 @@ async function adrDoCreate(batch=false){
 }
 </script>
 <div id="s5debugBar" style="display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,24,.92);border-top:1px solid var(--border);padding:3px 14px;font-size:10px;color:var(--muted);z-index:999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none"></div>
-<div id="s3sidebar" class="hidden" style="position:fixed;right:0;top:50%;transform:translateY(-50%);width:200px;max-height:80vh;overflow-y:auto;background:rgba(13,13,24,.95);border:1px solid var(--border);border-right:none;border-radius:10px 0 0 10px;z-index:200;padding:10px 12px;box-shadow:-4px 0 20px rgba(0,0,0,.4);font-size:10px"><div id="s3segelToggle"></div></div>
+<div id="s3sidebar" class="hidden" style="position:fixed;right:0;top:50%;transform:translateY(-50%);width:220px;max-height:80vh;overflow-y:auto;background:rgba(13,13,24,.95);border:1px solid var(--border);border-right:none;border-radius:10px 0 0 10px;z-index:200;padding:10px 14px;box-shadow:-4px 0 20px rgba(0,0,0,.4);font-size:10px"><div id="s3segelToggle"></div></div>
 <div id="s6excluded" class="hidden" style="position:fixed;right:0;top:50%;transform:translateY(-50%);width:190px;max-height:70vh;overflow-y:auto;background:rgba(13,13,24,.95);border:1px solid var(--border);border-right:none;border-radius:10px 0 0 10px;z-index:200;padding:10px 12px;box-shadow:-4px 0 20px rgba(0,0,0,.4);font-size:10px"></div>
 </body>
 </html>
