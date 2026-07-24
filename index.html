@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 18:48 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 18:55 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -495,13 +495,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
             <div class="zone-item" id="waufpCard" onclick="toggleWandaufpreis()"><div class="zone-num">Wandaufpreis</div><div class="zone-time">Sonderkonfiguration</div></div>
           </div>
         </div>
-        <div class="fg-col">
-          <div class="fg-title">Anfahrt-Satz</div>
-          <div class="zone-grid">
-            <div class="zone-item" id="anfRedCard" onclick="selAnfahrtSatz(false)"><div class="zone-num">Reduziert</div><div class="zone-time">empfohlen</div></div>
-            <div class="zone-item sel" id="anfVollCard" onclick="selAnfahrtSatz(true)"><div class="zone-num">Voller Satz</div><div class="zone-time">Team-Stundensatz</div></div>
-          </div>
-        </div>
+
       </div>
     </div>
     <div style="max-width:700px;margin:32px auto 0">
@@ -2234,8 +2228,18 @@ function selS5Termine(n){
 }
 function selAnfahrtSatz(voll){
   selAnfahrtVoll=voll;
-  document.getElementById('anfRedCard').classList.toggle('sel',!voll);
-  document.getElementById('anfVollCard').classList.toggle('sel',voll);
+  fragebogen.anfahrtVoll=voll;
+  document.querySelectorAll('.s5-anfBtn').forEach(b=>b.classList.toggle('sel',parseInt(b.dataset.v)===(voll?1:0)));
+  // Recalculate Service & Logistik price
+  const z=fragebogen.zone||selZoneNr;
+  const n=fragebogen.termine||selTermine;
+  const slRed=calcAnfahrtPreis(z,n,prices5.anfahrtSatz);
+  const slFull=calcAnfahrtPreis(z,n,prices5.stundensatz);
+  const useP=voll?slFull:slRed;
+  const sp=_gsMonPos.find(p=>p.artikelnummer==='SERV-LOG');
+  if(sp){const mi=_gsMonPos.indexOf(sp);const inp=document.getElementById('mP'+mi);if(inp){inp.value=useP.toFixed(2);updGv('mP'+mi);updMonSum();}}
+  const det=document.getElementById('s5slDetail');
+  if(det)det.innerHTML='<div>'+(voll?'':'&#10003; ')+'Reduzierter Anfahrt-Satz ('+fmtE(prices5.anfahrtSatz)+'/h): '+fmtE(slRed)+'</div><div>'+(voll?'&#10003; ':'')+'Voller Team-Stundensatz ('+fmtE(prices5.stundensatz)+'/h): '+fmtE(slFull)+'</div>';
 }
 function toggleMontage(v){
   selMontage=v;
@@ -3395,9 +3399,20 @@ function renderStep5(){
       <div class="s5-card-body">
         <div class="s5-irow" style="margin-bottom:8px"><span class="s5-lbl">Termine</span><div class="mc-pick-row">${_s5TBtns}</div></div>
         <div id="s5termEmpf" style="font-size:11px;color:#ffb300;margin-bottom:8px;font-weight:500">${_s5EmpfHtml}</div>
+        <div class="s5-irow" style="margin-bottom:4px">
+          <span class="s5-lbl">Anfahrt-Satz</span>
+          <div class="mc-pick-row">
+            <div class="mc-pick s5-anfBtn${fragebogen.anfahrtVoll?'':' sel'}" data-v="0" onclick="selAnfahrtSatz(false)">Reduziert</div>
+            <div class="mc-pick s5-anfBtn${fragebogen.anfahrtVoll?' sel':''}" data-v="1" onclick="selAnfahrtSatz(true)">Voller Satz</div>
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px;padding:6px 8px;background:rgba(128,128,128,.08);border-radius:6px;line-height:1.6">
+          <strong style="color:var(--text)">Reduziert (Standard):</strong> Fahrzeit zum Anfahrt-Stundensatz (${fmtE(prices5.anfahrtSatz)}/h) &mdash; nur Fahrtkosten, kein Arbeitsausfall.<br>
+          <strong style="color:var(--text)">Voller Satz:</strong> Fahrzeit zum Team-Stundensatz (${fmtE(prices5.stundensatz)}/h) &mdash; bei besonderen Vereinbarungen.
+        </div>
         <div class="s5-calc-detail" id="s5slDetail">
-          <div>${fragebogen.anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(prices5.anfahrtSatz)}/h): ${fmtE(slRed)}</div>
-          <div>${fragebogen.anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(prices5.stundensatz)}/h): ${fmtE(slFull)}</div>
+          <div>${fragebogen.anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz: ${fmtE(slRed)}</div>
+          <div>${fragebogen.anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz: ${fmtE(slFull)}</div>
         </div>
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
           <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
