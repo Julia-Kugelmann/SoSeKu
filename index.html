@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 01:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 02:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1976,13 +1976,20 @@ function renderStep3(){
   const isMS=transformedData.isMultiSegel;
   // Header for zusammengefasst view (single merged block)
   let zusHdr='';
-  const _aufrollTyp=sys=>['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes((sys||'').toUpperCase())?'elektrisch aufrollbar':'manuell aufrollbar';
+  const _aufrollTyp=sys=>{
+    const s=(sys||'').toUpperCase();
+    if(['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(s))return 'elektrisch aufrollbar';
+    if(['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(s))return 'semi-automatisch aufrollbar';
+    if(s==='SOLIDAY-SANDY')return '';
+    return 'manuell aufrollbar';
+  };
   if(_segelZusammenfassen&&_transformedDataOrig){
     const _nSails=(_transformedDataOrig.segelNrs||[]).length||Object.keys(_transformedDataOrig.segelTypes||{}).length;
     const _rawSys=effectiveSys||soSeKuJSON.system||'SOLIDAY';
     const _sys=_rawSys.replace(/-/g,' ');
     const _typ=_aufrollTyp(_rawSys);
-    const lbl=_nSails>1?`${_sys} – ${_typ} – ${_nSails} Segel zusammengefasst`:`${_sys} – ${_typ}`;
+    const _typPart=_typ?' – '+_typ:'';
+    const lbl=_nSails>1?`${_sys}${_typPart} – ${_nSails} Segel zusammengefasst`:`${_sys}${_typPart}`;
     zusHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
   }
   let lastSegelNr=null;
@@ -1993,7 +2000,8 @@ function renderStep3(){
       lastSegelNr=sek._segelNr;
       const _rawSys=effectiveSys||soSeKuJSON.system||'SOLIDAY';
       const _sys=_rawSys.replace(/-/g,' ');
-      const lbl=`${_sys} - ${_aufrollTyp(_rawSys)} - Segel ${sek._segelNr}`;
+      const _typ=_aufrollTyp(_rawSys);
+      const lbl=_typ?`${_sys} - ${_typ} - Segel ${sek._segelNr}`:`${_sys} - Segel ${sek._segelNr}`;
       sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
     }
     return sailHdr+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sekKey,i)).join('')}`;
@@ -3842,8 +3850,9 @@ function buildSevdeskPositions(){
     segelNrs.forEach((nr,idx)=>{
       if(idx>0)addBreak();
       const _sysLbl=sysFull.replace(/-/g,' ');
-      const _aufTyp=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sysFull.toUpperCase())?'elektrisch aufrollbar':'manuell aufrollbar';
-      rows.push({type:'section',name:`${_sysLbl} - ${_aufTyp} - Segel ${nr}`});
+      const _s=sysFull.toUpperCase();
+      const _aufTyp=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':' manuell aufrollbar';
+      rows.push({type:'section',name:_aufTyp?`${_sysLbl} - ${_aufTyp} - Segel ${nr}`:`${_sysLbl} - Segel ${nr}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
         rows.push({type:'section',name:sek.name});
         sek.positionen.forEach(addPos);
