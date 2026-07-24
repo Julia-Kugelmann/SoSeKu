@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 15:35 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 16:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2204,7 +2204,7 @@ function selS5Termine(n){
   const warn=emp>0&&emp>n;
   const col=warn?'#ffb300':'var(--accent2)';
   const empEl=document.getElementById('s5termEmpf');
-  if(empEl){empEl.innerHTML=emp>0?(warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+col+'">'+emp+' Termine</strong> &middot; '+fmt(th)+' Std.':'';empEl.style.color=col;}
+  if(empEl){empEl.innerHTML=genS5TermBreakdown(th,ah,n,emp,col);empEl.style.color=col;}
   // Update mcTerminePicks in Montage Kalkulator too
   document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(n)));
 }
@@ -2296,6 +2296,24 @@ function _calcTerminEmpfehlung(zone){
   const anfahrtH=((ZONE_MIN[zone||2]||0)*2)/60;
   const empfohlene=Math.max(2,Math.ceil(totalH/Math.max(0.1,8-anfahrtH)));
   return{sailH,apH,sfH,verbH,totalH,anfahrtH,empfohlene};
+}
+// Generate per-term hour breakdown HTML for Terminempfehlung
+function genS5TermBreakdown(th,ah,selN,empN,col){
+  if(!empN&&!th)return'';
+  const warn=empN>0&&empN>selN;
+  const c=col||(warn?'#ffb300':'var(--accent2)');
+  let html=(warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+c+'">'+empN+' Termine</strong> &middot; '+fmt(th)+' Std.';
+  if(th>0&&selN>0){
+    const effH=Math.max(0,8-ah);
+    let rem=th;
+    for(let d=1;d<=selN;d++){
+      const wH=Math.min(rem,effH);
+      rem=Math.max(0,rem-wH);
+      const dim=wH<0.05?';opacity:.35':'';
+      html+='<div style="padding-left:10px;font-size:10px;font-weight:400'+dim+'">Termin '+d+': <strong>'+fmt(wH)+'</strong>&thinsp;Std. Arbeit &plus; <strong>'+fmt(ah)+'</strong>&thinsp;Std. Anfahrt</div>';
+    }
+  }
+  return html;
 }
 function changeManualH(delta){
   const res=_calcTerminEmpfehlung(selZoneNr);
@@ -2405,8 +2423,15 @@ function parseStoffeMatrixAll(rows){
 // Parse size-tier tabs (Feste Segel, Sandy): returns [{name, tierPrices:[p0,p1,...], tierLabels:[l0,...]}]
 function parseSizeTierMatrix(rows){
   if(!rows||rows.length<2)return[];
-  const labels=rows[0].slice(1).filter(l=>l.trim());
-  return rows.slice(1)
+  // Find header row: skip title rows — look for first row where A is empty and
+  // non-A cells contain size-range patterns (bis, ab, digits)
+  let hdrIdx=0;
+  for(let i=0;i<Math.min(rows.length,8);i++){
+    const nonA=rows[i].slice(1).filter(c=>(c||'').trim());
+    if(!rows[i][0]?.trim()&&nonA.length>0&&nonA.some(c=>/(bis|ab|\d)/i.test(c))){hdrIdx=i;break;}
+  }
+  const labels=rows[hdrIdx].slice(1).filter(l=>l.trim());
+  return rows.slice(hdrIdx+1)
     .filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm')
     .map(r=>({name:r[0].trim(),tierLabels:labels,tierPrices:labels.map((_,i)=>parseDE(r[i+1]))}))
     .filter(s=>s.tierPrices.some(p=>p>0));
@@ -2443,11 +2468,8 @@ function getStoffeForSys(sys,bQm,qmOrig){
     // Use raw qm (without +2 buffer) for tier category selection
     const rawQm=qmOrig!=null?qmOrig:bQm;
     const all=getTierPrices(prices5.stofFeste,rawQm);
-    // Fallback when sheet not loaded ([] is truthy so || won't work)
-    const base=all.length>0?all:DEF_STOFFE_FEST;
-    // Show only Austronet 960 (default) + Austronet 950 (alternative)
-    const filtered=base.filter(s=>{const n=s.name.toLowerCase();return n.includes('960')||n.includes('950');});
-    return filtered.length>0?filtered:base;
+    // [] is truthy so || won't work — check .length explicitly
+    return all.length>0?all:DEF_STOFFE_FEST;
   }
   const fromMap=prices5.stofBySys?.[upper];
   let m=fromMap?.length?fromMap:prices5.stoffe.length>0?prices5.stoffe:(['SOLIDAY-M','SOLIDAY-MA'].includes(upper)?DEF_STOFFE_M:DEF_STOFFE_C);
@@ -3124,6 +3146,7 @@ function renderStep5(){
       const qm=sail.qm_segel;
       const bQm=billingQm(qm);
       const stoffe=getStoffeForSys(sys,bQm,qm);
+      const isFest=sys.startsWith('SONNENSEGEL');
       const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
       const sailNrLabel=sail._merged?` &ndash; ${sail._merged} Segel zusammengefasst`:(transformedData.isMultiSegel?` &ndash; Segel ${sail.segel_nr||si+1}`:'');
       const sailQmPrefix=sail._merged?'∅ ':'';
@@ -3148,6 +3171,7 @@ function renderStep5(){
               <span class="s5-radio-name">${s.name}</span>
               <input type="number" class="s5-inp s5-w90" id="sP${si}_${fi}" value="${s.preis.toFixed(2)}" step="0.01" min="0" oninput="updSail(${si})">
               <span class="s5-unit">&euro;/m&sup2;</span>
+              ${isFest&&fi!==defaultStoffIdx(sys,stoffe)?`<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none" title="Als Alternative in Beschreibung anzeigen"><input type="checkbox" id="sAlt${si}_${fi}" ${s.name.toLowerCase().includes('950')?'checked':''} style="width:11px;height:11px;cursor:pointer">alt</label>`:''}
             </label>`).join('')}
           <div class="s5-calc">
             <span style="color:var(--muted)">(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
@@ -3324,7 +3348,7 @@ function renderStep5(){
     const _s5Empf=_s5H>0?Math.max(2,Math.ceil(_s5H/Math.max(0.1,8-_s5AH))):0;
     const _s5Warn=_s5Empf>0&&_s5Empf>tAnz2;
     const _s5Col=_s5Warn?'#ffb300':'var(--accent2)';
-    const _s5EmpfHtml=_s5Empf>0?(_s5Warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+_s5Col+'">'+_s5Empf+' Termine</strong> &middot; '+fmt(_s5H)+' Std.':'';
+    const _s5EmpfHtml=genS5TermBreakdown(_s5H,_s5AH,tAnz2,_s5Empf,_s5Col);
     const _s5TBtns=[2,3,4].map(n=>'<div class="mc-pick s5-termineBtn'+(tAnz2===n?' sel':'')+'" data-v="'+n+'" onclick="selS5Termine('+n+')">'+n+' Termine</div>').join('');
     h+=`<div class="s5-card" style="margin-top:16px">
       <div class="s5-card-hdr" style="align-items:flex-start">
@@ -3529,8 +3553,10 @@ function applyPrices5(){
         const totalT=unitT*multiplier;
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
+        const _isFestSail=sys.startsWith('SONNENSEGEL');
         const desc='Alternativ:\n'+stoffe.map((s,fi)=>{
           if(fi===sel)return null;
+          if(_isFestSail&&!document.getElementById(`sAlt${si}_${fi}`)?.checked)return null;
           const tot=Math.ceil(bQm*(allP[fi]||0))*multiplier;
           return `${fmtE(tot)} ${s.name}`;
         }).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
