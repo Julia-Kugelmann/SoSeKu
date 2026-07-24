@@ -137,7 +137,7 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .dach-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
 .fg-outer{display:flex;gap:20px;align-items:start;max-width:1100px;margin:0 auto}
 .fg-col-1{flex:0 0 170px}
-.fg-montage-opts{flex:1;display:grid;grid-template-columns:repeat(5,1fr);gap:20px;min-width:0}
+.fg-montage-opts{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;min-width:0}
 .fg-col{display:flex;flex-direction:column}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:8px 8px;text-align:center;cursor:pointer;transition:all .2s;min-height:52px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 15:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 16:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2090,7 +2090,7 @@ function _renderSegelToggle(){
     const types=Object.values((_transformedDataOrig||transformedData).segelTypes||{});
     const sameType=types.length===0||types.every(t=>t===types[0]);
     const canMerge=sameType;
-    const segelHdr=`<div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt</div>`;
+    const segelHdr=`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt</div>`;
     if(!canMerge){
       let reason='';
       if(!sameType){const tc=types.reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{});reason=Object.entries(tc).map(([t,n])=>`${n}\xD7 ${t}`).join(' + ')+' → Einzeln';}
@@ -2099,7 +2099,7 @@ function _renderSegelToggle(){
     }else{
       sections+=segelHdr+`<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">
         <div class="zone-item${_segelZusammenfassen?'':' sel'}" style="cursor:pointer" onclick="segelZusammenSet(false)"><div class="zone-num">Einzeln</div></div>
-        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time" style="color:#555">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
+        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time" style="color:#777">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
       </div>`;
     }
   }
@@ -2120,18 +2120,18 @@ function _renderSegelToggle(){
       </div>
     </div>`;
     const aeroBtn=_aeroCleat
-      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:11px">&#10003; Aero Clamcleat Spannsystem aktiv</div><div class="zone-time" style="color:#555">Karabiner ersetzt &mdash; deaktivieren</div></div>`
-      :`<div class="zone-item" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:11px">Spannsystem aktivieren</div><div class="zone-time" style="color:#555">ersetzt Karabiner</div></div>`;
+      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:11px">&#10003; Aero Clamcleat Spannsystem aktiv</div><div class="zone-time" style="color:#777">Karabiner ersetzt &mdash; deaktivieren</div></div>`
+      :`<div class="zone-item" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:11px">Spannsystem aktivieren</div><div class="zone-time" style="color:#777">ersetzt Karabiner</div></div>`;
     const shapePicker=_aeroCleat?
       pmRow('Viereck',viereck,`aeroCleatUpdateShape(${viereck-1},${dreieck},null)`,`aeroCleatUpdateShape(${viereck+1},${dreieck},null)`,false)+
       pmRow('Dreieck',dreieck,`aeroCleatUpdateShape(${viereck},${dreieck-1},null)`,`aeroCleatUpdateShape(${viereck},${dreieck+1},null)`,false)+
       `<div style="border-top:1px solid var(--border);margin:6px 0 8px"></div>`+
       pmRow('Punkte',punkte,`aeroCleatUpdateShape(${viereck},${dreieck},${punkte-1})`,`aeroCleatUpdateShape(${viereck},${dreieck},${punkte+1})`,true)
       :'';
-    sections+=sep+`<div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Spannsystem</div>`;
+    sections+=sep+`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Spannsystem</div>`;
     sections+=aeroBtn+shapePicker;
   }
-  el.innerHTML=`<div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#999;margin-bottom:10px;font-size:10px">Optionen</div>`+sections;
+  el.innerHTML=`<div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#bbb;margin-bottom:10px;font-size:11px">Optionen</div>`+sections;
 }
 
 function segelZusammenSet(v){
@@ -2253,7 +2253,7 @@ function _calcTerminEmpfehlung(zone){
   if(!mk||!mk.ok||!_terminPreload.stundensatz) return null;
   const sys=(soSeKuJSON?.system||'').toUpperCase();
   const wellenM=soSeKuJSON?.wellenlaenge_aufrollsystem_mm?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0;
-  const sailCount=Math.max(1,(transformedData?.sektionen||[]).filter(s=>s.id==='segeltuch').length||1);
+  const sailCount=Math.max(1,(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0).length);
   const sailH=mk.grundpreis+Math.max(0,sailCount-1)*(mk.weiteresSegel||0);
   const uses18=(selWandart||'').includes('18');
   let apH=0;
@@ -2621,7 +2621,7 @@ function calcInstPreis(){
     ?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0;
 
   // 1. Segel-Grundstunden
-  const sailCount=Math.max(1,(_sailPos||[]).length);
+  const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
   const sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
 
   // 2. Ankerpunkte: Wandplatten + Bodenplatten immer
@@ -3042,7 +3042,7 @@ function renderStep5(){
   // Calc breakdown for INST card
   const mk2=prices5.montKalkParsed;
   const wellenM2=soSeKuJSON.wellenlaenge_aufrollsystem_mm?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0;
-  const sailCount2=Math.max(1,_sailPos.length||1);
+  const sailCount2=Math.max(1,_sailPos.reduce((s,p)=>s+(p._merged||1),0)||1);
   const sailH2=mk2?.ok?(mk2.grundpreis+Math.max(0,sailCount2-1)*mk2.weiteresSegel):0;
   const uses18=(fragebogen.wandart||'').includes('18');
   let apH2Wand=0,apCnt2Wand=0,apH2Boden=0,apCnt2Boden=0,totalMengeWand2=0,totalMengeB2=0;
@@ -3092,6 +3092,7 @@ function renderStep5(){
       const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
       const sailNrLabel=sail._merged?` &ndash; ${sail._merged} Segel zusammengefasst`:(transformedData.isMultiSegel?` &ndash; Segel ${sail.segel_nr||si+1}`:'');
       const sailQmPrefix=sail._merged?'∅ ':'';
+    const multLabel=(sail._merged||1)>1?sail._merged+'× ':'';
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:center">
           <strong>Segeltuch &ndash; ${sysLabel2}${sailNrLabel}</strong>
@@ -3113,7 +3114,7 @@ function renderStep5(){
               <span class="s5-unit">&euro;/m&sup2;</span>
             </label>`).join('')}
           <div class="s5-calc">
-            <span style="color:var(--muted)">(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
+            <span style="color:var(--muted)">${multLabel}(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
             <strong id="sT${si}">&ndash;</strong><span id="sTraw${si}" class="s5-raw"></span>
           </div>
         </div>
@@ -3400,12 +3401,14 @@ function updMonSum(){
 }
 
 function updSail(si){
+  const sail=_sailPos[si];
+  const multiplier=sail._merged||1;
   const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
   const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
   const qmInput=document.getElementById(`sailQm${si}`);
-  const qm=qmInput?parseFloat(qmInput.value||'0')||_sailPos[si].qm_segel:_sailPos[si].qm_segel;
+  const qm=qmInput?parseFloat(qmInput.value||'0')||sail.qm_segel:sail.qm_segel;
   const bQm=billingQm(qm);
-  const t=bQm*p;
+  const t=bQm*p*multiplier;
   const d=document.getElementById(`sPd${si}`),tv=document.getElementById(`sT${si}`),tr=document.getElementById(`sTraw${si}`);
   const dDisp=document.getElementById(`sQmDisp${si}`),dEx=document.getElementById(`sQmEx${si}`);
   if(d)d.textContent=fmt(p);
@@ -3466,21 +3469,23 @@ function applyPrices5(){
       segSek.positionen=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:altDesc,preis_einheit:p,menge:1,einheit:'Stk.',gesamt:p},...nonSail];
     } else {
       _sailPos.forEach((sail,si)=>{
+        const multiplier=sail._merged||1;
         const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
         const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
         const qmInput=document.getElementById(`sailQm${si}`);
         const qm=qmInput?parseFloat(qmInput.value||'0')||sail.qm_segel:sail.qm_segel;
         const bQm=billingQm(qm);
         const stoffe=getStoffeForSys(sys,bQm,qm);
-        const t=Math.ceil(bQm*p);
+        const unitT=Math.ceil(bQm*p);
+        const totalT=unitT*multiplier;
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
         const desc='Alternativ:\n'+stoffe.map((s,fi)=>{
           if(fi===sel)return null;
-          const tot=Math.ceil(bQm*(allP[fi]||0));
+          const tot=Math.ceil(bQm*(allP[fi]||0))*multiplier;
           return `${fmtE(tot)} ${s.name}`;
         }).filter(Boolean).join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
-        const newPos={artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:t,menge:1,einheit:'Stk.',gesamt:t};
+        const newPos={artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:unitT,menge:multiplier,einheit:'Stk.',gesamt:totalT};
         // For multi-sail: one segSek per sail (in order); for single-sail: one segSek gets all
         const segSek=segSeks[si]||segSeks[0];
         const nonSail=segSek.positionen.filter(pp=>!pp._gs&&!(pp.qm_segel>0));
