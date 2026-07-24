@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 03:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 23:25 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1941,9 +1941,14 @@ function goRepToRunden(){
   sevdeskPositions=buildRepSevdeskPositions();
   goToStep7();
 }
-function toggleManualWeglass(posNr,checked){
-  if(checked) manualWeglass.delete(String(posNr));
-  else manualWeglass.add(String(posNr));
+function toggleManualWeglass(posNr,checked,artNr){
+  // In zusammengefasst mode a merged position covers multiple underlying pos entries
+  // → find ALL positions with the same artikelnummer and toggle them all
+  const allMatchingPos=artNr
+    ?(soSeKuJSON?.positionen||[]).filter(p=>p.artikelnummer===artNr).map(p=>String(p.pos))
+    :[];
+  const toToggle=allMatchingPos.length>0?allMatchingPos:[String(posNr)];
+  toToggle.forEach(n=>checked?manualWeglass.delete(n):manualWeglass.add(n));
   _applyTransformKeep(soSeKuJSON);
   // Auto-save Step 3 snapshot immediately so Montage pricing picks up the change
   const prev=stepState[3]?JSON.stringify(stepState[3]):null;
@@ -1975,7 +1980,7 @@ function renderStep3(){
   const posCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
   const manExcl=removedPositionen.filter(p=>manualWeglass.has(String(p.pos)));
   const _cb=(p)=>p.pos!=null&&!p._gs
-    ?`<input type="checkbox" checked onchange="toggleManualWeglass(${p.pos},this.checked)" style="cursor:pointer">`
+    ?`<input type="checkbox" checked onchange="toggleManualWeglass(${p.pos},this.checked,${JSON.stringify(p.artikelnummer||'')})" style="cursor:pointer">`
     :'';
   const _row=(p,sekId='',pidx=0)=>`<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''} ondragover="s3RowDragOver(event,this)" ondrop="s3RowDrop(event,'${sekId}',${pidx})">` +
     `<td>${_cb(p)}</td>` +
@@ -1987,7 +1992,7 @@ function renderStep3(){
     `<td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
   const exclRows=manExcl.length
     ?`<tr class="sek-hdr-row excl"><td colspan="7">Manuell entfernt</td></tr>`
-     +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked)" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
+     +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked,${JSON.stringify(p.artikelnummer||'')})" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
     :'';
   // Build tbody with optional sail headers for multi-sail
   const isMS=transformedData.isMultiSegel;
