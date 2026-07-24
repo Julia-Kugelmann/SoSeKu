@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 13:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 14:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -440,7 +440,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
       </div>
     </div>
   </div>
-  <div class="btn-row" style="max-width:860px;margin-left:auto;margin-right:auto;width:100%">
+  <div class="btn-row">
     <button class="btn btn-s" onclick="showView('viewStep2');setStep(2)">&larr; Zur&uuml;ck</button>
     <button class="btn btn-p" onclick="goToStep4()">Weiter &rarr; Fragebogen</button>
   </div>
@@ -484,14 +484,8 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
             <div class="zone-item" data-v="freistehend" onclick="selWand('freistehend')"><div class="zone-num">Freistehend</div><div class="zone-time">keine Wandbefestigung</div></div>
           </div>
         </div>
-        <div class="fg-col">
-          <div class="fg-title">Termine</div>
-          <div class="zone-grid">
-            <div class="zone-item sel" id="t2Card" onclick="selTermineF(2)"><div class="zone-num">2 Termine</div></div>
-            <div class="zone-item" id="t3Card" onclick="selTermineF(3)"><div class="zone-num">3 Termine</div></div>
-            <div class="zone-item" id="t4Card" onclick="selTermineF(4)"><div class="zone-num">4 Termine</div></div>
-          </div>
-          <div id="terminEmpfTxt" style="min-height:22px"></div>
+        <div class="fg-col" style="display:none" aria-hidden="true">
+          <div id="terminEmpfTxt"></div>
         </div>
         <div class="fg-col">
           <div class="fg-title">Extras</div>
@@ -517,7 +511,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
   </div>
   </div><!-- close view-scroll -->
   <div class="btn-row">
-    <button class="btn btn-s" onclick="showView('viewStep3');setStep(3)">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-s" onclick="showView('viewStep3');setStep(3);_renderSegelToggle()">&larr; Zur&uuml;ck</button>
     <button class="btn btn-p" onclick="initStep5()">Weiter &rarr; Preisberechnung</button>
   </div>
 </div>
@@ -693,8 +687,9 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
           <div class="s5-irow">
             <span class="s5-lbl">Termine</span>
             <div class="mc-pick-row" id="mcTerminePicks">
-              <div class="mc-pick sel" data-v="2" onclick="mcPick('mcTerminePicks',this)">2 Termine</div>
-              <div class="mc-pick" data-v="3" onclick="mcPick('mcTerminePicks',this)">3 Termine</div>
+              <div class="mc-pick sel" data-v="2" onclick="mcPick('mcTerminePicks',this);selTermine=2;fragebogen.termine=2">2 Termine</div>
+              <div class="mc-pick" data-v="3" onclick="mcPick('mcTerminePicks',this);selTermine=3;fragebogen.termine=3">3 Termine</div>
+              <div class="mc-pick" data-v="4" onclick="mcPick('mcTerminePicks',this);selTermine=4;fragebogen.termine=4">4 Termine</div>
             </div>
           </div>
           <div class="s5-irow">
@@ -2125,8 +2120,8 @@ function _renderSegelToggle(){
       </div>
     </div>`;
     const aeroBtn=_aeroCleat
-      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:12px">&#10003; Aktiv</div><div class="zone-time">Karabiner ersetzt</div></div>`
-      :`<div class="zone-item" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:12px">Aero Clamcleat</div><div class="zone-time">Karabiner ersetzen</div></div>`;
+      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:11px">&#10003; Spannsystem aktiv</div><div class="zone-time">Karabiner ersetzt &mdash; deaktivieren</div></div>`
+      :`<div class="zone-item" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:11px">Spannsystem aktivieren</div><div class="zone-time">ersetzt Karabiner</div></div>`;
     const shapePicker=_aeroCleat?
       pmRow('Viereck',viereck,`aeroCleatUpdateShape(${viereck-1},${dreieck},null)`,`aeroCleatUpdateShape(${viereck+1},${dreieck},null)`,false)+
       pmRow('Dreieck',dreieck,`aeroCleatUpdateShape(${viereck},${dreieck-1},null)`,`aeroCleatUpdateShape(${viereck},${dreieck+1},null)`,false)+
@@ -2337,6 +2332,8 @@ async function initStep5(){
     anfahrtVoll:selAnfahrtVoll,
     freitext:document.getElementById('fgFrei').value
   };
+  // Sync mcTerminePicks with current selTermine
+  document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(selTermine)));
   // Re-transform with current fragebogen (applies montage/eigenleistung settings)
   _applyTransformKeep(soSeKuJSON);
   // Skip sheet reload if prices already loaded (back-nav from step 5)
