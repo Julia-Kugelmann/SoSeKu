@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 01:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 01:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1976,7 +1976,7 @@ function renderStep3(){
   const isMS=transformedData.isMultiSegel;
   // Header for zusammengefasst view (single merged block)
   let zusHdr='';
-  const _aufrollTyp=sys=>['SOLIDAY-FLEX','SOLIDAY-M'].includes((sys||'').toUpperCase())?'manuell aufrollbar':'elektrisch aufrollbar';
+  const _aufrollTyp=sys=>['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes((sys||'').toUpperCase())?'elektrisch aufrollbar':'manuell aufrollbar';
   if(_segelZusammenfassen&&_transformedDataOrig){
     const _nSails=(_transformedDataOrig.segelNrs||[]).length||Object.keys(_transformedDataOrig.segelTypes||{}).length;
     const _rawSys=effectiveSys||soSeKuJSON.system||'SOLIDAY';
@@ -3842,7 +3842,7 @@ function buildSevdeskPositions(){
     segelNrs.forEach((nr,idx)=>{
       if(idx>0)addBreak();
       const _sysLbl=sysFull.replace(/-/g,' ');
-      const _aufTyp=['SOLIDAY-FLEX','SOLIDAY-M'].includes(sysFull.toUpperCase())?'manuell aufrollbar':'elektrisch aufrollbar';
+      const _aufTyp=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sysFull.toUpperCase())?'elektrisch aufrollbar':'manuell aufrollbar';
       rows.push({type:'section',name:`${_sysLbl} - ${_aufTyp} - Segel ${nr}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
         rows.push({type:'section',name:sek.name});
