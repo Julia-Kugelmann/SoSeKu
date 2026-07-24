@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 02:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 03:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1358,6 +1358,7 @@ const NAMEN={
   '00E13000059':'Seilstopp-Winsch mit Kurbel',
   '00E13000591':'Snap-Design Winsch inkl. 25cm Kurbel & Adapterplatte',
   '00E13000743':'Snap-Grundplatte mit Fallstoppklemme',
+  '00E13001905':'Backenklemme Set inkl. Grundplatte und Schrauben',
   '00E13000335':'Droppole Mast l=3m - silber eloxiert','00E13000338':'Droppole Mast l=3m - schwarz eloxiert',
   '00E13000347':'Droppole Mast l=4m - schwarz eloxiert','00E13000348':'Droppole Mast l=5m - schwarz eloxiert',
   '00E13000336':'Droppole Mast l=4m - silber eloxiert','00E13000337':'Droppole Mast l=5m - silber eloxiert',
@@ -1937,6 +1938,10 @@ function toggleManualWeglass(posNr,checked){
   if(checked) manualWeglass.delete(String(posNr));
   else manualWeglass.add(String(posNr));
   _applyTransformKeep(soSeKuJSON);
+  // Auto-save Step 3 snapshot immediately so Montage pricing picks up the change
+  const prev=stepState[3]?JSON.stringify(stepState[3]):null;
+  stepState[3]=JSON.parse(JSON.stringify(transformedData));
+  if(prev!==JSON.stringify(stepState[3]))delete stepState[5]; // prices need recalc
   renderStep3();
 }
 async function retransform(){
