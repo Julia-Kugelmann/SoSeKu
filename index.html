@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 22:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 23:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2138,7 +2138,7 @@ function _renderSegelToggle(){
       </div>
     </div>`;
     const aeroBtn=_aeroCleat
-      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:11px">&#10003; Aero Clamcleat Spannsystem aktiv</div><div class="zone-time" style="color:#777">Karabiner ersetzt &mdash; deaktivieren</div></div>`
+      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:11px">&#10003; Aero Clamcleat Spannsystem aktiv</div><div class="zone-time" style="color:#777">Karabiner ersetzt</div></div>`
       :`<div class="zone-item" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:11px">Spannsystem aktivieren</div><div class="zone-time" style="color:#777">ersetzt Karabiner</div></div>`;
     const shapePicker=_aeroCleat?
       pmRow('Viereck',viereck,`aeroCleatUpdateShape(${viereck-1},${dreieck},null)`,`aeroCleatUpdateShape(${viereck+1},${dreieck},null)`,false)+
@@ -3413,12 +3413,12 @@ function renderStep5(){
   }
   if(servPos){
     const mi=monPosIdx['SERV-LOG'];
-    const gp=gsMonPreis('SERV-LOG');
-    // Compute empfohlen first, then pre-select it as default
+    // Pre-select empfohlene Termine BEFORE computing gp (so gp uses correct termine)
     const _s5AH=((ZONE_MIN[fragebogen.zone||2]||0)*2)/60;
     const _s5EffH=Math.max(0.1,8-_s5AH);
     const _s5Empf=hwH2+sailH2>0?Math.max(2,Math.ceil(hwH2/_s5EffH)+Math.ceil(sailH2/_s5EffH)):0;
     if(_s5Empf>0){const _auto=Math.min(4,Math.max(2,_s5Empf));fragebogen.termine=_auto;selTermine=_auto;}
+    const gp=gsMonPreis('SERV-LOG');
     const slRed=calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,prices5.anfahrtSatz);
     const slFull=calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,prices5.stundensatz);
     const zoneTimeMap2={1:'bis 15 min',2:'bis 30 min',3:'bis 45 min',4:'bis 60 min',5:'bis 75 min',6:'bis 90 min'};
