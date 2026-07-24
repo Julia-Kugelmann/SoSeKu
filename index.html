@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 16:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 17:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2183,6 +2183,31 @@ function selTermineF(n){
   ['t2Card','t3Card','t4Card'].forEach(id=>{const el=document.getElementById(id);if(el)el.classList.toggle('sel',el.id==='t'+n+'Card');});
   _updateTerminEmpfehlung();
 }
+function selS5Termine(n){
+  selTermine=n;fragebogen.termine=n;
+  document.querySelectorAll('.s5-termineBtn').forEach(b=>b.classList.toggle('sel',parseInt(b.dataset.v)===n));
+  const z=fragebogen.zone||selZoneNr;
+  const slRed=calcAnfahrtPreis(z,n,prices5.anfahrtSatz);
+  const slFull=calcAnfahrtPreis(z,n,prices5.stundensatz);
+  const useP=fragebogen.anfahrtVoll!==false?slFull:slRed;
+  const zMap={1:'bis 15 min',2:'bis 30 min',3:'bis 45 min',4:'bis 60 min',5:'bis 75 min',6:'bis 90 min'};
+  const chips=document.getElementById('s5slChips');
+  if(chips)chips.innerHTML='Zone '+z+'<br>'+zMap[z]+'<br>'+n+' Termine';
+  const det=document.getElementById('s5slDetail');
+  if(det)det.innerHTML='<div>'+(fragebogen.anfahrtVoll?'':'&#10003; ')+'Reduzierter Anfahrt-Satz ('+fmtE(prices5.anfahrtSatz)+'/h): '+fmtE(slRed)+'</div><div>'+(fragebogen.anfahrtVoll?'&#10003; ':'')+'Voller Team-Stundensatz ('+fmtE(prices5.stundensatz)+'/h): '+fmtE(slFull)+'</div>';
+  const sp=_gsMonPos.find(p=>p.artikelnummer==='SERV-LOG');
+  if(sp){const mi=_gsMonPos.indexOf(sp);const inp=document.getElementById('mP'+mi);if(inp){inp.value=useP.toFixed(2);updGv('mP'+mi);updMonSum();}}
+  const te=_calcTerminEmpfehlung(z);
+  const th=te?(selManualH!==null?selManualH:te.totalH):0;
+  const ah=te?te.anfahrtH:((ZONE_MIN[z]||0)*2/60);
+  const emp=th>0?Math.max(2,Math.ceil(th/Math.max(0.1,8-ah))):0;
+  const warn=emp>0&&emp>n;
+  const col=warn?'#ffb300':'var(--accent2)';
+  const empEl=document.getElementById('s5termEmpf');
+  if(empEl)empEl.innerHTML=emp>0?(warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+col+'">'+emp+' Termine</strong> &middot; '+fmt(th)+' Std.':'';
+  // Update mcTerminePicks in Montage Kalkulator too
+  document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(n)));
+}
 function selAnfahrtSatz(voll){
   selAnfahrtVoll=voll;
   document.getElementById('anfRedCard').classList.toggle('sel',!voll);
@@ -3281,14 +3306,23 @@ function renderStep5(){
     const zoneTimeMap2={1:'bis 15 min',2:'bis 30 min',3:'bis 45 min',4:'bis 60 min',5:'bis 75 min',6:'bis 90 min'};
     const zT2=zoneTimeMap2[fragebogen.zone||2]||'';
     const tAnz2=fragebogen.termine||2;
-    const slChips=`Zone ${fragebogen.zone||2}<br>${zT2}<br>${tAnz2} Termine`;
+    const _s5TermEmpf=_calcTerminEmpfehlung(fragebogen.zone||2);
+    const _s5H=_s5TermEmpf?(selManualH!==null?selManualH:_s5TermEmpf.totalH):0;
+    const _s5AH=_s5TermEmpf?_s5TermEmpf.anfahrtH:((ZONE_MIN[fragebogen.zone||2]||0)*2/60);
+    const _s5Empf=_s5H>0?Math.max(2,Math.ceil(_s5H/Math.max(0.1,8-_s5AH))):0;
+    const _s5Warn=_s5Empf>0&&_s5Empf>tAnz2;
+    const _s5Col=_s5Warn?'#ffb300':'var(--accent2)';
+    const _s5EmpfHtml=_s5Empf>0?(_s5Warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+_s5Col+'">'+_s5Empf+' Termine</strong> &middot; '+fmt(_s5H)+' Std.':'';
+    const _s5TBtns=[2,3,4].map(n=>'<div class="mc-pick s5-termineBtn'+(tAnz2===n?' sel':'')+'" data-v="'+n+'" onclick="selS5Termine('+n+')">'+n+'</div>').join('');
     h+=`<div class="s5-card" style="margin-top:16px">
       <div class="s5-card-hdr" style="align-items:flex-start">
         <strong>Service &amp; Logistik</strong>
-        <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${slChips}</span>
+        <span id="s5slChips" style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">Zone ${fragebogen.zone||2}<br>${zT2}<br>${tAnz2} Termine</span>
       </div>
       <div class="s5-card-body">
-        <div class="s5-calc-detail">
+        <div class="s5-irow" style="margin-bottom:8px"><span class="s5-lbl">Termine</span><div class="mc-pick-row">${_s5TBtns}</div></div>
+        <div id="s5termEmpf" style="font-size:11px;color:var(--muted);margin-bottom:8px">${_s5EmpfHtml}</div>
+        <div class="s5-calc-detail" id="s5slDetail">
           <div>${fragebogen.anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(prices5.anfahrtSatz)}/h): ${fmtE(slRed)}</div>
           <div>${fragebogen.anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(prices5.stundensatz)}/h): ${fmtE(slFull)}</div>
         </div>
@@ -3408,14 +3442,17 @@ function updSail(si){
   const qmInput=document.getElementById(`sailQm${si}`);
   const qm=qmInput?parseFloat(qmInput.value||'0')||sail.qm_segel:sail.qm_segel;
   const bQm=billingQm(qm);
-  const t=bQm*p*multiplier;
+  const unitT=bQm*p;
+  const totalT=unitT*multiplier;
   const d=document.getElementById(`sPd${si}`),tv=document.getElementById(`sT${si}`),tr=document.getElementById(`sTraw${si}`);
   const dDisp=document.getElementById(`sQmDisp${si}`),dEx=document.getElementById(`sQmEx${si}`);
   if(d)d.textContent=fmt(p);
   if(dDisp)dDisp.textContent=qm.toFixed(2);
   if(dEx)dEx.textContent=qmExtra(qm);
-  if(tv)tv.textContent=fmtE(Math.ceil(t));
-  if(tr)tr.textContent=Math.ceil(t)!==Math.round(t*100)/100?`(${fmt(t)})` : '';
+  const unitEl=document.getElementById(`sUnit${si}`);
+  if(unitEl)unitEl.textContent=fmtE(Math.ceil(unitT));
+  if(tv)tv.textContent=fmtE(Math.ceil(totalT));
+  if(tr)tr.textContent=Math.ceil(totalT)!==Math.round(totalT*100)/100?`(${fmt(totalT)})` : '';
   const hdrQm=document.getElementById(`sailHdrQm${si}`);
   if(hdrQm)hdrQm.textContent=`${qm.toFixed(2)} m²`;
 }
