@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 17:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 15:08 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2204,7 +2204,7 @@ function selS5Termine(n){
   const warn=emp>0&&emp>n;
   const col=warn?'#ffb300':'var(--accent2)';
   const empEl=document.getElementById('s5termEmpf');
-  if(empEl)empEl.innerHTML=emp>0?(warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+col+'">'+emp+' Termine</strong> &middot; '+fmt(th)+' Std.':'';
+  if(empEl){empEl.innerHTML=emp>0?(warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+col+'">'+emp+' Termine</strong> &middot; '+fmt(th)+' Std.':'';empEl.style.color=col;}
   // Update mcTerminePicks in Montage Kalkulator too
   document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(n)));
 }
@@ -3315,7 +3315,7 @@ function renderStep5(){
     const _s5Warn=_s5Empf>0&&_s5Empf>tAnz2;
     const _s5Col=_s5Warn?'#ffb300':'var(--accent2)';
     const _s5EmpfHtml=_s5Empf>0?(_s5Warn?'&#9888; ':'&#10003; ')+'Empfehlung: <strong style="color:'+_s5Col+'">'+_s5Empf+' Termine</strong> &middot; '+fmt(_s5H)+' Std.':'';
-    const _s5TBtns=[2,3,4].map(n=>'<div class="mc-pick s5-termineBtn'+(tAnz2===n?' sel':'')+'" data-v="'+n+'" onclick="selS5Termine('+n+')">'+n+'</div>').join('');
+    const _s5TBtns=[2,3,4].map(n=>'<div class="mc-pick s5-termineBtn'+(tAnz2===n?' sel':'')+'" data-v="'+n+'" onclick="selS5Termine('+n+')">'+n+' Termine</div>').join('');
     h+=`<div class="s5-card" style="margin-top:16px">
       <div class="s5-card-hdr" style="align-items:flex-start">
         <strong>Service &amp; Logistik</strong>
@@ -3323,7 +3323,7 @@ function renderStep5(){
       </div>
       <div class="s5-card-body">
         <div class="s5-irow" style="margin-bottom:8px"><span class="s5-lbl">Termine</span><div class="mc-pick-row">${_s5TBtns}</div></div>
-        <div id="s5termEmpf" style="font-size:11px;color:var(--muted);margin-bottom:8px">${_s5EmpfHtml}</div>
+        <div id="s5termEmpf" style="font-size:11px;color:${_s5Col||'var(--accent2)'};margin-bottom:8px;font-weight:500">${_s5EmpfHtml}</div>
         <div class="s5-calc-detail" id="s5slDetail">
           <div>${fragebogen.anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(prices5.anfahrtSatz)}/h): ${fmtE(slRed)}</div>
           <div>${fragebogen.anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(prices5.stundensatz)}/h): ${fmtE(slFull)}</div>
