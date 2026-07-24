@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 11:20 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 11:50 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -935,7 +935,7 @@ let importMode='segelsystem'; // 'segelsystem' | 'reparatur'
 let repStep={montageAn:false,stunden:1,team:2,zone:2,anfahrtVoll:false};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 let _segelZusammenfassen=false,_transformedDataOrig=null;
-let _aeroCleat=false,_aeroCleatViereck=null,_aeroCleatDreieck=null;
+let _aeroCleat=false,_aeroCleatViereck=null,_aeroCleatDreieck=null,_aeroCleatPunkte=null;
 let _aeroPreis={done:false,seilspanner:29,seil:2.7,schaekel:6.7,schnapp:6.8};
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
@@ -1123,6 +1123,7 @@ Wichtig:
 - Artikelnummer exakt aus der Positionszeile extrahieren
 - "soliday_sektion": Abschnittstitel unter dem die Position steht
 - "qm_segel": Segelflaeche in qm wenn Segeltuch, sonst null
+- "segelform": "viereck" oder "dreieck" wenn qm_segel nicht null (aus Beschreibung/Bezeichnung, aufrollbare Segel immer "viereck"), sonst null
 - "wellenlaenge_aufrollsystem_mm": Wellenlaenge in mm, null wenn nicht angegeben
 - "system": "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA" oder ""
 - "kommission": Wert aus Feld Kommission ohne Klammerzusaetze
@@ -1130,7 +1131,7 @@ Wichtig:
 
 Format:
 {"kommission":"string","datum":"string","system":"string","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,
-"positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null,"segel_nr":1}],
+"positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null,"segelform":"viereck"/"dreieck"/null,"segel_nr":1}],
 "teuerungszuschlag_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
 
 // === CLAUDE API ===
@@ -1966,7 +1967,7 @@ function _applyTransformReset(json){
     const _sameType=_types.length===0||_types.every(t=>t===_types[0]);
     _segelZusammenfassen=_sameType&&Math.max(..._qms)-Math.min(..._qms)<=5;
   }else{_segelZusammenfassen=false;}
-  _aeroCleat=false;_aeroCleatViereck=null;_aeroCleatDreieck=null;
+  _aeroCleat=false;_aeroCleatViereck=null;_aeroCleatDreieck=null;_aeroCleatPunkte=null;
   if(_segelZusammenfassen)transformedData=_buildZusammengefasstData();
 }
 function _applyTransformKeep(json){
@@ -2035,11 +2036,21 @@ async function _loadAeroCleatPreise(){
   if(_aeroCleat){transformedData=_buildAeroCleatData();renderStep3();}
   else _renderSegelToggle();
 }
+function _aeroSegelFormDefaults(){
+  const sails=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
+  const st=((_transformedDataOrig||transformedData)?.segelTypes)||{};
+  const festSails=sails.filter(p=>st[String(p.segel_nr||1)]==='fest');
+  if(festSails.length===0)return{viereck:_festSegelCount(),dreieck:0};
+  const d=festSails.filter(p=>p.segelform==='dreieck').length;
+  return{viereck:festSails.length-d,dreieck:d};
+}
 function _buildAeroCleatData(){
   const base=JSON.parse(JSON.stringify(transformedData));
-  const viereck=_aeroCleatViereck!==null?_aeroCleatViereck:_festSegelCount();
-  const dreieck=_aeroCleatDreieck!==null?_aeroCleatDreieck:0;
-  const punkte=viereck*4+dreieck*3;
+  const def=_aeroSegelFormDefaults();
+  const viereck=_aeroCleatViereck!==null?_aeroCleatViereck:def.viereck;
+  const dreieck=_aeroCleatDreieck!==null?_aeroCleatDreieck:def.dreieck;
+  const calcPunkte=viereck*4+dreieck*3;
+  const punkte=_aeroCleatPunkte!==null?_aeroCleatPunkte:calcPunkte;
   let removedSum=0;
   base.sektionen.forEach(sek=>{
     const rm=sek.positionen.filter(p=>/karabiner|spanngurt/i.test(p.name||''));
@@ -2097,23 +2108,31 @@ function _renderSegelToggle(){
     }
   }
   if(hasFest){
-    const sep=hasMult?`<div style="border-top:1px solid var(--border);margin:10px 0 12px"></div>`:'<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Aero Clamcleat</div>';
-    const festCount=_festSegelCount();
-    const viereck=_aeroCleatViereck!==null?_aeroCleatViereck:festCount;
-    const dreieck=_aeroCleatDreieck!==null?_aeroCleatDreieck:0;
-    const punkte=viereck*4+dreieck*3;
+    const sep=hasMult?`<div style="border-top:1px solid var(--border);margin:10px 0 12px"></div>`:'';
+    const def=_aeroSegelFormDefaults();
+    const viereck=_aeroCleatViereck!==null?_aeroCleatViereck:def.viereck;
+    const dreieck=_aeroCleatDreieck!==null?_aeroCleatDreieck:def.dreieck;
+    const calcPunkte=viereck*4+dreieck*3;
+    const punkte=_aeroCleatPunkte!==null?_aeroCleatPunkte:calcPunkte;
+    const pmBtnStyle='width:22px;height:22px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:14px;line-height:1;padding:0;flex-shrink:0';
+    const pmRow=(lbl,val,onMinus,onPlus,accent)=>`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:11px;color:${accent?'var(--accent)':'var(--muted)'};font-weight:${accent?'700':'400'}">${lbl}</span>
+      <div style="display:flex;align-items:center;gap:5px">
+        <button style="${pmBtnStyle}" onclick="${onMinus}">−</button>
+        <span style="font-size:12px;font-weight:700;color:${accent?'var(--accent)':'var(--text)'};min-width:20px;text-align:center">${val}</span>
+        <button style="${pmBtnStyle}" onclick="${onPlus}">+</button>
+      </div>
+    </div>`;
     const aeroBtn=_aeroCleat
-      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:8px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:12px">&#10003; Aktiv</div><div class="zone-time">Karabiner ersetzt</div></div>`
-      :`<div class="zone-item" style="cursor:pointer;margin-bottom:8px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:12px">Aero Clamcleat</div><div class="zone-time">Karabiner ersetzen</div></div>`;
-    const shapePicker=_aeroCleat?`<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-      <span style="font-size:11px;color:var(--muted)">Viereck</span>
-      <input id="aeroVierInput" type="number" min="0" value="${viereck}" style="width:36px;padding:2px 4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:11px;text-align:center" oninput="aeroCleatUpdateShape(this.value,document.getElementById('aeroTriInput').value)">
-      <span style="font-size:11px;color:var(--muted)">Dreieck</span>
-      <input id="aeroTriInput" type="number" min="0" value="${dreieck}" style="width:36px;padding:2px 4px;background:var(--bg);border:1px solid var(--border);color:var(--text);border-radius:4px;font-size:11px;text-align:center" oninput="aeroCleatUpdateShape(document.getElementById('aeroVierInput').value,this.value)">
-      <span style="font-size:11px;color:var(--accent);font-weight:600">${punkte} Pkt.</span>
-    </div>`:'';
-    if(hasMult)sections+=sep+`<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Aero Clamcleat</div>`;
-    else sections+=sep;
+      ?`<div class="zone-item sel" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(false)"><div class="zone-num" style="font-size:12px">&#10003; Aktiv</div><div class="zone-time">Karabiner ersetzt</div></div>`
+      :`<div class="zone-item" style="cursor:pointer;margin-bottom:10px" onclick="aeroCleatSet(true)"><div class="zone-num" style="font-size:12px">Aero Clamcleat</div><div class="zone-time">Karabiner ersetzen</div></div>`;
+    const shapePicker=_aeroCleat?
+      pmRow('Viereck',viereck,`aeroCleatUpdateShape(${viereck-1},${dreieck},null)`,`aeroCleatUpdateShape(${viereck+1},${dreieck},null)`,false)+
+      pmRow('Dreieck',dreieck,`aeroCleatUpdateShape(${viereck},${dreieck-1},null)`,`aeroCleatUpdateShape(${viereck},${dreieck+1},null)`,false)+
+      `<div style="border-top:1px solid var(--border);margin:6px 0 8px"></div>`+
+      pmRow('Punkte',punkte,`aeroCleatUpdateShape(${viereck},${dreieck},${punkte-1})`,`aeroCleatUpdateShape(${viereck},${dreieck},${punkte+1})`,true)
+      :'';
+    sections+=sep+`<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Aero Clamcleat</div>`;
     sections+=aeroBtn+shapePicker;
   }
   el.innerHTML=`<div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;font-size:9px">Optionen</div>`+sections;
@@ -2127,15 +2146,16 @@ function segelZusammenSet(v){
 }
 function aeroCleatSet(v){
   _aeroCleat=v;
-  if(!v){_aeroCleatViereck=null;_aeroCleatDreieck=null;}
+  if(!v){_aeroCleatViereck=null;_aeroCleatDreieck=null;_aeroCleatPunkte=null;}
   if(_segelZusammenfassen)transformedData=_buildZusammengefasstData();
   else transformedData=JSON.parse(JSON.stringify(_transformedDataOrig));
   if(v)transformedData=_buildAeroCleatData();
   renderStep3();
 }
-function aeroCleatUpdateShape(vi,di){
+function aeroCleatUpdateShape(vi,di,pi){
   _aeroCleatViereck=Math.max(0,parseInt(vi)||0);
   _aeroCleatDreieck=Math.max(0,parseInt(di)||0);
+  _aeroCleatPunkte=(pi!==null&&pi!==undefined)?Math.max(0,parseInt(pi)||0):null;
   transformedData=_buildAeroCleatData();
   renderStep3();
 }
