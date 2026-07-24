@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 23:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 23:34 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2405,12 +2405,11 @@ function _calcTerminEmpfehlung(zone){
   const totalH=sailH+hwH;
   const anfahrtH=((ZONE_MIN[zone||2]||0)*2)/60;
   const effH=Math.max(0.1,8-anfahrtH);
-  // For aufrollbare systems the final appointment is always exactly 1 day (1.5h/sail).
-  // Hardware time fills the other appointments. Feste Segel use standard ceil formula.
-  const isAufroll=!sys.startsWith('SONNENSEGEL');
-  const sailTermine=isAufroll?1:Math.ceil(sailH/effH);
-  const empfohlene=Math.max(2,Math.ceil(hwH/effH)+sailTermine);
-  return{sailH,apH,sfH,verbH,hwH,totalH,anfahrtH,empfohlene,isAufroll};
+  // The final appointment is always exactly 1 day for all systems:
+  // aufrollbar 1.5h/sail, feste Segel 0.5h/sail — both fit in one day.
+  // Hardware time (Ankerpunkte, Fundamente, Verbinder) fills the other appointments.
+  const empfohlene=Math.max(2,Math.ceil(hwH/effH)+1);
+  return{sailH,apH,sfH,verbH,hwH,totalH,anfahrtH,empfohlene};
 }
 // Generate per-term hour breakdown HTML for Terminempfehlung
 // Hardware days first, then sail installation days
@@ -3487,9 +3486,7 @@ function renderStep5(){
     // Pre-select empfohlene Termine BEFORE computing gp (so gp uses correct termine)
     const _s5AH=((ZONE_MIN[fragebogen.zone||2]||0)*2)/60;
     const _s5EffH=Math.max(0.1,8-_s5AH);
-    const _s5IsAufroll=!(soSeKuJSON?.system||'').toUpperCase().startsWith('SONNENSEGEL');
-    const _s5SailTermine=_s5IsAufroll?1:Math.ceil(sailH2/_s5EffH);
-    const _s5Empf=hwH2+sailH2>0?Math.max(2,Math.ceil(hwH2/_s5EffH)+_s5SailTermine):0;
+    const _s5Empf=hwH2+sailH2>0?Math.max(2,Math.ceil(hwH2/_s5EffH)+1):0;
     if(_s5Empf>0){const _auto=Math.min(4,Math.max(2,_s5Empf));fragebogen.termine=_auto;selTermine=_auto;}
     const gp=gsMonPreis('SERV-LOG');
     const slRed=calcAnfahrtPreis(fragebogen.zone||2,fragebogen.termine||2,prices5.anfahrtSatz);
@@ -3716,29 +3713,25 @@ function applyPrices5(){
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
         const _isFestSail=sys.startsWith('SONNENSEGEL');
-        const _upfAlt=n=>{const nl=n.toLowerCase();if(nl.includes('austrosail')||nl.includes('lotus')||nl.includes(' pes'))return' - UPF 50+';if(nl.includes('soltis')||nl.includes('950'))return' - UPF 11-25*';if(nl.includes('960'))return' - UPF 20-50*';return'';};
         const _fmtGeld=n=>Math.round(n).toLocaleString('de-DE')+',- €';
         let desc;
         if(_isFestSail){
           const altLines=stoffe.map((s,fi)=>{
             if(fi===sel)return null;
             if(!document.getElementById(`sAlt${si}_${fi}`)?.checked)return null;
-            return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name+_upfAlt(s.name);
+            return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name;
           }).filter(Boolean);
-          const hasUPFStar=_upfAlt(sn).includes('*')||altLines.some(l=>l.includes('*'));
           desc='mit eingenähtem Gurtband und D-Ringen\nSeitenkanten konkav';
-          if(altLines.length>0){desc+='\nAlternativ:\n'+altLines.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';if(hasUPFStar)desc+='\n*abhängig von Farbe';}
+          if(altLines.length>0){desc+='\nAlternativ:\n'+altLines.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';}
           else desc+='\nFarbe nach Wahl aus Farbfächer des Herstellers';
         }else{
           const altLines2=stoffe.map((s,fi)=>{
             if(fi===sel)return null;
-            return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name+_upfAlt(s.name);
+            return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name;
           }).filter(Boolean);
-          const hasUPFStar2=_upfAlt(sn).includes('*')||altLines2.some(l=>l.includes('*'));
           desc='Alternativ:\n'+altLines2.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
-          if(hasUPFStar2)desc+='\n*abhängig von Farbe';
         }
-        const newPos={artikelnummer:'',name:`Segeltuch - ${sn}${_upfAlt(sn)}`,beschreibung:desc,preis_einheit:unitT,menge:multiplier,einheit:'Stk.',gesamt:totalT};
+        const newPos={artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:unitT,menge:multiplier,einheit:'Stk.',gesamt:totalT};
         // For multi-sail: one segSek per sail (in order); for single-sail: one segSek gets all
         const segSek=segSeks[si]||segSeks[0];
         const nonSail=segSek.positionen.filter(pp=>!pp._gs&&!(pp.qm_segel>0));
