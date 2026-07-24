@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 12:05 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 12:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1123,7 +1123,7 @@ Wichtig:
 - Artikelnummer exakt aus der Positionszeile extrahieren
 - "soliday_sektion": Abschnittstitel unter dem die Position steht
 - "qm_segel": Segelflaeche in qm wenn Segeltuch, sonst null
-- "segelform": nur bei Positionen mit qm_segel nicht null: "dreieck" wenn es ein dreieckiges Segel nach Mass ist, sonst immer "viereck" (aufrollbare Systeme sind immer "viereck"); bei allen anderen Positionen null
+- "segelform": nur bei festen Segeln nach Mass (nicht aufrollbare Systeme): "viereck" oder "dreieck" je nach Form; bei aufrollbaren Segeln und allen anderen Positionen immer null
 - "wellenlaenge_aufrollsystem_mm": Wellenlaenge in mm, null wenn nicht angegeben
 - "system": "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA" oder ""
 - "kommission": Wert aus Feld Kommission ohne Klammerzusaetze
