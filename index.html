@@ -137,8 +137,8 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .dach-grid{display:grid;grid-template-columns:repeat(2,140px);gap:8px;width:fit-content;margin:0 auto}
 .fg-outer{display:flex;gap:20px;align-items:start;width:fit-content;margin:0 auto}
 .fg-col-1{flex:0 0 170px}
-.fg-montage-opts{flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:20px;min-width:0}
-.fg-col{display:flex;flex-direction:column}
+.fg-montage-opts{display:flex;gap:20px}
+.fg-col{display:flex;flex-direction:column;min-width:155px}
 .zone-item{background:var(--surface);border:2px solid var(--border);border-radius:10px;padding:8px 8px;text-align:center;cursor:pointer;transition:all .2s;min-height:52px;display:flex;flex-direction:column;justify-content:center;align-items:center}
 .zone-item.sel{border-color:var(--accent);background:rgba(91,141,238,.08)}
 @media(hover:hover){.zone-item:hover{border-color:var(--accent);background:rgba(91,141,238,.08)}}
@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 20:40 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 21:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3810,6 +3810,7 @@ function buildSevdeskPositions(){
 }
 function goToStep6(){
   _applyTransformKeep(soSeKuJSON);
+  if(_aeroCleat)transformedData=_buildAeroCleatData();
   applyPrices5();
   sevdeskPositions=buildSevdeskPositions();
   renderStep6();
