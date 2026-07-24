@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 00:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 01:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1161,18 +1161,38 @@ function normalizeExtractedSystem(json){
   if(!json) return json;
   const s=(json.system||'').trim();
   const su=s.toUpperCase();
-  // Already a recognized system — leave untouched
   const KNOWN=['SOLIDAY-','SONNENSEGEL','RAFF-M'];
-  if(KNOWN.some(p=>su.startsWith(p))) return json;
-  // Normalize free-text variants Claude might produce
-  if(su.includes('SONNENSEGEL')||su.includes('FIX SEGEL')||su.includes('FIX-SEGEL')||su.includes('FESTES SEGEL')||su.includes('SONNENSEGEL-MASS')){
-    json.system=su.includes('SNAP')?'SONNENSEGEL-MAß-SNAP':'SONNENSEGEL-MAß';
-    return json;
+  if(!KNOWN.some(p=>su.startsWith(p))){
+    // Normalize free-text variants Claude might produce
+    if(su.includes('SONNENSEGEL')||su.includes('FIX SEGEL')||su.includes('FIX-SEGEL')||su.includes('FESTES SEGEL')||su.includes('SONNENSEGEL-MASS')){
+      json.system=su.includes('SNAP')?'SONNENSEGEL-MAß-SNAP':'SONNENSEGEL-MAß';
+      return json;
+    }
+    // Infer from positions: no aufroll article + no wave length → feste Segel
+    const hasAufroll=(json.positionen||[]).some(p=>/^(78V|79V|70001B|71001B|78E|70E)/.test((p.artikelnummer||'').toUpperCase()));
+    if(!hasAufroll&&!(json.wellenlaenge_aufrollsystem_mm>0)){
+      json.system='SONNENSEGEL-MAß';
+      return json;
+    }
   }
-  // Infer from positions: no aufroll article + no wave length → feste Segel
-  const hasAufroll=(json.positionen||[]).some(p=>isAufrollsystem(p.artikelnummer||''));
-  if(!hasAufroll&&!(json.wellenlaenge_aufrollsystem_mm>0)){
-    json.system='SONNENSEGEL-MAß';
+  // Cross-check: detect system from Aufrollsystem article name to auto-correct misidentification
+  const _isAufrollNr=nr=>/^(78V|79V|70001B|71001B|78E|70E)/.test((nr||'').toUpperCase());
+  for(const p of (json.positionen||[])){
+    if(!_isAufrollNr(p.artikelnummer||''))continue;
+    const nm=(p.name||'').toUpperCase();
+    const nr=(p.artikelnummer||'').toUpperCase();
+    let det=null;
+    if(/\bFLEX\b/.test(nm)||/^79V/.test(nr))det='SOLIDAY-FLEX';
+    else if(/CS.*TWIN/i.test(nm))det='SOLIDAY-CS-TWIN';
+    else if(/CS.*(DREI|3ECK)/i.test(nm))det='SOLIDAY-CS-DREIECK';
+    else if(/\bONE\b/.test(nm))det='SOLIDAY-ONE';
+    else if(/\bXS\b/.test(nm))det='SOLIDAY-XS';
+    else if(/\bX\b/.test(nm)&&!/XS/.test(nm))det='SOLIDAY-X';
+    else if(/\bCS\b/.test(nm))det='SOLIDAY-CS';
+    else if(/\bMA\b/.test(nm))det='SOLIDAY-MA';
+    else if(/\bM\b/.test(nm)&&!/MA|ONE|FLEX/.test(nm))det='SOLIDAY-M';
+    else if(/SANDY/i.test(nm))det='SOLIDAY-SANDY';
+    if(det){if(det!==json.system)json.system=det;break;}
   }
   return json;
 }
@@ -1409,9 +1429,12 @@ const NR2SEK={};
 ['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
 
 function isAufrollsystem(nr){
-  return/^(78V|70001B|71001B|78E|70E)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
+  return/^(78V|79V|70001B|71001B|78E|70E)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
 }
 function _hasFesteSegel(){
+  const sys=(soSeKuJSON?.system||'').toUpperCase();
+  if(sys.startsWith('SOLIDAY'))return false;
+  if(sys.startsWith('SONNENSEGEL'))return true;
   const st=(_transformedDataOrig||transformedData)?.segelTypes;
   if(st&&Object.keys(st).length>0)return Object.values(st).some(t=>t==='fest');
   return !(soSeKuJSON?.positionen||[]).some(p=>isAufrollsystem(p.artikelnummer||''));
@@ -1951,6 +1974,14 @@ function renderStep3(){
     :'';
   // Build tbody with optional sail headers for multi-sail
   const isMS=transformedData.isMultiSegel;
+  // Header for zusammengefasst view (single merged block)
+  let zusHdr='';
+  if(_segelZusammenfassen&&_transformedDataOrig){
+    const _nSails=(_transformedDataOrig.segelNrs||[]).length||Object.keys(_transformedDataOrig.segelTypes||{}).length;
+    const _sys=(effectiveSys||soSeKuJSON.system||'SOLIDAY').replace(/-/g,' ');
+    const lbl=_nSails>1?`${_sys} – elektrisch aufrollbar – ${_nSails} Segel zusammengefasst`:`${_sys} – elektrisch aufrollbar`;
+    zusHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
+  }
   let lastSegelNr=null;
   const tbodyRows=sektionen.map(sek=>{
     const sekKey=sek._segelNr?`${sek.id}|${sek._segelNr}`:sek.id;
@@ -1965,7 +1996,7 @@ function renderStep3(){
   }).join('');
   document.getElementById('s3sektionen').innerHTML=
     `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${displaySys} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen</span></div>`+
-    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${tbodyRows}${exclRows}</tbody></table></div>`;
+    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${zusHdr}${tbodyRows}${exclRows}</tbody></table></div>`;
   _renderSegelToggle();
   showView('viewStep3');setStep(3);
 }
@@ -2146,7 +2177,7 @@ function _renderSegelToggle(){
       `<div style="border-top:1px solid var(--border);margin:6px 0 8px"></div>`+
       pmRow('Punkte',punkte,`aeroCleatUpdateShape(${viereck},${dreieck},${punkte-1})`,`aeroCleatUpdateShape(${viereck},${dreieck},${punkte+1})`,true)
       :'';
-    sections+=sep+`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Spannsystem</div>`;
+    sections+=sep+`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Aero Clamcleat Spannsystem</div>`;
     sections+=aeroBtn+shapePicker;
   }
   el.innerHTML=`<div style="font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#bbb;margin-bottom:10px;font-size:11px">Optionen</div>`+sections;
