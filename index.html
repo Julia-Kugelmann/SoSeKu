@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 15:08 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 15:35 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2340,6 +2340,7 @@ function _updateTerminEmpfehlung(){
 // Klebeanker nur wenn Art.-Nr. im Ankerpunkt Verzeichnis (prices5.apAnzahl)
 const DEF_STOFFE_C=[{name:'Austrosail Nano',preis:0},{name:'Austrosail Nano Sonderfarben',preis:0},{name:'Soltis 92',preis:0},{name:'Soltis 92 Sonderfarben',preis:0}];
 const DEF_STOFFE_M=[{name:'Austronet 950',preis:0},{name:'Austronet 950 Sonderfarben',preis:0}];
+const DEF_STOFFE_FEST=[{name:'Austronet 960',preis:0},{name:'Austronet 950',preis:0}];
 
 async function initStep5(){
   fragebogen={
@@ -2434,11 +2435,20 @@ function billingQm(qm){return qm+qmExtra(qm);}
 // Select correct stoffe list based on system and original sail qm
 // qmOrig: original qm_segel from Soliday (before billing adjustment)
 const DEF_STOFF_KEY={'SOLIDAY-ONE':'nano','SOLIDAY-C':'nano','SOLIDAY-CS':'nano','SOLIDAY-CS-DREIECK':'nano','SOLIDAY-CS-TWIN':'nano','SOLIDAY-X':'lotus','SOLIDAY-XS':'lotus','SOLIDAY-M':'950','SOLIDAY-MA':'950','SOLIDAY-FLEX':'960'};
-function defaultStoffIdx(sys,stoffe){const key=(DEF_STOFF_KEY[sys.toUpperCase()]||'nano').toLowerCase();const i=stoffe.findIndex(s=>s.name.toLowerCase().includes(key));return i>=0?i:0;}
+function defaultStoffIdx(sys,stoffe){const upper=sys.toUpperCase();const key=upper.startsWith('SONNENSEGEL')?'960':(DEF_STOFF_KEY[upper]||'nano').toLowerCase();const i=stoffe.findIndex(s=>s.name.toLowerCase().includes(key));return i>=0?i:0;}
 function getStoffeForSys(sys,bQm,qmOrig){
   const upper=sys.toUpperCase();
   if(upper==='SOLIDAY-SANDY') return getTierPrices(prices5.stofSandy,bQm)||DEF_STOFFE_C;
-  if(upper.startsWith('SONNENSEGEL')) return getTierPrices(prices5.stofFeste,bQm)||DEF_STOFFE_C;
+  if(upper.startsWith('SONNENSEGEL')){
+    // Use raw qm (without +2 buffer) for tier category selection
+    const rawQm=qmOrig!=null?qmOrig:bQm;
+    const all=getTierPrices(prices5.stofFeste,rawQm);
+    // Fallback when sheet not loaded ([] is truthy so || won't work)
+    const base=all.length>0?all:DEF_STOFFE_FEST;
+    // Show only Austronet 960 (default) + Austronet 950 (alternative)
+    const filtered=base.filter(s=>{const n=s.name.toLowerCase();return n.includes('960')||n.includes('950');});
+    return filtered.length>0?filtered:base;
+  }
   const fromMap=prices5.stofBySys?.[upper];
   let m=fromMap?.length?fromMap:prices5.stoffe.length>0?prices5.stoffe:(['SOLIDAY-M','SOLIDAY-MA'].includes(upper)?DEF_STOFFE_M:DEF_STOFFE_C);
   // Soltis 92 only available up to 55 m² on C/CS systems
