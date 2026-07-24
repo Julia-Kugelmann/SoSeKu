@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 23:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-24 23:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1535,8 +1535,8 @@ function _transformiereKern(json){
     return (_SEG_KEY[a.artikelnummer]||55)-(_SEG_KEY[b.artikelnummer]||55);
   });
   const instNr={'SOLIDAY-C':'INST-C','SOLIDAY-CS':'INST-CS','SOLIDAY-ONE':'INST-ONE','SOLIDAY-M':'INST-M'}[sys]||'INST-X';
-  const _slMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY'};
-  const sysLabel='SOLIDAY '+(_slMap[sys]||sys.replace('SOLIDAY-',''));
+  const _slMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY','SONNENSEGEL-MAß':'Fix Segel','SONNENSEGEL-MAß-SNAP':'Fix Segel SNAP','SONNENSEGEL-MASS':'Fix Segel','SONNENSEGEL-MASS-SNAP':'Fix Segel SNAP'};
+  const sysLabel=sys.startsWith('SONNENSEGEL')?(_slMap[sys]||'Fix Segel'):'SOLIDAY '+(_slMap[sys]||sys.replace('SOLIDAY-',''));
   const hasMasten=map.masten.length>0;
   const isRaff=(soSeKuJSON.system||'').toUpperCase().startsWith('RAFF');
   const useVorfracht=hasMasten||isRaff;
