@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 23:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 23:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2961,9 +2961,11 @@ function calcInstData(){
   const sysShort=sysU.replace('SOLIDAY-','');
   const noVerbinder=['M','FLEX'].includes(sysShort)||sysU.startsWith('SONNENSEGEL');
   const verbCount=noVerbinder?0:(prices5.verbByWelle[wellenM]||0);
-  const hwH=apH+sfCount*mk.schraubfund+verbCount*mk.verbZuschlag;
+  // In multi-system mode sum verbH from each sailRow; single-system uses global verbCount
+  const totalVerbH=multiDiff?sailRows.reduce((s,r)=>s+(r.verbH||0),0):verbCount*(mk.verbZuschlag||0);
+  const hwH=apH+sfCount*mk.schraubfund+totalVerbH;
   const totalH=sailH+hwH;
-  return{price:Math.ceil(totalH*prices5.stundensatz/10)*10,sailH,hwH,totalH,sailRows,mk,sfCount,verbCount,wellenM,apH,apCntWand:0};
+  return{price:Math.ceil(totalH*prices5.stundensatz/10)*10,sailH,hwH,totalH,sailRows,mk,sfCount,verbCount,wellenM,apH,apCntWand:0,totalVerbH};
 }
 function calcInstPreis(){return calcInstData().price;}
 // Anfahrt: Zone-Minuten (einfache Fahrt) × 2 (Hin+Rück) × Anzahl Termine × reduzierter Anfahrt-Stundensatz
@@ -3370,7 +3372,9 @@ function renderStep5(){
   const sysShort2=(sys||'').replace('SOLIDAY-','');
   const noVerb2=['M','FLEX'].includes(sysShort2)||sys.startsWith('SONNENSEGEL');
   const verbCnt2=_instData.verbCount||(noVerb2?0:(prices5.verbByWelle[wellenM2]||0));
-  const hwH2=apH2+sfCnt2*(mk2?.schraubfund||0)+verbCnt2*(mk2?.verbZuschlag||0);
+  // Use pre-summed totalVerbH from calcInstData (multi-system sums per-system verbH correctly)
+  const verbH2=_instData.totalVerbH!==undefined?_instData.totalVerbH:verbCnt2*(mk2?.verbZuschlag||0);
+  const hwH2=apH2+sfCnt2*(mk2?.schraubfund||0)+verbH2;
   const totalH2=sailH2+hwH2;
   _s5CachedTotalH=totalH2; // cache for selS5Termine button switching
   _s5CachedSailH=sailH2;
