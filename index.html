@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 23:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 23:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1124,11 +1124,12 @@ Wichtig:
 - "segelform": nur bei festen Segeln nach Mass (nicht aufrollbare Systeme): "viereck" oder "dreieck" je nach Form; bei aufrollbaren Segeln und allen anderen Positionen immer null
 - "wellenlaenge_aufrollsystem_mm": Wellenlaenge in mm, null wenn nicht angegeben
 - "system": "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA" oder ""
+- "variante": Angebotsvariante/Version wie z.B. "V05", "V05X", "V05XX" – erkennbar im Dokumentkopf, im Angebotsnamen oder der Versionsnummer; null wenn nicht vorhanden
 - "kommission": Wert aus Feld Kommission ohne Klammerzusaetze
 - "segel_nr": Segelnummer (1 fuer erstes Segel, 2 fuer zweites usw.). Bei einem einzigen Segel immer 1. Bei mehrsegligen Angeboten (erkennbar an Ueberschriften wie "1 SOLIDAY-C", "2 SOLIDAY-C") die zugehoerige Nummer einsetzen.
 
 Format:
-{"kommission":"string","datum":"string","system":"string","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,
+{"kommission":"string","datum":"string","system":"string","variante":"string/null","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,
 "positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null,"segelform":"viereck"/"dreieck"/null,"segel_nr":1}],
 "teuerungszuschlag_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
 
@@ -4402,7 +4403,8 @@ async function importToSevdesk(){
     let _sysLabel=_sysLabelMap[_effectiveSys]||_effectiveSys.replace('SOLIDAY-','');
     const _segSek=transformedData?.sektionen.find(s=>s.id==='segelsystem');
     if(_segSek){const _aufroll=_segSek.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_aufroll){const _m=(_aufroll.name||'').match(/^SOLIDAY\s+(.+?)\s+Segelsystem/i);if(_m)_sysLabel=_m[1];}}
-    const _betreff=`Angebot - SOLIDAY ${_sysLabel}`+(_kom?' - '+_kom:'');
+    const _var=soSeKuJSON.variante||'';
+    const _betreff=`Angebot - SOLIDAY ${_sysLabel}`+(_kom?' - '+_kom:'')+(_var?' - '+_var:'');
     const _kopfMap={
       'SOLIDAY-C':   'Elektrisch aufrollbares Sonnensegel',
       'SOLIDAY-CS':  'Elektrisch aufrollbares Markisensegel',
