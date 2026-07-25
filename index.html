@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 20:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 20:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3542,39 +3542,95 @@ function renderStep5(){
   if(instPos){
     const mi=monPosIdx[instPos.artikelnummer];
     const gp=gsMonPreis(instPos.artikelnummer);
-    const plateParts=[];
-    if(totalMengeWand2>0)plateParts.push(`${totalMengeWand2}x Wandplatte`);
-    if(totalMengeB2>0)plateParts.push(`${totalMengeB2}x Bodenplatte`);
-    const sfHdr=sfCnt2>0?`${sfCnt2}x Erdschraube`:'';
-    const sailHdr=sailCount2>1?`<span style="color:#ffb300">${sailCount2}× Segel</span>`:'';
-    const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
-    const hdrChips=[welleHdr,sailHdr,plateParts.join(' '),sfHdr].filter(Boolean).join('<br>');
-    h+=`<div class="s5-card">
-      <div class="s5-card-hdr" style="align-items:flex-start">
-        <strong>${instPos.name}</strong>
-        <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${hdrChips}</span>
-      </div>
-      <div class="s5-card-body">
-        <div class="s5-irow"><span class="s5-lbl">Preis</span>
-          <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
-          <span class="s5-unit">&euro;</span>
+    if(mk2?.ok && _instData.sailRows.length>1){
+      // ═══ Multi-system: one sub-box per system ═══
+      _instData.sailRows.forEach((r,ri)=>{
+        const sysLbl=MC_SYS_LABEL[r.sys]?`Soliday ${MC_SYS_LABEL[r.sys]}`:r.sys;
+        const isFix=mcIsFix(r.sys);
+        const hasNonFix=_instData.sailRows.some(r2=>!mcIsFix(r2.sys));
+        const sailLbl=(isFix&&hasNonFix)?'Weiteres Segel':'Grundpreis';
+        const sailDetail=r.count>1
+          ?`${sailLbl}: ${r.mk.grundpreis.toFixed(2)}h + ${r.count-1}&times; ${r.mk.weiteresSegel.toFixed(2)}h = ${r.h.toFixed(2)}h`
+          :`${sailLbl}: ${r.h.toFixed(2)}h`;
+        const subRaw=r.h*prices5.stundensatz;
+        const subCeil=Math.ceil(subRaw/10)*10;
+        h+=`<div class="s5-card"${ri>0?' style="margin-top:12px"':''}>
+          <div class="s5-card-hdr" style="align-items:flex-start">
+            <strong>System Installation &ndash; ${sysLbl}</strong>
+            <span style="font-size:14px;font-weight:700;color:var(--accent2)">${r.count}&times; Segel</span>
+          </div>
+          <div class="s5-card-body">
+            <div class="s5-calc-detail">
+              <div>${r.count} Segel: ${sailDetail}</div>
+            </div>
+            <div class="s5-calc">
+              <span style="color:var(--muted)">${r.h.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} &asymp;</span>
+              <strong>${fmtE(subCeil)}</strong><span class="s5-raw">${subCeil!==Math.round(subRaw*100)/100?`(${fmt(subRaw)})`:''}</span>
+            </div>
+          </div>
+        </div>`;
+      });
+      // ═══ Summary box: HW + total + price input ═══
+      const plateParts2=[];
+      if(totalMengeWand2>0)plateParts2.push(`${totalMengeWand2}x Wandplatte`);
+      if(totalMengeB2>0)plateParts2.push(`${totalMengeB2}x Bodenplatte`);
+      const hdrChips2=[wellenM2>0?`${wellenM2}m Welle`:'',plateParts2.join(' '),sfCnt2>0?`${sfCnt2}x Erdschraube`:''].filter(Boolean).join('<br>');
+      h+=`<div class="s5-card" style="margin-top:12px;border-color:rgba(56,217,169,.3)">
+        <div class="s5-card-hdr" style="background:rgba(56,217,169,.04);align-items:flex-start">
+          <strong>System Installation &ndash; Gesamt</strong>
+          <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${hdrChips2}</span>
         </div>
-        ${mk2?.ok?`<div class="s5-calc-detail">
-          ${_instData.sailRows.length>1
-            ?_instData.sailRows.map(r=>`<div>${r.sys.replace('SOLIDAY-','')} (${r.count} Stk. &times; GP ${r.mk.grundpreis}h${r.count>1?` + ${r.count-1}&times;${r.mk.weiteresSegel}h`:''} = ${r.h.toFixed(2)}h)</div>`).join('')
-            :`<div>Segel (${sailCount2}${sailCount2>1?` Stk. &middot; GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>`
-          }
-          ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
-          ${apCnt2Boden>0?`<div>${totalMengeB2}x Bodenplatte (${apCnt2Boden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${apH2Boden.toFixed(2)}h</div>`:''}
-          ${sfCnt2>0?`<div>Schraubfundamente (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
-          ${verbCnt2>0?`<div>Wellen-Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
+        <div class="s5-card-body">
+          <div class="s5-calc-detail">
+            ${_instData.sailRows.map(r=>`<div>${MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-','')} &times;${r.count} Segel: ${r.h.toFixed(2)}h</div>`).join('')}
+            ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
+            ${apCnt2Boden>0?`<div>${totalMengeB2}x Bodenplatte (${apCnt2Boden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${apH2Boden.toFixed(2)}h</div>`:''}
+            ${sfCnt2>0?`<div>Schraubfundamente (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
+            ${verbCnt2>0?`<div>Wellen-Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
+          </div>
+          <div class="s5-irow"><span class="s5-lbl">Preis</span>
+            <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
+            <span class="s5-unit">&euro;</span>
+          </div>
+          <div class="s5-calc">
+            <span style="color:var(--muted)">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
+            <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*prices5.stundensatz/10)*10)}</strong><span class="s5-raw">${(()=>{const raw=totalH2*prices5.stundensatz;const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
+          </div>
         </div>
-        <div class="s5-calc">
-          <span style="color:var(--muted)">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
-          <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*prices5.stundensatz/10)*10)}</strong><span class="s5-raw">${(()=>{const raw=totalH2*prices5.stundensatz;const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
-        </div>`:''}
-      </div>
-    </div>`;
+      </div>`;
+    } else {
+      // ═══ Single system: original box ═══
+      const plateParts=[];
+      if(totalMengeWand2>0)plateParts.push(`${totalMengeWand2}x Wandplatte`);
+      if(totalMengeB2>0)plateParts.push(`${totalMengeB2}x Bodenplatte`);
+      const sfHdr=sfCnt2>0?`${sfCnt2}x Erdschraube`:'';
+      const sailHdr=sailCount2>1?`<span style="color:#ffb300">${sailCount2}× Segel</span>`:'';
+      const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
+      const hdrChips=[welleHdr,sailHdr,plateParts.join(' '),sfHdr].filter(Boolean).join('<br>');
+      h+=`<div class="s5-card">
+        <div class="s5-card-hdr" style="align-items:flex-start">
+          <strong>${instPos.name}</strong>
+          <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${hdrChips}</span>
+        </div>
+        <div class="s5-card-body">
+          <div class="s5-irow"><span class="s5-lbl">Preis</span>
+            <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
+            <span class="s5-unit">&euro;</span>
+          </div>
+          ${mk2?.ok?`<div class="s5-calc-detail">
+            <div>Segel (${sailCount2}${sailCount2>1?` Stk. &middot; GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
+            ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
+            ${apCnt2Boden>0?`<div>${totalMengeB2}x Bodenplatte (${apCnt2Boden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${apH2Boden.toFixed(2)}h</div>`:''}
+            ${sfCnt2>0?`<div>Schraubfundamente (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
+            ${verbCnt2>0?`<div>Wellen-Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
+          </div>
+          <div class="s5-calc">
+            <span style="color:var(--muted)">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
+            <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*prices5.stundensatz/10)*10)}</strong><span class="s5-raw">${(()=>{const raw=totalH2*prices5.stundensatz;const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
+          </div>`:''}
+        </div>
+      </div>`;
+    }
   }
   if(servPos){
     const mi=monPosIdx['SERV-LOG'];
