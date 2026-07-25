@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 15:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 15:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1668,6 +1668,7 @@ function transformiere(json){
   const savedMontage=fragebogen.montage;
   fragebogen.montage=false; // no montage per-sail
   const _PFLEGE=new Set(['00E13001325','00E13001321']);
+  const _pflegeAdded=new Set();
   const segelTypes={};
   segelNrs.forEach((nr,nrIdx)=>{
     const groupPos=(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
@@ -1676,14 +1677,16 @@ function transformiere(json){
     const groupJson={...json,positionen:groupPos,system:sailSys};
     const res=_transformiereKern(groupJson);
     const seks=res.sektionen.filter(s=>s.id!=='montage');
-    if(nrIdx>0){
-      seks.forEach(sek=>{
-        sek.positionen=sek.positionen.filter(p=>{
-          if(_PFLEGE.has(p.artikelnummer)){allRemoved.push({...p});return false;}
-          return true;
-        });
+    // Remove only duplicate pflege sets (same art-nr already included from an earlier sail)
+    seks.forEach(sek=>{
+      sek.positionen=sek.positionen.filter(p=>{
+        if(_PFLEGE.has(p.artikelnummer)){
+          if(_pflegeAdded.has(p.artikelnummer)){allRemoved.push({...p});return false;}
+        }
+        return true;
       });
-    }
+    });
+    seks.forEach(sek=>sek.positionen.forEach(p=>{if(_PFLEGE.has(p.artikelnummer))_pflegeAdded.add(p.artikelnummer);}));
     seks.forEach(sek=>{sek._segelNr=nr;allSektionen.push(sek);});
     allRemoved.push(...res.removedPositionen);
     if(res.effectiveSys)effectiveSys=res.effectiveSys;
