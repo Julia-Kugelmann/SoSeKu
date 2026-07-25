@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 12:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 14:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -917,6 +917,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
 let manualWeglassArtNr=new Set(); // artikelnummern-basierte Ausschlüsse (zusammengefasst-Modus)
+let _s3MengeOverride={}; // manuell geänderte Mengen im zusammengefasst-Modus {artikelnummer: menge}
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,extractAttempts=0,maxStep=0;
 let stepState={};
 let selManualH=null;
@@ -993,7 +994,7 @@ function setRepMiniStep(n){
   }
 }
 function resetToUpload(){
-  pdfFile=null;pdfBase64=null;soSeKuJSON=null;transformedData=null;extractAttempts=0;manualWeglass=new Set();manualWeglassArtNr=new Set();stepState={};
+  pdfFile=null;pdfBase64=null;soSeKuJSON=null;transformedData=null;extractAttempts=0;manualWeglass=new Set();manualWeglassArtNr=new Set();_s3MengeOverride={};stepState={};
   document.getElementById('fileInput').value='';
   document.getElementById('stepsBar').classList.add('hidden');
   document.getElementById('repStepsBar').classList.add('hidden');
@@ -1997,7 +1998,7 @@ function renderStep3(){
     `<td>${_cb(p)}</td>` +
     `<td>${!p._gs?`<span class="s3-move-btn" onclick="s3ShowMover(event,'${sekId}',${pidx})" title="Verschieben">⇅</span>`:''}${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
     `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'&#216; Preis aus Schritt 5'}${(p._mergedSegelCount||0)>1?' &ndash; '+p._mergedSegelCount+' Segel zusammengefasst':''}</div>`:''}</td>` +
-    `<td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td>` +
+    `<td class="num-r">${_segelZusammenfassen&&p.artikelnummer&&!(p.qm_segel>0)&&!p._gs?`<input type="number" value="${Number(p.menge||0)}" step="0.01" min="0" style="width:52px;text-align:right;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--text);font-size:11px;font-family:inherit" onchange="s3SetMenge('${p.artikelnummer}',this.value)">`:Number(p.menge||0).toLocaleString('de-DE')}</td>` +
     `<td style="color:var(--muted)">${p.einheit||'–'}</td>` +
     `<td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td>` +
     `<td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
@@ -2047,7 +2048,7 @@ function renderStep3(){
 }
 
 function _applyTransformReset(json){
-  stepState={};
+  stepState={};_s3MengeOverride={};
   transformedData=transformiere(json);
   _transformedDataOrig=JSON.parse(JSON.stringify(transformedData));
   const _sails=(json.positionen||[]).filter(p=>p.qm_segel>0);
@@ -2104,6 +2105,10 @@ function _buildZusammengefasstData(){
     const _mk=p=>{const nr=p.artikelnummer||'',nm=(p.name||'').toLowerCase();const pl=_pl(nr);if(pl!==null)return 1000+pl;if(/versteifung/i.test(p.name||'')||nr==='00E13000131'||nr==='00E13000096')return 6000;if(/biegung/.test(nm)&&/mast/.test(nm))return 5000;if(/kappe/i.test(p.name||''))return 7000;if(/gleitschiene|höhenverstellung/i.test(p.name||''))return 8000;if(/zuschnitt/.test(nm))return 4000;return 2000+_len(p.name);};
     _mastSek.positionen.sort((a,b)=>_mk(a)-_mk(b));
   }
+  // Apply manual menge overrides (user-editable in step 3 zusammengefasst view)
+  Object.values(sektMap).forEach(sek=>sek.positionen.forEach(p=>{
+    if(p.artikelnummer&&_s3MengeOverride[p.artikelnummer]!=null)p.menge=_s3MengeOverride[p.artikelnummer];
+  }));
   return {...orig,sektionen:order.map(id=>sektMap[id]),isMultiSegel:false,_sumAdjust};
 }
 
@@ -2184,7 +2189,13 @@ function _renderSegelToggle(){
     const types=Object.values((_transformedDataOrig||transformedData).segelTypes||{});
     const sameType=types.length===0||types.every(t=>t===types[0]);
     const canMerge=sameType;
-    const segelHdr=`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt</div>`;
+    const sysLabels=sails.map((p,i)=>{
+      const grp=(soSeKuJSON?.positionen||[]).filter(x=>(Number(x.segel_nr)||1)===(i+1));
+      const det=detectSysFromPos(grp);
+      return det?(det.replace('SOLIDAY-','')):`Segel ${i+1}`;
+    });
+    const sysStr=sysLabels.join(' + ');
+    const segelHdr=`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt &middot; ${sysStr}</div>`;
     if(!canMerge){
       let reason='';
       if(!sameType){const tc=types.reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{});reason=Object.entries(tc).map(([t,n])=>`${n}\xD7 ${t}`).join(' + ')+' → Einzeln';}
@@ -2197,11 +2208,6 @@ function _renderSegelToggle(){
       </div>`;
     }
     if(sails.length===2){
-      const sysLabels=sails.map((p,i)=>{
-        const grp=(soSeKuJSON?.positionen||[]).filter(x=>(Number(x.segel_nr)||1)===(i+1));
-        const det=detectSysFromPos(grp);
-        return det?(det.replace('SOLIDAY-','')):`Segel ${i+1}`;
-      });
       sections+=`<div style="border-top:1px solid var(--border);margin:10px 0 8px"></div>
         <div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Reihenfolge</div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.5">1. ${sysLabels[0]}<br>2. ${sysLabels[1]}</div>
@@ -2271,6 +2277,15 @@ function swapSegelNr(){
   manualWeglassArtNr=new Set();
   delete stepState[5];
   _applyTransformReset(soSeKuJSON);
+  renderStep3();
+}
+function s3SetMenge(artikelnummer,value){
+  const v=parseFloat(value)||0;
+  if(v<=0)delete _s3MengeOverride[artikelnummer];
+  else _s3MengeOverride[artikelnummer]=v;
+  transformedData=_buildZusammengefasstData();
+  if(_aeroCleat)transformedData=_buildAeroCleatData();
+  delete stepState[5];
   renderStep3();
 }
 
