@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 00:04 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 10:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -923,6 +923,7 @@ let selManualH=null;
 let _s5CachedTotalH=0; // cached from renderStep5 for selS5Termine
 let _s5CachedSailH=0;
 let _s5CachedHardwareH=0;
+let _s5CachedSailCount=0;
 let _terminPreload={done:false,mk:null,stundensatz:0,apAnzahl:{},verbByWelle:{},sys:''};
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
@@ -1158,6 +1159,25 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');co
 fi.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0]);});
 
 // === STEP 1 ===
+function detectSysFromPos(positionen){
+  const _isAufrollNr=nr=>/^(78V|79V|70001B|71001B|78E|70E)/.test((nr||'').toUpperCase());
+  for(const p of (positionen||[])){
+    if(!_isAufrollNr(p.artikelnummer||''))continue;
+    const nm=(p.name||'').toUpperCase();
+    const nr=(p.artikelnummer||'').toUpperCase();
+    if(/\bFLEX\b/.test(nm)||/^79V/.test(nr))return'SOLIDAY-FLEX';
+    if(/CS.*TWIN/i.test(nm))return'SOLIDAY-CS-TWIN';
+    if(/CS.*(DREI|3ECK)/i.test(nm))return'SOLIDAY-CS-DREIECK';
+    if(/\bONE\b/.test(nm))return'SOLIDAY-ONE';
+    if(/\bXS\b/.test(nm))return'SOLIDAY-XS';
+    if(/\bX\b/.test(nm)&&!/XS/.test(nm))return'SOLIDAY-X';
+    if(/\bCS\b/.test(nm))return'SOLIDAY-CS';
+    if(/\bMA\b/.test(nm))return'SOLIDAY-MA';
+    if(/\bM\b/.test(nm)&&!/MA|ONE|FLEX/.test(nm))return'SOLIDAY-M';
+    if(/SANDY/i.test(nm))return'SOLIDAY-SANDY';
+  }
+  return null;
+}
 function normalizeExtractedSystem(json){
   if(!json) return json;
   const s=(json.system||'').trim();
@@ -1176,25 +1196,10 @@ function normalizeExtractedSystem(json){
       return json;
     }
   }
-  // Cross-check: detect system from Aufrollsystem article name to auto-correct misidentification
-  const _isAufrollNr=nr=>/^(78V|79V|70001B|71001B|78E|70E)/.test((nr||'').toUpperCase());
-  for(const p of (json.positionen||[])){
-    if(!_isAufrollNr(p.artikelnummer||''))continue;
-    const nm=(p.name||'').toUpperCase();
-    const nr=(p.artikelnummer||'').toUpperCase();
-    let det=null;
-    if(/\bFLEX\b/.test(nm)||/^79V/.test(nr))det='SOLIDAY-FLEX';
-    else if(/CS.*TWIN/i.test(nm))det='SOLIDAY-CS-TWIN';
-    else if(/CS.*(DREI|3ECK)/i.test(nm))det='SOLIDAY-CS-DREIECK';
-    else if(/\bONE\b/.test(nm))det='SOLIDAY-ONE';
-    else if(/\bXS\b/.test(nm))det='SOLIDAY-XS';
-    else if(/\bX\b/.test(nm)&&!/XS/.test(nm))det='SOLIDAY-X';
-    else if(/\bCS\b/.test(nm))det='SOLIDAY-CS';
-    else if(/\bMA\b/.test(nm))det='SOLIDAY-MA';
-    else if(/\bM\b/.test(nm)&&!/MA|ONE|FLEX/.test(nm))det='SOLIDAY-M';
-    else if(/SANDY/i.test(nm))det='SOLIDAY-SANDY';
-    if(det){if(det!==json.system)json.system=det;break;}
-  }
+  // Cross-check: detect system from sail-1 positions only (avoid mixed-system override)
+  const sail1Pos=(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===1);
+  const det=detectSysFromPos(sail1Pos)||detectSysFromPos(json.positionen);
+  if(det&&det!==json.system)json.system=det;
   return json;
 }
 async function processFile(file,correctionHint){
@@ -1664,7 +1669,8 @@ function transformiere(json){
   segelNrs.forEach((nr,nrIdx)=>{
     const groupPos=(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
     segelTypes[nr]=groupPos.some(p=>isAufrollsystem(p.artikelnummer||''))?'aufrollbar':'fest';
-    const groupJson={...json,positionen:groupPos};
+    const sailSys=detectSysFromPos(groupPos)||json.system;
+    const groupJson={...json,positionen:groupPos,system:sailSys};
     const res=_transformiereKern(groupJson);
     const seks=res.sektionen.filter(s=>s.id!=='montage');
     if(nrIdx>0){
@@ -2188,6 +2194,17 @@ function _renderSegelToggle(){
         <div class="zone-item${_segelZusammenfassen?' sel':''}" style="cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time" style="color:#777">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
       </div>`;
     }
+    if(sails.length===2){
+      const sysLabels=sails.map((p,i)=>{
+        const grp=(soSeKuJSON?.positionen||[]).filter(x=>(Number(x.segel_nr)||1)===(i+1));
+        const det=detectSysFromPos(grp);
+        return det?(det.replace('SOLIDAY-','')):`Segel ${i+1}`;
+      });
+      sections+=`<div style="border-top:1px solid var(--border);margin:10px 0 8px"></div>
+        <div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Reihenfolge</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.5">1. ${sysLabels[0]}<br>2. ${sysLabels[1]}</div>
+        <button onclick="swapSegelNr()" style="width:100%;padding:6px 8px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px;text-align:left">&#8597; Reihenfolge tauschen</button>`;
+    }
   }
   if(hasFest){
     const sep=hasMult?`<div style="border-top:1px solid var(--border);margin:10px 0 12px"></div>`:'';
@@ -2241,6 +2258,19 @@ function aeroCleatUpdateShape(vi,di,pi){
   transformedData=_buildAeroCleatData();
   renderStep3();
 }
+function swapSegelNr(){
+  if(!soSeKuJSON||!soSeKuJSON.positionen)return;
+  soSeKuJSON.positionen.forEach(p=>{
+    const n=Number(p.segel_nr)||1;
+    if(n===1)p.segel_nr=2;
+    else if(n===2)p.segel_nr=1;
+  });
+  manualWeglass=new Set();
+  manualWeglassArtNr=new Set();
+  delete stepState[5];
+  _applyTransformReset(soSeKuJSON);
+  renderStep3();
+}
 
 // === STEP 4 ===
 function selZone(n){
@@ -2288,11 +2318,11 @@ function selS5Termine(n){
   const effH5=Math.max(0.1,8-ah);
   const hwH5=te?te.hwH:_s5CachedHardwareH;
   const sH5=te?te.sailH:_s5CachedSailH;
-  const emp=hwH5+sH5>0?Math.max(2,Math.ceil(hwH5/effH5)+Math.ceil(sH5/effH5)):0;
+  const emp=hwH5+sH5>0?Math.max(2,Math.ceil(hwH5/effH5)+1):0;
   const warn=emp>0&&emp>n;
   const col=warn?'#ffb300':'var(--accent2)';
   const empEl=document.getElementById('s5termEmpf');
-  if(empEl){empEl.innerHTML=genS5TermBreakdown(hwH5,sH5,ah,n,emp,col);empEl.style.color='#ffb300';}
+  if(empEl){empEl.innerHTML=genS5TermBreakdown(hwH5,sH5,ah,n,emp,col,_s5CachedSailCount);empEl.style.color='#ffb300';}
   // Update mcTerminePicks in Montage Kalkulator too
   document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(n)));
 }
@@ -2416,8 +2446,9 @@ function _calcTerminEmpfehlung(zone){
 }
 // Generate per-term hour breakdown HTML for Terminempfehlung
 // Hardware days first, then sail installation days
-function genS5TermBreakdown(hwH,sailH,ah,selN,empN,col){
-  const th=hwH+sailH;
+function genS5TermBreakdown(hwH,sailH,ah,selN,empN,col,sailCount=0){
+  const dispSailH=sailCount>0?1.5*sailCount:sailH; // customer-visible last-day sail hours
+  const th=hwH+dispSailH;
   if(!empN&&!th)return'';
   const warn=empN>0&&empN>selN;
   const c='#ffb300';
@@ -2432,7 +2463,7 @@ function genS5TermBreakdown(hwH,sailH,ah,selN,empN,col){
       const isLast=d===selN;
       let wHw=0,wSail=0;
       if(isLast){
-        wSail=sailH; // last day: ONLY sail
+        wSail=dispSailH; // last day: ONLY sail (customer-visible: 1.5h×sails)
       }else if(d<=hwSlots){
         const hwDaysLeft=hwSlots-(d-1); // remaining hw slots incl. today
         wHw=hwDaysLeft===1?remHw:Math.min(remHw,effH); // last hw slot: pack all
@@ -3259,6 +3290,7 @@ function renderStep5(){
   _s5CachedTotalH=totalH2; // cache for selS5Termine button switching
   _s5CachedSailH=sailH2;
   _s5CachedHardwareH=hwH2;
+  _s5CachedSailCount=sailCount2;
   const apRate2=uses18?(mk2?.ap18||0):(mk2?.ap10||0);
 
   // Separate _gsMonPos by role
@@ -3499,7 +3531,7 @@ function renderStep5(){
     const tAnz2=fragebogen.termine||2;
     const _s5Warn=_s5Empf>0&&_s5Empf>tAnz2;
     const _s5Col=_s5Warn?'#ffb300':'var(--accent2)';
-    const _s5EmpfHtml=genS5TermBreakdown(hwH2,sailH2,_s5AH,tAnz2,_s5Empf,_s5Col);
+    const _s5EmpfHtml=genS5TermBreakdown(hwH2,sailH2,_s5AH,tAnz2,_s5Empf,_s5Col,sailCount2);
     const _s5TBtns=[2,3,4].map(n=>'<div class="mc-pick s5-termineBtn'+(tAnz2===n?' sel':'')+'" data-v="'+n+'" onclick="selS5Termine('+n+')">'+n+' Termine</div>').join('');
     h+=`<div class="s5-card" style="margin-top:16px">
       <div class="s5-card-hdr" style="align-items:flex-start">
