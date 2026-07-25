@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 11:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 11:35 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3358,7 +3358,7 @@ function renderStep5(){
               <input type="radio" name="sail${si}st" value="${fi}" ${fi===defaultStoffIdx(sys,stoffe)?'checked':''} onchange="updSail(${si})">
               <span class="s5-radio-name">${s.name}${s.upf?`<span style="font-size:9px;font-weight:400;color:var(--muted);margin-left:4px">${s.upf}</span>`:''}</span>
               <input type="number" id="sP${si}_${fi}" value="${s.preis.toFixed(2)}" step="0.01" min="0" oninput="updSail(${si})" style="display:none">
-              ${isFest&&fi!==defaultStoffIdx(sys,stoffe)?`<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none" title="Als Alternative in Angebots-Beschreibung anzeigen"><input type="checkbox" id="sAlt${si}_${fi}" ${s.name.toLowerCase().includes('950')?'checked':''} style="width:11px;height:11px;cursor:pointer">Alt.</label>`:''}
+              ${fi!==defaultStoffIdx(sys,stoffe)?`<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none" title="Als Alternative in Angebots-Beschreibung anzeigen"><input type="checkbox" id="sAlt${si}_${fi}" checked style="width:11px;height:11px;cursor:pointer">Alt.</label>`:''}
             </label>`).join('')}
           <div class="s5-calc">
             <span style="color:var(--muted)">(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
@@ -3756,24 +3756,27 @@ function applyPrices5(){
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
         const _isFestSail=sys.startsWith('SONNENSEGEL');
         const _fmtGeld=n=>Math.round(n).toLocaleString('de-DE')+',- €';
+        const _upfAlt=name=>{const n=(name||'').toLowerCase();if(n.includes('soltis'))return{upf:'UPF 11-25',star:true};if(n.includes('950'))return{upf:'UPF 11-25',star:true};if(n.includes('960'))return{upf:'UPF 20-50',star:true};if(n.includes('austrosail')||n.includes('lotus')||n.includes('nano'))return{upf:'UPF 50+',star:false};return{upf:'',star:false};};
+        const selUpf=_upfAlt(sn);
+        const posName=`Segeltuch - ${sn}${selUpf.upf?' - '+selUpf.upf+(selUpf.star?'*':''):''}`;
+        const altLines=stoffe.map((s,fi)=>{
+          if(fi===sel)return null;
+          if(!document.getElementById(`sAlt${si}_${fi}`)?.checked)return null;
+          const u=_upfAlt(s.name);
+          return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name+(u.upf?' - '+u.upf+(u.star?'*':''):'');
+        }).filter(Boolean);
+        const hasStarInAlt=altLines.some(l=>l.includes('*'));
+        const hasStar=selUpf.star||hasStarInAlt;
         let desc;
         if(_isFestSail){
-          const altLines=stoffe.map((s,fi)=>{
-            if(fi===sel)return null;
-            if(!document.getElementById(`sAlt${si}_${fi}`)?.checked)return null;
-            return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name;
-          }).filter(Boolean);
           desc='mit eingenähtem Gurtband und D-Ringen\nSeitenkanten konkav';
           if(altLines.length>0){desc+='\nAlternativ:\n'+altLines.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';}
           else desc+='\nFarbe nach Wahl aus Farbfächer des Herstellers';
         }else{
-          const altLines2=stoffe.map((s,fi)=>{
-            if(fi===sel)return null;
-            return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name;
-          }).filter(Boolean);
-          desc='Alternativ:\n'+altLines2.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers';
+          desc=altLines.length>0?'Alternativ:\n'+altLines.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers':'Farbe nach Wahl aus Farbfächer des Herstellers';
         }
-        const newPos={artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:desc,preis_einheit:unitT,menge:multiplier,einheit:'Stk.',gesamt:totalT};
+        if(hasStar)desc+='\n*abhängig von Farbe';
+        const newPos={artikelnummer:'',name:posName,beschreibung:desc,preis_einheit:unitT,menge:multiplier,einheit:'Stk.',gesamt:totalT};
         // For multi-sail: one segSek per sail (in order); for single-sail: one segSek gets all
         const segSek=segSeks[si]||segSeks[0];
         const nonSail=segSek.positionen.filter(pp=>!pp._gs&&!(pp.qm_segel>0));
