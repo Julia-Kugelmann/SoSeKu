@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 01:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 01:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1677,8 +1677,9 @@ function transformiere(json){
   const segelSystems={};
   segelNrs.forEach((nr,nrIdx)=>{
     const groupPos=(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
-    segelTypes[nr]=groupPos.some(p=>isAufrollsystem(p.artikelnummer||''))?'aufrollbar':'fest';
-    const sailSys=detectSysFromPos(groupPos)||json.system;
+    const _grpIsFest=!groupPos.some(p=>isAufrollsystem(p.artikelnummer||''));
+    segelTypes[nr]=_grpIsFest?'fest':'aufrollbar';
+    const sailSys=detectSysFromPos(groupPos)||(_grpIsFest?'SONNENSEGEL-MAß':json.system);
     segelSystems[nr]=(sailSys||'').toUpperCase();
     const groupJson={...json,positionen:groupPos,system:sailSys};
     const res=_transformiereKern(groupJson);
@@ -2031,6 +2032,7 @@ function renderStep3(){
     if(['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(s))return 'elektrisch aufrollbar';
     if(['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(s))return 'semi-automatisch aufrollbar';
     if(s==='SOLIDAY-SANDY')return '';
+    if(s.startsWith('SONNENSEGEL'))return '';
     return 'manuell aufrollbar';
   };
   if(_segelZusammenfassen&&_transformedDataOrig){
@@ -2049,9 +2051,10 @@ function renderStep3(){
     if(isMS&&sek._segelNr&&sek._segelNr!==lastSegelNr){
       lastSegelNr=sek._segelNr;
       const _rawSys=(transformedData.segelSystems||{})[sek._segelNr]||effectiveSys||soSeKuJSON.system||'SOLIDAY';
-      const _sys=_rawSys.replace(/-/g,' ');
-      const _typ=_aufrollTyp(_rawSys);
-      const lbl=_typ?`${_sys} - ${_typ} - Segel ${sek._segelNr}`:`${_sys} - Segel ${sek._segelNr}`;
+      const _isFix=_rawSys.toUpperCase().startsWith('SONNENSEGEL');
+      const _sys=_isFix?'Fix Segel':_rawSys.replace(/-/g,' ');
+      const _typ=_isFix?'feste Sonnensegel nach Maß':_aufrollTyp(_rawSys);
+      const lbl=_typ?`${_sys} - ${_typ}`:`${_sys} - Segel ${sek._segelNr}`;
       sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
     }
     return sailHdr+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sekKey,i)).join('')}`;
@@ -3169,7 +3172,7 @@ function mcCalc(){
 
   // Positionen für Angebot: exakte Namen wie im sevdesk-Angebot, gut sichtbar zum Übertragen
   const _mcSysSet=[...new Set(mc.rows.map(r=>(r.sys||'').toUpperCase()))];
-  const sysLabels=_mcSysSet.map(s=>s.startsWith('SOLIDAY-')?'Soliday '+s.replace('SOLIDAY-',''):s.startsWith('SONNENSEGEL')?s.replace('SONNENSEGEL-','Sonnensegel '):s).join(' / ');
+  const sysLabels=_mcSysSet.map(s=>MC_SYS_LABEL[s]||(s.startsWith('SOLIDAY-')?'Soliday '+s.replace('SOLIDAY-',''):s.startsWith('SONNENSEGEL')?'Fix Segel':s)).join(' / ');
   const instLabel=_mcSysSet.length>1?'System Installation':`System Installation - ${sysLabels}`;
   let tp=`<div class="mc-postable"><div class="mc-postable-title">Positionen f&uuml;r Angebot</div>`;
   tp+=`<div class="mc-posrow"><span>${instLabel}</span><strong>${fmtE(instPreis)}</strong></div>`;
@@ -3323,7 +3326,7 @@ function renderStep5(){
   let sys=(soSeKuJSON.system||'').toUpperCase();
   // Fallback: if system not extracted, infer from data
   if(!sys) sys=(soSeKuJSON.wellenlaenge_aufrollsystem_mm||0)>0?'SOLIDAY':'SONNENSEGEL-MASS';
-  const sysLabel2=sys.startsWith('SOLIDAY-')?'Soliday '+sys.replace('SOLIDAY-',''):sys.startsWith('SONNENSEGEL')?sys.replace('SONNENSEGEL-','Sonnensegel '):sys;
+  const sysLabel2=sys.startsWith('SOLIDAY-')?'Soliday '+sys.replace('SOLIDAY-',''):sys.startsWith('SONNENSEGEL')?'Fix Segel':sys;
   const withMontage=fragebogen.montage!==false;
   const wandartForAP=(fragebogen.wandart==='freistehend'||!fragebogen.wandart)?'ziegel-10':fragebogen.wandart;
   const apDef=withMontage?(prices5.apPreis[wandartForAP]||0):0;
@@ -4097,10 +4100,11 @@ function buildSevdeskPositions(){
     segelNrs.forEach((nr,idx)=>{
       if(idx>0)addBreak();
       const _thisSys=((transformedData.segelSystems||{})[nr]||(soSeKuJSON.segelSystems||{})[nr]||sysFull).toUpperCase();
-      const _sysLbl=_thisSys.replace(/-/g,' ');
       const _s=_thisSys;
-      const _aufTyp=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':' manuell aufrollbar';
-      rows.push({type:'section',name:_aufTyp?`${_sysLbl} - ${_aufTyp} - Segel ${nr}`:`${_sysLbl} - Segel ${nr}`});
+      const _isFix=_s.startsWith('SONNENSEGEL');
+      const _sysLbl=_isFix?'Fix Segel':_s.replace(/-/g,' ');
+      const _aufTyp=_isFix?'feste Sonnensegel nach Maß':['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':'manuell aufrollbar';
+      rows.push({type:'section',name:`${_sysLbl} - ${_aufTyp}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
         rows.push({type:'section',name:sek.name});
         sek.positionen.forEach(addPos);
