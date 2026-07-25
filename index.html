@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 17:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 17:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1696,7 +1696,14 @@ function transformiere(json){
   fragebogen.montage=savedMontage;
   const monRes=_transformiereKern(json);
   const monSek=monRes.sektionen.find(s=>s.id==='montage');
-  if(monSek)allSektionen.push(monSek);
+  if(monSek){
+    // Multiple different systems → strip system name, keep only "System Installation"
+    if(new Set(Object.values(segelSystems)).size>1){
+      const instP=monSek.positionen.find(p=>(p.artikelnummer||'').startsWith('INST-'));
+      if(instP)instP.name='System Installation';
+    }
+    allSektionen.push(monSek);
+  }
   return{sektionen:allSektionen,removedPositionen:allRemoved,effectiveSys,isMultiSegel:true,segelNrs,segelTypes,segelSystems};
 }
 
@@ -3124,12 +3131,11 @@ function mcCalc(){
   t3+=`<div class="mc-total"><span>Gesamt</span><span>${fmtE(gesamt)}</span></div></div>`;
 
   // Positionen für Angebot: exakte Namen wie im sevdesk-Angebot, gut sichtbar zum Übertragen
-  const sysLabels=[...new Set(mc.rows.map(r=>{
-    const s=(r.sys||'').toUpperCase();
-    return s.startsWith('SOLIDAY-')?'Soliday '+s.replace('SOLIDAY-',''):s.startsWith('SONNENSEGEL')?s.replace('SONNENSEGEL-','Sonnensegel '):s;
-  }))].join(' / ');
+  const _mcSysSet=[...new Set(mc.rows.map(r=>(r.sys||'').toUpperCase()))];
+  const sysLabels=_mcSysSet.map(s=>s.startsWith('SOLIDAY-')?'Soliday '+s.replace('SOLIDAY-',''):s.startsWith('SONNENSEGEL')?s.replace('SONNENSEGEL-','Sonnensegel '):s).join(' / ');
+  const instLabel=_mcSysSet.length>1?'System Installation':`System Installation - ${sysLabels}`;
   let tp=`<div class="mc-postable"><div class="mc-postable-title">Positionen f&uuml;r Angebot</div>`;
-  tp+=`<div class="mc-posrow"><span>System Installation - ${sysLabels}</span><strong>${fmtE(instPreis)}</strong></div>`;
+  tp+=`<div class="mc-posrow"><span>${instLabel}</span><strong>${fmtE(instPreis)}</strong></div>`;
   tp+=`<div class="mc-posrow"><span>Service &amp; Logistik (Zone ${zone})</span><strong>${fmtE(servLogPreis)}</strong></div>`;
   if(dach) tp+=`<div class="mc-posrow"><span>Dachterrassen-Aufschlag</span><strong>${fmtE(dachPreis)}</strong></div>`;
   tp+=`<div class="mc-grandtotal"><span>Gesamt</span><strong>${fmtE(gesamt)}</strong></div>`;
