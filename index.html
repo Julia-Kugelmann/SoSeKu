@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 14:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 15:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1998,7 +1998,7 @@ function renderStep3(){
     `<td>${_cb(p)}</td>` +
     `<td>${!p._gs?`<span class="s3-move-btn" onclick="s3ShowMover(event,'${sekId}',${pidx})" title="Verschieben">⇅</span>`:''}${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
     `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'&#216; Preis aus Schritt 5'}${(p._mergedSegelCount||0)>1?' &ndash; '+p._mergedSegelCount+' Segel zusammengefasst':''}</div>`:''}</td>` +
-    `<td class="num-r">${_segelZusammenfassen&&p.artikelnummer&&!(p.qm_segel>0)&&!p._gs?`<input type="number" value="${Number(p.menge||0)}" step="0.01" min="0" style="width:52px;text-align:right;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--text);font-size:11px;font-family:inherit" onchange="s3SetMenge('${p.artikelnummer}',this.value)">`:Number(p.menge||0).toLocaleString('de-DE')}</td>` +
+    `<td class="num-r">${p.artikelnummer&&!(p.qm_segel>0)&&!p._gs?`<input type="number" value="${Number(p.menge||0)}" step="0.01" min="0" style="width:52px;text-align:right;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--text);font-size:11px;font-family:inherit" onchange="s3SetMenge('${p.artikelnummer}',this.value)">`:Number(p.menge||0).toLocaleString('de-DE')}</td>` +
     `<td style="color:var(--muted)">${p.einheit||'–'}</td>` +
     `<td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td>` +
     `<td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
@@ -2105,11 +2105,18 @@ function _buildZusammengefasstData(){
     const _mk=p=>{const nr=p.artikelnummer||'',nm=(p.name||'').toLowerCase();const pl=_pl(nr);if(pl!==null)return 1000+pl;if(/versteifung/i.test(p.name||'')||nr==='00E13000131'||nr==='00E13000096')return 6000;if(/biegung/.test(nm)&&/mast/.test(nm))return 5000;if(/kappe/i.test(p.name||''))return 7000;if(/gleitschiene|höhenverstellung/i.test(p.name||''))return 8000;if(/zuschnitt/.test(nm))return 4000;return 2000+_len(p.name);};
     _mastSek.positionen.sort((a,b)=>_mk(a)-_mk(b));
   }
-  // Apply manual menge overrides (user-editable in step 3 zusammengefasst view)
+  // Apply manual menge overrides
   Object.values(sektMap).forEach(sek=>sek.positionen.forEach(p=>{
     if(p.artikelnummer&&_s3MengeOverride[p.artikelnummer]!=null)p.menge=_s3MengeOverride[p.artikelnummer];
   }));
   return {...orig,sektionen:order.map(id=>sektMap[id]),isMultiSegel:false,_sumAdjust};
+}
+function _applyMengeOverridesToData(data){
+  if(!data)return data;
+  (data.sektionen||[]).forEach(sek=>(sek.positionen||[]).forEach(p=>{
+    if(p.artikelnummer&&_s3MengeOverride[p.artikelnummer]!=null)p.menge=_s3MengeOverride[p.artikelnummer];
+  }));
+  return data;
 }
 
 async function _loadAeroCleatPreise(){
@@ -2247,7 +2254,7 @@ function _renderSegelToggle(){
 
 function segelZusammenSet(v){
   _segelZusammenfassen=v;
-  transformedData=v?_buildZusammengefasstData():JSON.parse(JSON.stringify(_transformedDataOrig||transformedData));
+  transformedData=v?_buildZusammengefasstData():_applyMengeOverridesToData(JSON.parse(JSON.stringify(_transformedDataOrig||transformedData)));
   if(_aeroCleat)transformedData=_buildAeroCleatData();
   renderStep3();
 }
@@ -2255,7 +2262,7 @@ function aeroCleatSet(v){
   _aeroCleat=v;
   if(!v){_aeroCleatViereck=null;_aeroCleatDreieck=null;_aeroCleatPunkte=null;}
   if(_segelZusammenfassen)transformedData=_buildZusammengefasstData();
-  else transformedData=JSON.parse(JSON.stringify(_transformedDataOrig));
+  else transformedData=_applyMengeOverridesToData(JSON.parse(JSON.stringify(_transformedDataOrig)));
   if(v)transformedData=_buildAeroCleatData();
   renderStep3();
 }
@@ -2283,7 +2290,11 @@ function s3SetMenge(artikelnummer,value){
   const v=parseFloat(value)||0;
   if(v<=0)delete _s3MengeOverride[artikelnummer];
   else _s3MengeOverride[artikelnummer]=v;
-  transformedData=_buildZusammengefasstData();
+  if(_segelZusammenfassen){
+    transformedData=_buildZusammengefasstData();
+  }else{
+    transformedData=_applyMengeOverridesToData(JSON.parse(JSON.stringify(_transformedDataOrig||transformedData)));
+  }
   if(_aeroCleat)transformedData=_buildAeroCleatData();
   delete stepState[5];
   renderStep3();
