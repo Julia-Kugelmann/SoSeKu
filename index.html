@@ -1983,7 +1983,7 @@ function renderStep3(){
   const posCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
   const manExcl=removedPositionen.filter(p=>manualWeglass.has(String(p.pos))||(p.artikelnummer&&manualWeglassArtNr.has(p.artikelnummer)));
   const _cb=(p)=>p.pos!=null&&!p._gs
-    ?`<input type="checkbox" checked onchange="toggleManualWeglass(${p.pos},this.checked,${JSON.stringify(p.artikelnummer||'')})" style="cursor:pointer">`
+    ?`<input type="checkbox" checked onchange="toggleManualWeglass(${p.pos},this.checked,'${p.artikelnummer||''}')" style="cursor:pointer">`
     :'';
   const _row=(p,sekId='',pidx=0)=>`<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''} ondragover="s3RowDragOver(event,this)" ondrop="s3RowDrop(event,'${sekId}',${pidx})">` +
     `<td>${_cb(p)}</td>` +
@@ -1995,7 +1995,7 @@ function renderStep3(){
     `<td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
   const exclRows=manExcl.length
     ?`<tr class="sek-hdr-row excl"><td colspan="7">Manuell entfernt</td></tr>`
-     +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked,${JSON.stringify(p.artikelnummer||'')})" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
+     +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked,'${p.artikelnummer||''}')" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
     :'';
   // Build tbody with optional sail headers for multi-sail
   const isMS=transformedData.isMultiSegel;
