@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 23:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 00:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3577,6 +3577,7 @@ function renderStep5(){
     const gp=gsMonPreis(instPos.artikelnummer);
     if(mk2?.ok && _instData.sailRows.length>1){
       // ═══ Multi-system: one full box per system, hardware from exact sections ═══
+      const _subCeils=[];
       _instData.sailRows.forEach((r,ri)=>{
         const sysLbl=MC_SYS_LABEL[r.sys]?`Soliday ${MC_SYS_LABEL[r.sys]}`:r.sys;
         const sailLbl=(r.isFix&&r.hasNonFix)?'Weiteres Segel':'Grundpreis';
@@ -3599,6 +3600,7 @@ function renderStep5(){
         const subH=r.h+sysApHWand+sysApHBoden+sysSFh+sysVerbH;
         const subRaw=subH*prices5.stundensatz;
         const subCeil=Math.ceil(subRaw/10)*10;
+        _subCeils.push(subCeil);
         const welleChip=r.welle?`${r.welle}m Welle`:'';
         let detailLines=`<div>${r.count} Segel: ${sailDetail}</div>`;
         if(sysMengeWand>0)detailLines+=`<div>${sysMengeWand}x Wandplatte (${sysApCntWand} AP &times; ${apRate2.toFixed(2)}h): ${sysApHWand.toFixed(2)}h</div>`;
@@ -3619,26 +3621,23 @@ function renderStep5(){
           </div>
         </div>`;
       });
-      // ═══ Summary box: total hours + price input ═══
+      // ═══ Summary box: sum of rounded per-system prices ═══
+      const _gesamtSum=_subCeils.reduce((a,b)=>a+b,0);
+      const _gpStored=Number(_gsMonPos[mi]?.preis_einheit||0);
+      const _gpInit=_gpStored>0?_gpStored:_gesamtSum;
       h+=`<div class="s5-card" style="margin-top:12px;border-color:rgba(56,217,169,.3)">
         <div class="s5-card-hdr" style="background:rgba(56,217,169,.04)">
           <strong>System Installation &ndash; Gesamt</strong>
           <span style="font-size:10px;color:var(--muted)">inkl. aller Systeme</span>
         </div>
         <div class="s5-card-body">
-          <div class="s5-calc-detail">
-            ${_instData.sailRows.map(r=>`<div>${MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-','')} &times;${r.count} Segel: ${r.h.toFixed(2)}h Segel</div>`).join('')}
-            ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte gesamt (${apCnt2Wand} AP): ${apH2Wand.toFixed(2)}h</div>`:''}
-            ${sfCnt2>0?`<div>${sfCnt2}x Schraubfundament gesamt: ${(sfCnt2*(mk2.schraubfund||0)).toFixed(2)}h</div>`:''}
-            ${verbCnt2>0?`<div>Wellen-Verbinder gesamt: ${(verbCnt2*(mk2.verbZuschlag||0)).toFixed(2)}h</div>`:''}
-          </div>
           <div class="s5-irow"><span class="s5-lbl">Preis</span>
-            <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
+            <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${_gpInit.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
             <span class="s5-unit">&euro;</span>
           </div>
           <div class="s5-calc">
-            <span style="color:var(--muted)">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
-            <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*prices5.stundensatz/10)*10)}</strong><span class="s5-raw">${(()=>{const raw=totalH2*prices5.stundensatz;const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
+            <span style="color:var(--muted)">${_instData.sailRows.map((r,i)=>fmtE(_subCeils[i])).join(' + ')} =</span>
+            <strong id="gv_mP${mi}">${fmtE(_gesamtSum)}</strong>
           </div>
         </div>
       </div>`;
