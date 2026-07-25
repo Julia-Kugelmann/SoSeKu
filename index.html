@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 19:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 20:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2237,7 +2237,7 @@ function _renderSegelToggle(){
         const canUp=i>0,canDown=i<_sNrs.length-1;
         const upBtn=canUp?`<button onclick="swapSegelNr(${nr},${_sNrs[i-1]})" title="Nach oben" style="width:20px;height:20px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:12px;line-height:1;padding:0;flex-shrink:0">▲</button>`:`<span style="width:20px;display:inline-block;flex-shrink:0"></span>`;
         const dnBtn=canDown?`<button onclick="swapSegelNr(${nr},${_sNrs[i+1]})" title="Nach unten" style="width:20px;height:20px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:12px;line-height:1;padding:0;flex-shrink:0">▼</button>`:`<span style="width:20px;display:inline-block;flex-shrink:0"></span>`;
-        return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">${upBtn}${dnBtn}<span style="font-size:11px;color:var(--muted);margin-left:2px">${nr}. ${sysLabels[i]}</span></div>`;
+        return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px"><span style="font-size:11px;color:var(--muted);flex:1">${nr}. ${sysLabels[i]}</span>${upBtn}${dnBtn}</div>`;
       }).join('');
   }
   if(hasFest){
