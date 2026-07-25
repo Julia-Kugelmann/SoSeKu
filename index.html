@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 00:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 00:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3649,7 +3649,7 @@ function renderStep5(){
           </div>
           <div class="s5-calc">
             <span style="color:var(--muted)" id="mInstGesamtCalcLbl">${_totalSubH.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
-            <strong id="gv_mP${mi}">${fmtE(_gesamtRounded)}</strong>
+            <strong id="gv_mP${mi}">${fmtE(_gesamtRounded)}</strong><span class="s5-raw" id="mInstGesamtRaw">${_gesamtRounded!==Math.round(_totalSubH*prices5.stundensatz*100)/100?`(${fmt(_totalSubH*prices5.stundensatz)})`:''}</span>
           </div>
         </div>
       </div>`;
@@ -3837,13 +3837,16 @@ function updMonSum(){
 function _updInstGesamt(mi){
   const extraH=parseFloat(document.getElementById('mInstExtraH')?.value||'0')||0;
   const totalH=(_s5CachedMultiTotalSubH||0)+extraH;
-  const rounded=Math.ceil(totalH*(prices5.stundensatz||0)/10)*10;
+  const raw=totalH*(prices5.stundensatz||0);
+  const rounded=Math.ceil(raw/10)*10;
   const inp=document.getElementById(`mP${mi}`);
   const lbl=document.getElementById('mInstGesamtCalcLbl');
   const gv=document.getElementById(`gv_mP${mi}`);
+  const rawEl=document.getElementById('mInstGesamtRaw');
   if(inp){inp.value=rounded.toFixed(2);updMonSum();}
   if(lbl) lbl.textContent=`${totalH.toFixed(2)}h × ${fmtE(prices5.stundensatz)} =`;
   if(gv) gv.textContent=fmtE(rounded);
+  if(rawEl) rawEl.textContent=rounded!==Math.round(raw*100)/100?`(${fmt(raw)})`:'';
 }
 
 function updSail(si){
