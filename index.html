@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 22:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 22:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1589,7 +1589,7 @@ function _transformiereKern(json){
   if(fragebogen.montage!==false){
     map.montage.unshift(
       {artikelnummer:instNr,name:`System Installation - ${sysLabel}`,beschreibung:'Professionelle Ausführung der kompletten Systemmontage durch 2 Soliday Fachmonteure',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true},
-      {artikelnummer:'SERV-LOG',name:`Service & Logistik (Zone ${fragebogen.zone||2})`,beschreibung:(fragebogen.termine||2)>2?`${fragebogen.termine||2} Termine (Grund-, Vor- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale`:'2 Termine (Grund- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale',preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true}
+      {artikelnummer:'SERV-LOG',name:`Service & Logistik (Zone ${fragebogen.zone||2})`,beschreibung:`${fragebogen.termine||2} Termine (Grund- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale`,preis_einheit:0,menge:1,einheit:'pauschal',gesamt:0,_gs:true}
     );
   }
   // Fracht immer — auch bei Ohne Montage
@@ -4094,7 +4094,7 @@ function goToStep6(){
     const sp=(sek.positionen||[]).find(p=>p.artikelnummer==='SERV-LOG');
     if(sp){
       sp.name=`Service & Logistik (Zone ${_gz})`;
-      sp.beschreibung=_gn>2?`${_gn} Termine (Grund-, Vor- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale`:'2 Termine (Grund- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale';
+      sp.beschreibung=`${_gn} Termine (Grund- & Endmontage)\ninkl. Rüstzeiten & Maschinenpauschale`;
     }
   });
   applyPrices5();
