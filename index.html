@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 10:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 11:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -924,6 +924,7 @@ let _s5CachedTotalH=0; // cached from renderStep5 for selS5Termine
 let _s5CachedSailH=0;
 let _s5CachedHardwareH=0;
 let _s5CachedSailCount=0;
+let _s5CachedIsFest=false;
 let _terminPreload={done:false,mk:null,stundensatz:0,apAnzahl:{},verbByWelle:{},sys:''};
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
@@ -2322,7 +2323,7 @@ function selS5Termine(n){
   const warn=emp>0&&emp>n;
   const col=warn?'#ffb300':'var(--accent2)';
   const empEl=document.getElementById('s5termEmpf');
-  if(empEl){empEl.innerHTML=genS5TermBreakdown(hwH5,sH5,ah,n,emp,col,_s5CachedSailCount);empEl.style.color='#ffb300';}
+  if(empEl){empEl.innerHTML=genS5TermBreakdown(hwH5,sH5,ah,n,emp,col,_s5CachedSailCount,_s5CachedIsFest);empEl.style.color='#ffb300';}
   // Update mcTerminePicks in Montage Kalkulator too
   document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(n)));
 }
@@ -2446,8 +2447,8 @@ function _calcTerminEmpfehlung(zone){
 }
 // Generate per-term hour breakdown HTML for Terminempfehlung
 // Hardware days first, then sail installation days
-function genS5TermBreakdown(hwH,sailH,ah,selN,empN,col,sailCount=0){
-  const dispSailH=sailCount>0?1.5*sailCount:sailH; // customer-visible last-day sail hours
+function genS5TermBreakdown(hwH,sailH,ah,selN,empN,col,sailCount=0,isFest=false){
+  const dispSailH=sailCount>0?(isFest?0.5:1.5)*sailCount:sailH; // customer-visible last-day sail hours
   const th=hwH+dispSailH;
   if(!empN&&!th)return'';
   const warn=empN>0&&empN>selN;
@@ -2581,18 +2582,20 @@ function parseStoffeMatrix(rows,sys){
   const hdr=rows[0];const variants=SYS2COL[sys]||[];
   const ci=findStoffeCol(hdr,variants);
   if(ci<0)return[];
-  return rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm').map(r=>({name:r[0].trim(),preis:parseDE(r[ci])})).filter(s=>s.preis>0);
+  const upfCol=hdr.findIndex(h=>/(upf)/i.test((h||'').trim()));
+  return rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm').map(r=>({name:r[0].trim(),preis:parseDE(r[ci]),upf:upfCol>=0?(r[upfCol]||'').trim():''})).filter(s=>s.preis>0);
 }
 function parseStoffeMatrixAll(rows){
   if(!rows||rows.length<2)return{};const hdr=rows[0];const result={};
+  const upfCol=hdr.findIndex(h=>/(upf)/i.test((h||'').trim()));
   Object.entries(SYS2COL).forEach(([sys,variants])=>{
     const ci=findStoffeCol(hdr,variants);if(ci<0)return;
-    const st=rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm').map(r=>({name:r[0].trim(),preis:parseDE(r[ci])})).filter(s=>s.preis>0);
+    const st=rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm').map(r=>({name:r[0].trim(),preis:parseDE(r[ci]),upf:upfCol>=0?(r[upfCol]||'').trim():''})).filter(s=>s.preis>0);
     if(st.length>0)result[sys]=st;
   });
   return result;
 }
-// Parse size-tier tabs (Feste Segel, Sandy): returns [{name, tierPrices:[p0,p1,...], tierLabels:[l0,...]}]
+// Parse size-tier tabs (Feste Segel, Sandy): returns [{name, tierPrices:[p0,p1,...], tierLabels:[l0,...], upf}]
 function parseSizeTierMatrix(rows){
   if(!rows||rows.length<2)return[];
   // Find header row: skip title rows — look for first row where A is empty and
@@ -2603,9 +2606,12 @@ function parseSizeTierMatrix(rows){
     if(!rows[i][0]?.trim()&&nonA.length>0&&nonA.some(c=>/(bis|ab|\d)/i.test(c))){hdrIdx=i;break;}
   }
   const labels=rows[hdrIdx].slice(1).filter(l=>l.trim());
+  // UPF column: look in all rows for a header cell containing "UPF" (could be on a title row above hdrIdx)
+  let upfCol=-1;
+  for(let i=0;i<=hdrIdx&&upfCol<0;i++){upfCol=rows[i].findIndex(h=>/(upf)/i.test((h||'').trim()));}
   return rows.slice(hdrIdx+1)
     .filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm')
-    .map(r=>({name:r[0].trim(),tierLabels:labels,tierPrices:labels.map((_,i)=>parseDE(r[i+1]))}))
+    .map(r=>({name:r[0].trim(),tierLabels:labels,tierPrices:labels.map((_,i)=>parseDE(r[i+1])),upf:upfCol>=0?(r[upfCol]||'').trim():''}))
     .filter(s=>s.tierPrices.some(p=>p>0));
 }
 // Find tier column index from header labels for a given qm
@@ -2620,11 +2626,11 @@ function findTierIdx(labels,qm){
   }
   return labels.length-1;
 }
-// Get [{name,preis}] for size-tier stoffe at given billing qm
+// Get [{name,preis,upf}] for size-tier stoffe at given billing qm
 function getTierPrices(matrix,billingQm){
   if(!matrix||matrix.length===0)return[];
   const idx=findTierIdx(matrix[0].tierLabels,billingQm);
-  return matrix.map(s=>({name:s.name,preis:s.tierPrices[idx]||0})).filter(s=>s.preis>0);
+  return matrix.map(s=>({name:s.name,preis:s.tierPrices[idx]||0,upf:s.upf||''})).filter(s=>s.preis>0);
 }
 // qm billing extra: +1 if <6, +2 if >=6
 function qmExtra(qm){return qm<6?1:2;}
@@ -3291,6 +3297,7 @@ function renderStep5(){
   _s5CachedSailH=sailH2;
   _s5CachedHardwareH=hwH2;
   _s5CachedSailCount=sailCount2;
+  _s5CachedIsFest=sys.startsWith('SONNENSEGEL');
   const apRate2=uses18?(mk2?.ap18||0):(mk2?.ap10||0);
 
   // Separate _gsMonPos by role
@@ -3314,7 +3321,7 @@ function renderStep5(){
       <div class="s5-card-body">
         <div class="s5-irow"><span class="s5-lbl">Stoff</span>
           <select id="sailStoffSel" style="background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);outline:none">
-            ${stoffe0.map((s,i)=>`<option value="${i}">${s.name}</option>`).join('')}
+            ${stoffe0.map((s,i)=>`<option value="${i}">${s.name}${s.upf?' '+s.upf:''}</option>`).join('')}
           </select></div>
         <div class="s5-irow"><span class="s5-lbl">Gesamtpreis</span>
           <input type="number" class="s5-inp s5-w120" id="sailManPreis" value="0" step="0.01" min="0">
@@ -3349,7 +3356,7 @@ function renderStep5(){
           ${stoffe.map((s,fi)=>`
             <label class="s5-radio-row">
               <input type="radio" name="sail${si}st" value="${fi}" ${fi===defaultStoffIdx(sys,stoffe)?'checked':''} onchange="updSail(${si})">
-              <span class="s5-radio-name">${s.name}</span>
+              <span class="s5-radio-name">${s.name}${s.upf?`<span style="font-size:9px;font-weight:400;color:var(--muted);margin-left:4px">${s.upf}</span>`:''}</span>
               <input type="number" id="sP${si}_${fi}" value="${s.preis.toFixed(2)}" step="0.01" min="0" oninput="updSail(${si})" style="display:none">
               ${isFest&&fi!==defaultStoffIdx(sys,stoffe)?`<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none" title="Als Alternative in Angebots-Beschreibung anzeigen"><input type="checkbox" id="sAlt${si}_${fi}" ${s.name.toLowerCase().includes('950')?'checked':''} style="width:11px;height:11px;cursor:pointer">Alt.</label>`:''}
             </label>`).join('')}
@@ -3531,7 +3538,7 @@ function renderStep5(){
     const tAnz2=fragebogen.termine||2;
     const _s5Warn=_s5Empf>0&&_s5Empf>tAnz2;
     const _s5Col=_s5Warn?'#ffb300':'var(--accent2)';
-    const _s5EmpfHtml=genS5TermBreakdown(hwH2,sailH2,_s5AH,tAnz2,_s5Empf,_s5Col,sailCount2);
+    const _s5EmpfHtml=genS5TermBreakdown(hwH2,sailH2,_s5AH,tAnz2,_s5Empf,_s5Col,sailCount2,_s5CachedIsFest);
     const _s5TBtns=[2,3,4].map(n=>'<div class="mc-pick s5-termineBtn'+(tAnz2===n?' sel':'')+'" data-v="'+n+'" onclick="selS5Termine('+n+')">'+n+' Termine</div>').join('');
     h+=`<div class="s5-card" style="margin-top:16px">
       <div class="s5-card-hdr" style="align-items:flex-start">
