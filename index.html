@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 01:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 01:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -927,6 +927,7 @@ let _s5CachedHardwareH=0;
 let _s5CachedSailCount=0;
 let _s5CachedIsFest=false;
 let _s5CachedMultiTotalSubH=0; // sum of raw per-system hours in multi mode
+let _showUpf=true;
 let _terminPreload={done:false,mk:null,stundensatz:0,apAnzahl:{},verbByWelle:{},sys:''};
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
@@ -3398,7 +3399,7 @@ function renderStep5(){
   // ═══ COL 1: Segeltuch + Wandbefestigungen ═══
   h+=`<div class="s5-col">`;
   // — Segeltuch —
-  h+=`<div class="s5-section"><div class="s5-sec-title" style="display:flex;align-items:center;gap:10px">Segeltuch<label style="font-size:10px;font-weight:400;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;user-select:none;margin-left:auto"><input type="checkbox" id="showUpfChk" checked onchange="document.querySelectorAll('.upf-badge').forEach(el=>el.style.display=this.checked?'':'none')">UPF</label></div>`;
+  h+=`<div class="s5-section"><div class="s5-sec-title" style="display:flex;align-items:center;gap:10px">Segeltuch<label style="font-size:10px;font-weight:400;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;user-select:none;margin-left:auto"><input type="checkbox" id="showUpfChk" checked onchange="_showUpf=this.checked;document.querySelectorAll('.upf-badge').forEach(el=>el.style.display=this.checked?'':'none')">UPF</label></div>`;
   if(_sailPos.length===0){
     const stoffe0=getStoffeForSys(sys,2);
     h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Segeltuch (Gesamtpreis)</strong><span>kein qm_segel aus Extraktion</span></div>
@@ -3936,12 +3937,12 @@ function applyPrices5(){
         const _fmtGeld=n=>Math.round(n).toLocaleString('de-DE')+',- €';
         const _upfAlt=name=>{const n=(name||'').toLowerCase();if(n.includes('soltis'))return{upf:'UPF 11-25',star:true};if(n.includes('950'))return{upf:'UPF 11-25',star:true};if(n.includes('960'))return{upf:'UPF 20-50',star:true};if(n.includes('austrosail')||n.includes('lotus')||n.includes('nano'))return{upf:'UPF 50+',star:false};return{upf:'',star:false};};
         const selUpf=_upfAlt(sn);
-        const posName=`Segeltuch - ${sn}${selUpf.upf?' - '+selUpf.upf+(selUpf.star?'*':''):''}`;
+        const posName=`Segeltuch - ${sn}${_showUpf&&selUpf.upf?' - '+selUpf.upf+(selUpf.star?'*':''):''}`;
         const altLines=stoffe.map((s,fi)=>{
           if(fi===sel)return null;
           if(!document.getElementById(`sAlt${si}_${fi}`)?.checked)return null;
           const u=_upfAlt(s.name);
-          return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name+(u.upf?' - '+u.upf+(u.star?'*':''):'');
+          return _fmtGeld(Math.ceil(bQm*(allP[fi]||0)))+' '+s.name+(_showUpf&&u.upf?' - '+u.upf+(u.star?'*':''):'');
         }).filter(Boolean);
         const hasStarInAlt=altLines.some(l=>l.includes('*'));
         const hasStar=selUpf.star||hasStarInAlt;
