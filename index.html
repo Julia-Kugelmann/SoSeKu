@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 16:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 17:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2201,10 +2201,11 @@ function _renderSegelToggle(){
     const types=Object.values((_transformedDataOrig||transformedData).segelTypes||{});
     const sameType=types.length===0||types.every(t=>t===types[0]);
     const canMerge=sameType;
-    const sysLabels=sails.map((p,i)=>{
-      const grp=(soSeKuJSON?.positionen||[]).filter(x=>(Number(x.segel_nr)||1)===(i+1));
+    const _sNrs=[...new Set(sails.map(p=>Number(p.segel_nr)||1))].sort((a,b)=>a-b);
+    const sysLabels=_sNrs.map(nr=>{
+      const grp=(soSeKuJSON?.positionen||[]).filter(x=>(Number(x.segel_nr)||1)===nr);
       const det=detectSysFromPos(grp);
-      return det?(det.replace('SOLIDAY-','')):`Segel ${i+1}`;
+      return det?(det.replace('SOLIDAY-','')):`Segel ${nr}`;
     });
     const sysStr=sysLabels.join(' + ');
     const segelHdr=`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt &middot; ${sysStr}</div>`;
@@ -2219,12 +2220,17 @@ function _renderSegelToggle(){
         <div class="zone-item${_segelZusammenfassen?' sel':''}" style="cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time" style="color:#777">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
       </div>`;
     }
-    if(sails.length===2){
-      sections+=`<div style="border-top:1px solid var(--border);margin:10px 0 8px"></div>
-        <div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Reihenfolge</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px;line-height:1.5">1. ${sysLabels[0]}<br>2. ${sysLabels[1]}</div>
-        <button onclick="swapSegelNr()" style="width:100%;padding:6px 8px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;cursor:pointer;font-size:11px;text-align:left">&#8597; Reihenfolge tauschen</button>`;
-    }
+    const _abtn=(active,onclick)=>active
+      ?`<button onclick="${onclick}" style="width:20px;height:20px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:12px;line-height:1;padding:0;flex-shrink:0">`
+      :`<span style="width:20px;height:20px;display:inline-block;flex-shrink:0"></span>`;
+    sections+=`<div style="border-top:1px solid var(--border);margin:10px 0 8px"></div>
+      <div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Reihenfolge</div>`+
+      _sNrs.map((nr,i)=>{
+        const canUp=i>0,canDown=i<_sNrs.length-1;
+        const upBtn=canUp?`<button onclick="swapSegelNr(${nr},${_sNrs[i-1]})" title="Nach oben" style="width:20px;height:20px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:12px;line-height:1;padding:0;flex-shrink:0">▲</button>`:`<span style="width:20px;display:inline-block;flex-shrink:0"></span>`;
+        const dnBtn=canDown?`<button onclick="swapSegelNr(${nr},${_sNrs[i+1]})" title="Nach unten" style="width:20px;height:20px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:12px;line-height:1;padding:0;flex-shrink:0">▼</button>`:`<span style="width:20px;display:inline-block;flex-shrink:0"></span>`;
+        return `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">${upBtn}${dnBtn}<span style="font-size:11px;color:var(--muted);margin-left:2px">${nr}. ${sysLabels[i]}</span></div>`;
+      }).join('');
   }
   if(hasFest){
     const sep=hasMult?`<div style="border-top:1px solid var(--border);margin:10px 0 12px"></div>`:'';
@@ -2278,12 +2284,13 @@ function aeroCleatUpdateShape(vi,di,pi){
   transformedData=_buildAeroCleatData();
   renderStep3();
 }
-function swapSegelNr(){
+function swapSegelNr(nrA,nrB){
   if(!soSeKuJSON||!soSeKuJSON.positionen)return;
+  nrA=Number(nrA);nrB=Number(nrB);
   soSeKuJSON.positionen.forEach(p=>{
     const n=Number(p.segel_nr)||1;
-    if(n===1)p.segel_nr=2;
-    else if(n===2)p.segel_nr=1;
+    if(n===nrA)p.segel_nr=nrB;
+    else if(n===nrB)p.segel_nr=nrA;
   });
   manualWeglass=new Set();
   manualWeglassArtNr=new Set();
