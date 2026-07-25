@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 22:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 22:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2063,6 +2063,7 @@ function renderStep3(){
 function _applyTransformReset(json){
   stepState={};_s3MengeOverride={};
   transformedData=transformiere(json);
+  if(transformedData.segelSystems&&Object.keys(transformedData.segelSystems).length>0)json.segelSystems=transformedData.segelSystems;
   _transformedDataOrig=JSON.parse(JSON.stringify(transformedData));
   const _sails=(json.positionen||[]).filter(p=>p.qm_segel>0);
   if(_sails.length>1){
@@ -4060,8 +4061,9 @@ function buildSevdeskPositions(){
     const addBreak=()=>{for(let i=rows.length-1;i>=0;i--){if(rows[i].type==='pos'){rows[i].beschreibung=(rows[i].beschreibung||'')+'</br>';break;}}};
     segelNrs.forEach((nr,idx)=>{
       if(idx>0)addBreak();
-      const _sysLbl=sysFull.replace(/-/g,' ');
-      const _s=sysFull.toUpperCase();
+      const _thisSys=((transformedData.segelSystems||{})[nr]||(soSeKuJSON.segelSystems||{})[nr]||sysFull).toUpperCase();
+      const _sysLbl=_thisSys.replace(/-/g,' ');
+      const _s=_thisSys;
       const _aufTyp=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':' manuell aufrollbar';
       rows.push({type:'section',name:_aufTyp?`${_sysLbl} - ${_aufTyp} - Segel ${nr}`:`${_sysLbl} - Segel ${nr}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
