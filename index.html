@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 17:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-25 18:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2789,6 +2789,7 @@ async function loadPrices5(){
   // Zeile 14: Wandbefestigungspunkt 10cm          → col B (universal)
   // Zeile 15: Wandbefestigungspunkt 18cm          → col B (universal)
   prices5.montKalkParsed=parseMontKalkMatrix(mR,sys);
+  prices5.montRowsRaw=mR;
 
   // ── Wellenverbinder Verzeichnis (Matrix-Format) ─────────────────────
   // Row 1: M/MA/X/XS | One | C | CS
@@ -2888,51 +2889,53 @@ function parseVerbinderMatrix(rows,sysU){
 }
 
 // ── Montagekosten-Berechnung ─────────────────────────────────────────────
-// Formel: (Grundstd[sys] + (Segel-1)×weiteresSegel[sys]
-//          + AP×apH + SF×sfH + Verb×verbH) × Stundensatz
-function calcInstPreis(){
+function calcInstData(){
   const mk=prices5.montKalkParsed;
-  if(!mk||!mk.ok||!prices5.stundensatz) return 0;
-
+  if(!mk||!mk.ok||!prices5.stundensatz) return{price:0,sailH:0,hwH:0,totalH:0,sailRows:[]};
   const sysU=(soSeKuJSON.system||'').toUpperCase();
-  const sysShortMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M',
-    'SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX'};
-  const sysShort=sysShortMap[sysU]||sysU.replace('SOLIDAY-','');
-  const wellenM=soSeKuJSON.wellenlaenge_aufrollsystem_mm
-    ?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0;
+  const wellenM=soSeKuJSON.wellenlaenge_aufrollsystem_mm?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0;
 
-  // 1. Segel-Grundstunden
-  const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
-  const sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
+  // Per-system sail hours
+  const segelSys=transformedData?.segelSystems||{};
+  const uniqueSys=[...new Set(Object.values(segelSys))];
+  const multiDiff=uniqueSys.length>1&&prices5.montRowsRaw;
+  const sailRows=[];
+  let sailH=0;
+  if(multiDiff){
+    // Group sail positions by their detected system
+    const sailsBySys={};
+    (_sailPos||[]).forEach(sail=>{
+      const nr=Number(sail.segel_nr)||1;
+      const s=(segelSys[nr]||sysU).toUpperCase();
+      sailsBySys[s]=(sailsBySys[s]||0)+(sail._merged||1);
+    });
+    Object.entries(sailsBySys).forEach(([s,count])=>{
+      const mk_s=parseMontKalkMatrix(prices5.montRowsRaw,s);
+      if(!mk_s.ok)return;
+      const h=mk_s.grundpreis+Math.max(0,count-1)*mk_s.weiteresSegel;
+      sailH+=h;
+      sailRows.push({sys:s,count,mk:mk_s,h});
+    });
+  }else{
+    const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
+    sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
+    sailRows.push({sys:sysU,count:sailCount,mk,h:sailH});
+  }
 
-  // 2. Ankerpunkte: Wandplatten + Bodenplatten immer
+  // Hardware hours (ankerpunkte, schraubfundamente, wellenverbinder) — universal
   const uses18=(fragebogen.wandart||'').includes('18');
-  let apH_total=0;
-  (_wandpl||[]).forEach(pl=>{
-    const ap=prices5.apAnzahl[pl.artikelnummer]||0;
-    const cnt=Math.max(1,Math.round(pl.menge));
-    apH_total+=ap*cnt*(uses18?mk.ap18:mk.ap10);
-  });
-  (_bodenpl||[]).forEach(pl=>{
-    const ap=prices5.apAnzahl[pl.artikelnummer]||0;
-    const cnt=Math.max(1,Math.round(pl.menge));
-    apH_total+=ap*cnt*mk.ap10;
-  });
-
-  // 3. Schraubfundamente (alle Sektionen für Multi-Segel)
-  const sfCount=(transformedData?.sektionen||[]).filter(s=>s.id==='fundamente')
-    .flatMap(s=>s.positionen||[])
-    .filter(p=>p.artikelnummer==='00E13000227')
-    .reduce((s,p)=>s+Math.round(p.menge||0),0);
-
-  // 4. Wellenverbinder aus Matrix-Tabelle (M, FLEX, Festes Segel haben keine)
+  let apH=0;
+  (_wandpl||[]).forEach(pl=>{const ap=prices5.apAnzahl[pl.artikelnummer]||0;const cnt=Math.max(1,Math.round(pl.menge));apH+=ap*cnt*(uses18?mk.ap18:mk.ap10);});
+  (_bodenpl||[]).forEach(pl=>{const ap=prices5.apAnzahl[pl.artikelnummer]||0;const cnt=Math.max(1,Math.round(pl.menge));apH+=ap*cnt*mk.ap10;});
+  const sfCount=(transformedData?.sektionen||[]).filter(s=>s.id==='fundamente').flatMap(s=>s.positionen||[]).filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0);
+  const sysShort=sysU.replace('SOLIDAY-','');
   const noVerbinder=['M','FLEX'].includes(sysShort)||sysU.startsWith('SONNENSEGEL');
   const verbCount=noVerbinder?0:(prices5.verbByWelle[wellenM]||0);
-
-  const totalH=sailH+apH_total+sfCount*mk.schraubfund+verbCount*mk.verbZuschlag;
-  const raw=totalH*prices5.stundensatz;
-  return Math.ceil(raw/10)*10;
+  const hwH=apH+sfCount*mk.schraubfund+verbCount*mk.verbZuschlag;
+  const totalH=sailH+hwH;
+  return{price:Math.ceil(totalH*prices5.stundensatz/10)*10,sailH,hwH,totalH,sailRows,mk,sfCount,verbCount,wellenM,apH,apCntWand:0};
 }
+function calcInstPreis(){return calcInstData().price;}
 // Anfahrt: Zone-Minuten (einfache Fahrt) × 2 (Hin+Rück) × Anzahl Termine × reduzierter Anfahrt-Stundensatz
 const ZONE_MIN={1:15,2:30,3:45,4:60,5:75,6:90};
 function calcAnfahrtPreis(zoneNum,termine,satz){
@@ -3321,21 +3324,22 @@ function renderStep5(){
   if(dbgBar) dbgBar.innerHTML=`<span style="color:${sheetOk?'var(--accent2)':'var(--warn)'}">${sheetOk?'✓':'!'} Sheet</span>&ensp;${sheetOk?`sys:${sys||"?"} · AR:${prices5.stoffe.length} · FE:${prices5.stofFeste.length} · Anfahrt: ${prices5.anfahrtSatz}€/h · ${mkInfo} · Verbinder: ${vvK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · PL: ${prices5.preislisteZeilen||0}Z · Std: ${prices5.stundensatz}€ · Dach: ${prices5.dachterrasse}€ · SF: ${prices5.schraubfundament}€`:'Preisdaten nicht geladen — Sheet ID prüfen'}`;
   let h=``;
 
-  // Calc breakdown for INST card
+  // Calc breakdown for INST card — uses calcInstData() so display = price
+  const _instData=calcInstData();
   const mk2=prices5.montKalkParsed;
-  const wellenM2=soSeKuJSON.wellenlaenge_aufrollsystem_mm?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0;
+  const wellenM2=_instData.wellenM||(soSeKuJSON.wellenlaenge_aufrollsystem_mm?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0);
   const sailCount2=Math.max(1,_sailPos.reduce((s,p)=>s+(p._merged||1),0)||1);
-  const sailH2=mk2?.ok?(mk2.grundpreis+Math.max(0,sailCount2-1)*mk2.weiteresSegel):0;
+  const sailH2=_instData.sailH;
   const uses18=(fragebogen.wandart||'').includes('18');
   let apH2Wand=0,apCnt2Wand=0,apH2Boden=0,apCnt2Boden=0,totalMengeWand2=0,totalMengeB2=0;
   (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Wand+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2Wand+=a*n;totalMengeWand2+=n;});
   (_wandschellen||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Wand+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2Wand+=a*n;totalMengeWand2+=n;});
   (_bodenpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Boden+=a*n*(mk2?.ap10||0);apCnt2Boden+=a*n;totalMengeB2+=n;});
   const apH2=apH2Wand+apH2Boden,apCnt2=apCnt2Wand+apCnt2Boden;
-  const sfCnt2=(transformedData?.sektionen||[]).filter(s=>s.id==='fundamente').flatMap(s=>s.positionen||[]).filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0);
+  const sfCnt2=_instData.sfCount||(transformedData?.sektionen||[]).filter(s=>s.id==='fundamente').flatMap(s=>s.positionen||[]).filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0);
   const sysShort2=(sys||'').replace('SOLIDAY-','');
   const noVerb2=['M','FLEX'].includes(sysShort2)||sys.startsWith('SONNENSEGEL');
-  const verbCnt2=noVerb2?0:(prices5.verbByWelle[wellenM2]||0);
+  const verbCnt2=_instData.verbCount||(noVerb2?0:(prices5.verbByWelle[wellenM2]||0));
   const hwH2=apH2+sfCnt2*(mk2?.schraubfund||0)+verbCnt2*(mk2?.verbZuschlag||0);
   const totalH2=sailH2+hwH2;
   _s5CachedTotalH=totalH2; // cache for selS5Termine button switching
@@ -3555,7 +3559,10 @@ function renderStep5(){
           <span class="s5-unit">&euro;</span>
         </div>
         ${mk2?.ok?`<div class="s5-calc-detail">
-          <div>Segel (${sailCount2}${sailCount2>1?` Stk. · GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
+          ${_instData.sailRows.length>1
+            ?_instData.sailRows.map(r=>`<div>${r.sys.replace('SOLIDAY-','')} (${r.count} Stk. &times; GP ${r.mk.grundpreis}h${r.count>1?` + ${r.count-1}&times;${r.mk.weiteresSegel}h`:''} = ${r.h.toFixed(2)}h)</div>`).join('')
+            :`<div>Segel (${sailCount2}${sailCount2>1?` Stk. &middot; GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>`
+          }
           ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
           ${apCnt2Boden>0?`<div>${totalMengeB2}x Bodenplatte (${apCnt2Boden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${apH2Boden.toFixed(2)}h</div>`:''}
           ${sfCnt2>0?`<div>Schraubfundamente (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
