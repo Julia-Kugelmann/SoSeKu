@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 12:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 12:20 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4263,12 +4263,16 @@ const _KOPF_MAP={
   'RAFF-M-FUEHRUNGSSCHIENE':   'Manuell raffbares Sonnensegel mit Drahtseil Aufhängung',
 };
 function _buildKopfCombined(){
-  const _segelSysAll=soSeKuJSON?.segelSystems||{};
   const _eff=(transformedData?.effectiveSys||soSeKuJSON?.system||'').toUpperCase();
-  const _sailsAll=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
+  // Use transformedData.segelNrs + segelSystems — both reflect post-Reihenfolge order
+  const _tdNrs=transformedData?.segelNrs||[];
+  const _tdSys=transformedData?.segelSystems||soSeKuJSON?.segelSystems||{};
   const _order=[],_cnt={};
-  if(_sailsAll.length>0){
-    _sailsAll.forEach(p=>{const nr=Number(p.segel_nr)||1;const s=(_segelSysAll[nr]||_eff).toUpperCase();if(!_cnt[s]){_order.push(s);_cnt[s]=0;}_cnt[s]++;});
+  if(_tdNrs.length>0){
+    _tdNrs.forEach(nr=>{const s=(_tdSys[nr]||_eff).toUpperCase();if(!_cnt[s]){_order.push(s);_cnt[s]=0;}_cnt[s]++;});
+  } else if((soSeKuJSON?.positionen||[]).some(p=>p.qm_segel>0)){
+    const _sailsAll=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0).sort((a,b)=>(Number(a.segel_nr)||1)-(Number(b.segel_nr)||1));
+    _sailsAll.forEach(p=>{const nr=Number(p.segel_nr)||1;const s=(_tdSys[nr]||_eff).toUpperCase();if(!_cnt[s]){_order.push(s);_cnt[s]=0;}_cnt[s]++;});
   } else {_order.push(_eff);_cnt[_eff]=1;}
   const _toPl=txt=>txt.replace(/\b(\w+)es\b/g,(_,s)=>s+'e');
   return _order.map(s=>{const base=_KOPF_MAP[s]||s;const n=_cnt[s]||1;return n>1?n+' '+_toPl(base):base;}).join(' + ');
