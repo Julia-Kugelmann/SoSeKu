@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 13:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 13:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3802,7 +3802,7 @@ function renderStep5(){
         </div>
       </div>`;
     } else {
-      // ═══ Single system: original box ═══
+      // ═══ Single system ═══
       const plateParts=[];
       if(totalMengeWand2>0)plateParts.push(`${totalMengeWand2}x Wandplatte`);
       if(totalMengeB2>0)plateParts.push(`${totalMengeB2}x Bodenplatte`);
@@ -3810,16 +3810,15 @@ function renderStep5(){
       const sailHdr=sailCount2>1?`<span style="color:#ffb300">${sailCount2}× Segel</span>`:'';
       const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
       const hdrChips=[welleHdr,sailHdr,plateParts.join(' '),sfHdr].filter(Boolean).join('<br>');
+      if(mk2?.ok)_s5CachedMultiTotalSubH=totalH2;
+      const _gpStoredS=Number(_gsMonPos[mi]?.preis_einheit||0);
+      const _gpInitS=_gpStoredS>0?_gpStoredS:(mk2?.ok?Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10:gp);
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:flex-start">
           <strong>${instPos.name}</strong>
           <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${hdrChips}</span>
         </div>
         <div class="s5-card-body">
-          <div class="s5-irow"><span class="s5-lbl">Preis</span>
-            <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
-            <span class="s5-unit">&euro;</span>
-          </div>
           ${mk2?.ok?`<div class="s5-calc-detail">
             <div>Segel (${sailCount2}${sailCount2>1?` Stk. &middot; GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
             ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
@@ -3827,9 +3826,18 @@ function renderStep5(){
             ${sfCnt2>0?`<div>Schraubfundamente (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
             ${verbCnt2>0?`<div>Wellen-Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
           </div>
-          <div class="s5-calc">
-            <span style="color:var(--muted)">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
-            <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*prices5.stundensatz/10)*10)}</strong><span class="s5-raw">${(()=>{const raw=totalH2*prices5.stundensatz;const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
+          <div class="s5-irow" style="margin-top:6px">
+            <span class="s5-lbl">Zusatzstunden</span>
+            <input type="number" class="s5-inp s5-w70" id="mInstExtraH" value="0" step="0.25" min="0" oninput="_updInstGesamt(${mi})" style="text-align:right">
+            <span class="s5-unit">h</span>
+          </div>`:''}
+          <div class="s5-irow"><span class="s5-lbl">Preis</span>
+            <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${_gpInitS.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
+            <span class="s5-unit">&euro;</span>
+          </div>
+          ${mk2?.ok?`<div class="s5-calc">
+            <span style="color:var(--muted)" id="mInstGesamtCalcLbl">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
+            <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10)}</strong><span class="s5-raw" id="mInstGesamtRaw">${(()=>{const raw=totalH2*(prices5.stundensatz||0);const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
           </div>`:''}
         </div>
       </div>`;
