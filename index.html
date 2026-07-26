@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 09:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 09:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -936,6 +936,7 @@ let repStep={montageAn:false,stunden:1,team:2,zone:2,anfahrtVoll:false};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
 let _segelZusammenfassen=false,_segelMergeSet=new Set(),_transformedDataOrig=null;
 let _aeroCleat=false,_aeroCleatViereck=null,_aeroCleatDreieck=null,_aeroCleatPunkte=null;
+let _kopfCombined='';
 let _aeroPreis={done:false,seilspanner:29,seil:2.7,schaekel:6.7,schnapp:6.8};
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
@@ -4208,6 +4209,37 @@ function applyPrices5(){
 }
 
 // === STEP 6 ===
+const _KOPF_MAP={
+  'SOLIDAY-C':          'Elektrisch aufrollbares Sonnensegel',
+  'SOLIDAY-CS':         'Elektrisch aufrollbares Markisensegel',
+  'SOLIDAY-CS-DREIECK': 'Elektrisch aufrollbares Sonnensegel',
+  'SOLIDAY-CS-TWIN':    'Elektrisch aufrollbares Markisensegel',
+  'SOLIDAY-XS':         'Semi-automatisch aufrollbares Markisensegel',
+  'SOLIDAY-XS-DREIECK': 'Semi-automatisch aufrollbares Sonnensegel',
+  'SOLIDAY-X':          'Semi-automatisch aufrollbares Markisensegel',
+  'SOLIDAY-M':          'Manuell aufrollbares Sonnensegel',
+  'SOLIDAY-MA':         'Manuell aufrollbares Sonnensegel',
+  'SOLIDAY-ONE':        'Manuell aufrollbares Premium Sonnensegel mit Ein-Punkt Bedienung',
+  'SOLIDAY-FLEX':       'Robustes aufrollbares Sonnensegel mit SNAP System',
+  'SOLIDAY-SANDY':      'Sonnensegel & Sandkastenabdeckung',
+  'SONNENSEGEL-MAß':      'Festes Sonnensegel nach Maß',
+  'SONNENSEGEL-MAß-SNAP': 'Festes Sonnensegel nach Maß mit SNAP System',
+  'SONNENSEGEL-MASS':     'Festes Sonnensegel nach Maß',
+  'SONNENSEGEL-MASS-SNAP':'Festes Sonnensegel nach Maß mit SNAP System',
+  'RAFF-M-DRAHTSEIL':          'Manuell raffbares Sonnensegel mit Drahtseil Aufhängung',
+  'RAFF-M-FUEHRUNGSSCHIENE':   'Manuell raffbares Sonnensegel mit Drahtseil Aufhängung',
+};
+function _buildKopfCombined(){
+  const _segelSysAll=soSeKuJSON?.segelSystems||{};
+  const _eff=(transformedData?.effectiveSys||soSeKuJSON?.system||'').toUpperCase();
+  const _sailsAll=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
+  const _order=[],_cnt={};
+  if(_sailsAll.length>0){
+    _sailsAll.forEach(p=>{const nr=Number(p.segel_nr)||1;const s=(_segelSysAll[nr]||_eff).toUpperCase();if(!_cnt[s]){_order.push(s);_cnt[s]=0;}_cnt[s]++;});
+  } else {_order.push(_eff);_cnt[_eff]=1;}
+  const _toPl=txt=>txt.replace(/\b(\w+)es\b/g,(_,s)=>s+'e');
+  return _order.map(s=>{const base=_KOPF_MAP[s]||s;const n=_cnt[s]||1;return n>1?n+' '+_toPl(base):base;}).join(' + ');
+}
 function buildSevdeskPositions(){
   const rows=[];
   const addPos=p=>rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});
@@ -4265,6 +4297,7 @@ function goToStep6(){
   applyPrices5();
   stepState[5]=JSON.parse(JSON.stringify(transformedData));
   sevdeskPositions=buildSevdeskPositions();
+  _kopfCombined=_buildKopfCombined();
   renderStep6();
 }
 function renderStep6(){
@@ -4346,12 +4379,13 @@ function renderStep6(){
     `<div class='s3-sum-left'><div class='s3-lbl'>Unveränderte Pos. (SoSeKu)</div><div class='s3-big' style='font-size:16px'>${fmtE(unmodSoSeKu)}</div><div style='font-size:10px;color:var(--muted);margin-top:4px'>${unmodArtNrs.size} Art.-Nr.</div></div>`+
     `<div class='s3-sum-right'><div class='s3-lbl'>Unveränderte Pos. (sevdesk)</div><div class='s3-big' style='font-size:16px'>${fmtE(unmodSevdesk)}</div><div style='font-size:10px;color:var(--muted);margin-top:4px'>Gegenprüfung</div></div>`+
     `<div class='s3-sum-badge ${unmodOk?"ok":"err"}'>${unmodOk?'✓ OK':'✗ '+fmtE(unmodDelta)}</div></div>`;
-  h+=`<div class="info-chips" style="margin-bottom:12px;display:flex;align-items:center;flex-wrap:wrap;gap:8px">`+
+  h+=`<div class="info-chips" style="margin-bottom:4px;display:flex;align-items:center;flex-wrap:wrap;gap:8px">`+
     `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`+
     `<span>System: <strong>${d.system||'–'}</strong></span>`+
     `<span>Datum: <strong>${d.datum||'–'}</strong></span>`+
     `<label style="margin-left:auto;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;user-select:none"><input type="checkbox" ${_showUpf?'checked':''} onchange="toggleUpf(this.checked)" style="accent-color:var(--accent)">UPF in Positionsnamen</label>`+
-    `</div>`;
+    `</div>`+
+    (_kopfCombined?`<div style="margin-bottom:12px;font-size:11px;color:var(--muted)">Kopftext: <em>${_kopfCombined}</em></div>`:'');
   h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line;line-height:1.5">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
   h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto Positionen</span><span>${fmtE(netto)}</span></div>`;
@@ -4384,10 +4418,11 @@ function renderStep7(){
   const d=soSeKuJSON;
   let h=`<div style="max-width:860px;margin:0 auto;padding:16px 0">`;
   h+=`<div style="margin-bottom:12px;padding:10px 14px;background:rgba(56,217,169,.08);border:1px solid rgba(56,217,169,.2);border-radius:10px;font-size:12px;color:var(--accent2)">Alle Preise wurden auf ganze Euro gerundet. Die Positionen unten zeigen die finalen Import-Werte.</div>`;
-  h+=`<div class="info-chips" style="margin-bottom:12px">`+
+  h+=`<div class="info-chips" style="margin-bottom:4px">`+
     `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`+
     (importMode==='reparatur'?`<span style="color:rgba(255,152,0,.9)">Reparatur / Ersatz</span>`:`<span>System: <strong>${d.system||'–'}</strong></span>`)+
-    `<span>Datum: <strong>${d.datum||'–'}</strong></span></div>`;
+    `<span>Datum: <strong>${d.datum||'–'}</strong></span></div>`+
+    (_kopfCombined?`<div style="margin-bottom:12px;font-size:11px;color:var(--muted)">Kopftext: <em>${_kopfCombined}</em></div>`:'');
   h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line;line-height:1.5">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
   h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto Positionen</span><span>${fmtE(netto)}</span></div>`;
@@ -4565,28 +4600,8 @@ async function importToSevdesk(){
     if(_segSek){const _aufroll=_segSek.positionen.find(p=>p._isAufroll||isAufrollsystem(p.artikelnummer));if(_aufroll){const _m=(_aufroll.name||'').match(/^SOLIDAY\s+(.+?)\s+Segelsystem/i);if(_m)_sysLabel=_m[1];}}
     const _var=soSeKuJSON.variante||'';
     const _betreff=`Angebot - SOLIDAY ${_sysLabel}`+(_kom?' - '+_kom:'')+(_var?' - '+_var:'');
-    const _kopfMap={
-      'SOLIDAY-C':   'Elektrisch aufrollbares Sonnensegel',
-      'SOLIDAY-CS':  'Elektrisch aufrollbares Markisensegel',
-      'SOLIDAY-CS-DREIECK': 'Elektrisch aufrollbares Sonnensegel',
-      'SOLIDAY-CS-TWIN':    'Elektrisch aufrollbares Markisensegel',
-      'SOLIDAY-XS':  'Semi-automatisch aufrollbares Markisensegel',
-      'SOLIDAY-XS-DREIECK': 'Semi-automatisch aufrollbares Sonnensegel',
-      'SOLIDAY-X':   'Semi-automatisch aufrollbares Markisensegel',
-      'SOLIDAY-M':   'Manuell aufrollbares Sonnensegel',
-      'SOLIDAY-MA':  'Manuell aufrollbares Sonnensegel',
-      'SOLIDAY-ONE': 'Manuell aufrollbares Premium Sonnensegel mit Ein-Punkt Bedienung',
-      'SOLIDAY-FLEX':'Robustes aufrollbares Sonnensegel mit SNAP System',
-      'SOLIDAY-SANDY':'Sonnensegel & Sandkastenabdeckung',
-      'SONNENSEGEL-MAß':      'Festes Sonnensegel nach Maß',
-      'SONNENSEGEL-MAß-SNAP': 'Festes Sonnensegel nach Maß',
-      'SONNENSEGEL-MASS':     'Festes Sonnensegel nach Maß',
-      'SONNENSEGEL-MASS-SNAP':'Festes Sonnensegel nach Maß',
-      'RAFF-M-DRAHTSEIL':         'Manuell raffbares Sonnensegel mit Drahtseil Aufhängung',
-      'RAFF-M-FUEHRUNGSSCHIENE':  'Manuell raffbares Sonnensegel mit Drahtseil Aufhängung',
-    };
-    const _kopfBase=_kopfMap[_effectiveSys]||'';
     const _eigenSys=new Set(['SOLIDAY-SANDY','SONNENSEGEL-MAß','SONNENSEGEL-MAß-SNAP','SONNENSEGEL-MASS','SONNENSEGEL-MASS-SNAP','RAFF-M-DRAHTSEIL','RAFF-M-FUEHRUNGSSCHIENE']);
+    const _kopfBase=_kopfCombined||_buildKopfCombined();
     const _kopf=_kopfBase+((_kopfBase&&fragebogen.montage===false&&_eigenSys.has(_effectiveSys))?' zur Eigenmontage':'');
 
     const payload={
