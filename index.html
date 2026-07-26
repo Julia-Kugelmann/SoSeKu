@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 10:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 10:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1165,22 +1165,41 @@ dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');co
 fi.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files[0]);});
 
 // === STEP 1 ===
+function _sysFromText(txt){
+  const t=(txt||'').toUpperCase();
+  if(!t)return null;
+  if(/SOLIDAY-FLEX/.test(t))return'SOLIDAY-FLEX';
+  if(/SOLIDAY-CS-TWIN/.test(t))return'SOLIDAY-CS-TWIN';
+  if(/SOLIDAY-CS[^-]*(DREIECK|3ECK)/.test(t)||/SOLIDAY-CS-DREIECK/.test(t))return'SOLIDAY-CS-DREIECK';
+  if(/SOLIDAY-ONE/.test(t))return'SOLIDAY-ONE';
+  if(/SOLIDAY-XS-DREIECK/.test(t))return'SOLIDAY-XS-DREIECK';
+  if(/SOLIDAY-XS(?!-DREIECK)/.test(t))return'SOLIDAY-XS';
+  if(/SOLIDAY-X(?!S)/.test(t))return'SOLIDAY-X';
+  if(/SOLIDAY-CS(?!-TWIN|-DREIECK)/.test(t))return'SOLIDAY-CS';
+  if(/SOLIDAY-C(?!S)/.test(t))return'SOLIDAY-C';
+  if(/SOLIDAY-MA(?!SS)/.test(t))return'SOLIDAY-MA';
+  if(/SOLIDAY-M(?!A|ASS)/.test(t))return'SOLIDAY-M';
+  if(/SOLIDAY-SANDY/.test(t))return'SOLIDAY-SANDY';
+  if(/SONNENSEGEL[^A-Z]*(MAß|MA[ÃŸ]|MASS)[^A-Z]*(SNAP|SCHNAPP)/i.test(t)||/SONNENSEGEL.*SNAP.*MAß|SNAP.*SONNENSEGEL.*MAß/i.test(t))return'SONNENSEGEL-MAß-SNAP';
+  if(/SONNENSEGEL[^A-Z]*(MAß|MA[ÃŸ]|MASS)|MAß[-\s]*SEGEL|NACH\s*MAß|AUF\s*MAß|NACH MA[ÃŸ]/i.test(t))return'SONNENSEGEL-MAß';
+  if(/RAFF.*DRAHTSEIL|DRAHTSEIL.*RAFF/i.test(t))return'RAFF-M-DRAHTSEIL';
+  if(/RAFF.*F[ÜU]HRUNGS|F[ÜU]HRUNGS.*RAFF/i.test(t))return'RAFF-M-FUEHRUNGSSCHIENE';
+  return null;
+}
 function detectSysFromPos(positionen){
+  // Pass 1: soliday_sektion headings (most reliable — directly from PDF section titles)
+  for(const p of (positionen||[])){
+    const det=_sysFromText(p.soliday_sektion);
+    if(det)return det;
+  }
+  // Pass 2: aufrollsystem article numbers + position names
   const _isAufrollNr=nr=>/^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((nr||'').toUpperCase());
   for(const p of (positionen||[])){
     if(!_isAufrollNr(p.artikelnummer||''))continue;
     const nm=(p.name||'').toUpperCase();
     const nr=(p.artikelnummer||'').toUpperCase();
-    if(/\bFLEX\b/.test(nm)||/^79V/.test(nr))return'SOLIDAY-FLEX';
-    if(/CS.*TWIN/i.test(nm))return'SOLIDAY-CS-TWIN';
-    if(/CS.*(DREI|3ECK)/i.test(nm))return'SOLIDAY-CS-DREIECK';
-    if(/\bONE\b/.test(nm))return'SOLIDAY-ONE';
-    if(/\bXS\b/.test(nm))return'SOLIDAY-XS';
-    if(/\bX\b/.test(nm)&&!/XS/.test(nm))return'SOLIDAY-X';
-    if(/\bCS\b/.test(nm))return'SOLIDAY-CS';
-    if(/\bC\b/.test(nm)&&!/CS/.test(nm))return'SOLIDAY-C';
-    if(/\bMA\b/.test(nm))return'SOLIDAY-MA';
-    if(/\bM\b/.test(nm)&&!/MA|ONE|FLEX/.test(nm))return'SOLIDAY-M';
+    const det=_sysFromText(nm)||_sysFromText(nr);
+    if(det)return det;
     if(/SANDY/i.test(nm))return'SOLIDAY-SANDY';
   }
   return null;
@@ -1197,7 +1216,9 @@ function normalizeExtractedSystem(json){
       return json;
     }
     // Infer from positions: no aufroll article + no wave length → feste Segel
-    const hasAufroll=(json.positionen||[]).some(p=>/^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((p.artikelnummer||'').toUpperCase()));
+    const hasAufroll=(json.positionen||[]).some(p=>
+      /^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((p.artikelnummer||'').toUpperCase())||
+      /SOLIDAY-(?:C|CS|ONE|M|MA|X|XS|FLEX|SANDY)/i.test(p.soliday_sektion||''));
     if(!hasAufroll&&!(json.wellenlaenge_aufrollsystem_mm>0)){
       json.system='SONNENSEGEL-MAß';
       return json;
