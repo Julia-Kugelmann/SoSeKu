@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 07:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 08:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3487,11 +3487,15 @@ function renderStep5(){
       </div></div>`;
   } else {
     _sailPos.forEach((sail,si)=>{
+      const _sailNr=Number(sail.segel_nr)||1;
+      const _sailSys=((soSeKuJSON?.segelSystems||{})[_sailNr]||sys).toUpperCase();
+      const _isFix=_sailSys.startsWith('SONNENSEGEL');
+      const _sailLbl=_isFix?'Fix Segel':_sailSys.startsWith('SOLIDAY-')?'Soliday '+_sailSys.replace('SOLIDAY-',''):_sailSys;
       const qm=sail.qm_segel;
       const bQm=billingQm(qm);
-      const stoffe=getStoffeForSys(sys,bQm,qm);
-      const isFest=sys.startsWith('SONNENSEGEL');
-      const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys)&&qm>55;
+      const stoffe=getStoffeForSys(_sailSys,bQm,qm);
+      const isFest=_isFix;
+      const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_sailSys)&&qm>55;
       const sailNrLabel=sail._merged?` &ndash; ${sail._merged} Segel zusammengefasst`:(transformedData.isMultiSegel?` &ndash; Segel ${sail.segel_nr||si+1}`:'');
       const sailQmPrefix=sail._merged?'∅ ':'';
     const stkCount=sail._merged||1;
@@ -3499,7 +3503,7 @@ function renderStep5(){
       const _mergedBadge=sail._merged?`<span style="font-size:13px;font-weight:700;color:#ffb300;margin-left:4px">${sail._merged}× Segel</span>`:'';
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:center">
-          <span style="display:flex;align-items:center;gap:0;flex-wrap:wrap"><strong>Segeltuch &ndash; ${sysLabel2}</strong>${_mergedBadge}</span>
+          <span style="display:flex;align-items:center;gap:0;flex-wrap:wrap"><strong>Segeltuch &ndash; ${_sailLbl}</strong>${_mergedBadge}</span>
           <span id="sailHdrQm${si}" style="font-size:14px;font-weight:700;color:var(--accent2)">${sailQmPrefix}${qm.toFixed(2)} m&sup2;</span>
         </div>
         <div class="s5-card-body">
@@ -3513,10 +3517,10 @@ function renderStep5(){
           <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Stoff &amp; Preis/m&sup2;</div>
           ${stoffe.map((s,fi)=>`
             <label class="s5-radio-row">
-              <input type="radio" name="sail${si}st" value="${fi}" ${fi===defaultStoffIdx(sys,stoffe)?'checked':''} onchange="updSail(${si})">
+              <input type="radio" name="sail${si}st" value="${fi}" ${fi===defaultStoffIdx(_sailSys,stoffe)?'checked':''} onchange="updSail(${si})">
               <span class="s5-radio-name">${s.name}${s.upf?`<span class="upf-badge" style="font-size:9px;font-weight:400;color:var(--muted);margin-left:4px">${s.upf}</span>`:''}</span>
               <input type="number" id="sP${si}_${fi}" value="${s.preis.toFixed(2)}" step="0.01" min="0" oninput="updSail(${si})" style="display:none">
-              ${fi!==defaultStoffIdx(sys,stoffe)?`<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none" title="Als Alternative in Angebots-Beschreibung anzeigen"><input type="checkbox" id="sAlt${si}_${fi}" checked style="width:11px;height:11px;cursor:pointer">Alt.</label>`:''}
+              ${fi!==defaultStoffIdx(_sailSys,stoffe)?`<label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none" title="Als Alternative in Angebots-Beschreibung anzeigen"><input type="checkbox" id="sAlt${si}_${fi}" checked style="width:11px;height:11px;cursor:pointer">Alt.</label>`:''}
             </label>`).join('')}
           <div class="s5-calc">
             <span style="color:var(--muted)">(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
@@ -3995,18 +3999,20 @@ function applyPrices5(){
       segSek.positionen=[{artikelnummer:'',name:`Segeltuch - ${sn}`,beschreibung:altDesc,preis_einheit:p,menge:1,einheit:'Stk.',gesamt:p},...nonSail];
     } else {
       _sailPos.forEach((sail,si)=>{
+        const _sailNr2=Number(sail.segel_nr)||1;
+        const _sailSys2=((soSeKuJSON?.segelSystems||{})[_sailNr2]||sys).toUpperCase();
         const multiplier=sail._merged||1;
         const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
         const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
         const qmInput=document.getElementById(`sailQm${si}`);
         const qm=qmInput?parseFloat(qmInput.value||'0')||sail.qm_segel:sail.qm_segel;
         const bQm=billingQm(qm);
-        const stoffe=getStoffeForSys(sys,bQm,qm);
+        const stoffe=getStoffeForSys(_sailSys2,bQm,qm);
         const unitT=Math.ceil(bQm*p);
         const totalT=unitT*multiplier;
         const sn=stoffe[sel]?.name||'Austrosail Nano';
         const allP=stoffe.map((s,fi)=>parseFloat(document.getElementById(`sP${si}_${fi}`)?.value||'0')||s.preis);
-        const _isFestSail=sys.startsWith('SONNENSEGEL');
+        const _isFestSail=_sailSys2.startsWith('SONNENSEGEL');
         const _fmtGeld=n=>Math.round(n).toLocaleString('de-DE')+',- €';
         const _upfAlt=name=>{const n=(name||'').toLowerCase();if(n.includes('soltis'))return{upf:'UPF 11-25',star:true};if(n.includes('950'))return{upf:'UPF 11-25',star:true};if(n.includes('960'))return{upf:'UPF 20-50',star:true};if(n.includes('austrosail')||n.includes('lotus')||n.includes('nano'))return{upf:'UPF 50+',star:false};return{upf:'',star:false};};
         const selUpf=_upfAlt(sn);
