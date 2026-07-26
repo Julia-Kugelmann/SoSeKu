@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 11:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 12:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3587,7 +3587,7 @@ function renderStep5(){
               <input type="radio" name="sail${si}st" value="${fi}" ${fi===defaultStoffIdx(_sailSys,stoffe)?'checked':''} onchange="updSail(${si})">
               <span class="s5-radio-name">${s.name}${s.upf?`<span class="upf-badge" style="font-size:9px;font-weight:400;color:var(--muted);margin-left:4px">${s.upf}</span>`:''}</span>
               <input type="number" id="sP${si}_${fi}" value="${s.preis.toFixed(2)}" step="0.01" min="0" oninput="updSail(${si})" style="display:none">
-              <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none" title="Als Alternative in Angebots-Beschreibung anzeigen"><input type="checkbox" id="sAlt${si}_${fi}" checked style="width:11px;height:11px;cursor:pointer">Alt.</label>
+              <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none" title="Als Alternative in Angebots-Beschreibung anzeigen"><input type="checkbox" id="sAlt${si}_${fi}" ${fi!==defaultStoffIdx(_sailSys,stoffe)?'checked':''} style="width:11px;height:11px;cursor:pointer">Alt.</label>
             </label>`).join('')}
           <div class="s5-calc">
             <span style="color:var(--muted)">(<span id="sQmDisp${si}">${qm.toFixed(2)}</span> + <span id="sQmEx${si}">${qmExtra(qm)}</span>) m&sup2; &times; <span id="sPd${si}">&ndash;</span> &euro;/m&sup2; =</span>
@@ -3998,9 +3998,12 @@ function updSail(si){
   const sail=_sailPos[si];
   const multiplier=sail._merged||1;
   const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
-  // Auto-check Alt. for the selected stoff so it can appear in the Alternativ block
-  const _altEl=document.getElementById(`sAlt${si}_${sel}`);
-  if(_altEl&&!_altEl.checked)_altEl.checked=true;
+  // Selected stoff: Alt. unchecked. All others: Alt. checked.
+  const _sailSysUpd=((soSeKuJSON?.segelSystems||{})[Number(sail.segel_nr)||1]||(soSeKuJSON?.system||'')).toUpperCase();
+  const qmUpdEl=document.getElementById(`sailQm${si}`);
+  const qmUpd=qmUpdEl?parseFloat(qmUpdEl.value||'0')||sail.qm_segel:sail.qm_segel;
+  const bQmUpd=billingQm(qmUpd);
+  getStoffeForSys(_sailSysUpd,bQmUpd,qmUpd).forEach((_,fi)=>{const ae=document.getElementById(`sAlt${si}_${fi}`);if(ae)ae.checked=(fi!==sel);});
   const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
   const qmInput=document.getElementById(`sailQm${si}`);
   const qm=qmInput?parseFloat(qmInput.value||'0')||sail.qm_segel:sail.qm_segel;
@@ -4105,8 +4108,12 @@ function applyPrices5(){
         }
         if(hasStar)desc+='\n*abhängig von Farbe';
         const newPos={artikelnummer:'',name:posName,beschreibung:desc,preis_einheit:unitT,menge:multiplier,einheit:'Stk.',gesamt:totalT};
-        // For multi-sail: one segSek per sail (in order); for single-sail: one segSek gets all
-        const segSek=segSeks[si]||segSeks[0];
+        // For multi-sail: match segSek by segel_nr so Reihenfolge reordering doesn't swap sections
+        const _sailNrKey=Number(sail.segel_nr)||1;
+        const segSek=(segSeks.length>1
+          ? segSeks.find(s=>s._mergedSys ? s._mergedSys===sail._mergedSys : s._segelNr===_sailNrKey)
+          : null
+        )||segSeks[si]||segSeks[0];
         const nonSail=segSek.positionen.filter(pp=>!pp._gs&&!(pp.qm_segel>0));
         if(segSeks.length>1){
           // Multi-sail: each sektion gets its own one sail position
