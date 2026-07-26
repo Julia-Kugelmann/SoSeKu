@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 10:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 11:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3465,7 +3465,7 @@ function renderStep5(){
   const wandartForAP=(fragebogen.wandart==='freistehend'||!fragebogen.wandart)?'ziegel-10':fragebogen.wandart;
   const apDef=withMontage?(prices5.apPreis[wandartForAP]||0):0;
 
-  _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
+  _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0).sort((a,b)=>(Number(a.segel_nr)||1)-(Number(b.segel_nr)||1));
   if(_segelMergeSet.size>0&&_sailPos.length>1){
     const _segelSysMs=soSeKuJSON.segelSystems||{};
     const _sbMs={};
@@ -3998,6 +3998,9 @@ function updSail(si){
   const sail=_sailPos[si];
   const multiplier=sail._merged||1;
   const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
+  // Auto-check Alt. for the selected stoff so it can appear in the Alternativ block
+  const _altEl=document.getElementById(`sAlt${si}_${sel}`);
+  if(_altEl&&!_altEl.checked)_altEl.checked=true;
   const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
   const qmInput=document.getElementById(`sailQm${si}`);
   const qm=qmInput?parseFloat(qmInput.value||'0')||sail.qm_segel:sail.qm_segel;
