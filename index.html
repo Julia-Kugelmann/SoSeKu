@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 08:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 09:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2223,6 +2223,12 @@ function _aeroSegelFormDefaults(){
   const d=festSails.filter(p=>p.segelform==='dreieck').length;
   return{viereck:festSails.length-d,dreieck:d};
 }
+function _makeAeroPosArr(p,pr){return[
+  {artikelnummer:'AEROCLEAT',name:'AeroClamcleat - Seilspanner',beschreibung:'',menge:p,einheit:'Stk.',preis_einheit:pr.seilspanner,gesamt:+(p*pr.seilspanner).toFixed(2)},
+  {artikelnummer:'AEROSEIL',name:'Dyneema Seil 4mm',beschreibung:'',menge:p*3,einheit:'lfm',preis_einheit:pr.seil,gesamt:+(p*3*pr.seil).toFixed(2)},
+  {artikelnummer:'AEROSCHAEKEL',name:'Schäkel mit Schnellverschluss Edelstahl',beschreibung:'',menge:p,einheit:'Stk.',preis_einheit:pr.schaekel,gesamt:+(p*pr.schaekel).toFixed(2)},
+  {artikelnummer:'AEROSCHNAPP',name:'Schnappschäkel Edelstahl',beschreibung:'',menge:p,einheit:'Stk.',preis_einheit:pr.schnapp,gesamt:+(p*pr.schnapp).toFixed(2)},
+];}
 function _buildAeroCleatData(){
   const base=JSON.parse(JSON.stringify(transformedData));
   const def=_aeroSegelFormDefaults();
@@ -2237,16 +2243,53 @@ function _buildAeroCleatData(){
     sek.positionen=sek.positionen.filter(p=>!/karabiner|spanngurt/i.test(p.name||''));
   });
   const pr=_aeroPreis;
-  const np=[
-    {artikelnummer:'AEROCLEAT',name:'AeroClamcleat - Seilspanner',beschreibung:'',menge:punkte,einheit:'Stk.',preis_einheit:pr.seilspanner,gesamt:+(punkte*pr.seilspanner).toFixed(2)},
-    {artikelnummer:'AEROSEIL',name:'Dyneema Seil 4mm',beschreibung:'',menge:punkte*3,einheit:'lfm',preis_einheit:pr.seil,gesamt:+(punkte*3*pr.seil).toFixed(2)},
-    {artikelnummer:'AEROSCHAEKEL',name:'Schäkel mit Schnellverschluss Edelstahl',beschreibung:'',menge:punkte,einheit:'Stk.',preis_einheit:pr.schaekel,gesamt:+(punkte*pr.schaekel).toFixed(2)},
-    {artikelnummer:'AEROSCHNAPP',name:'Schnappschäkel Edelstahl',beschreibung:'',menge:punkte,einheit:'Stk.',preis_einheit:pr.schnapp,gesamt:+(punkte*pr.schnapp).toFixed(2)},
-  ];
-  const aeroSum=+np.reduce((s,p)=>s+p.gesamt,0).toFixed(2);
-  let zub=base.sektionen.find(s=>s.id==='zubehoer');
-  if(zub)zub.positionen.push(...np);
-  else base.sektionen.push({id:'zubehoer',name:'Zubehör',positionen:np});
+  const segelSys=base.segelSystems||{};
+  const sysFull=(base.system||'').toUpperCase();
+  // Determine if a section belongs to a Fix Segel (festes Sonnensegel)
+  const isFestSek=sek=>{
+    if(sek._mergedSys)return sek._mergedSys.toUpperCase().startsWith('SONNENSEGEL');
+    if(sek._segelNr!==undefined)return(segelSys[sek._segelNr]||'').toUpperCase().startsWith('SONNENSEGEL');
+    return sysFull.startsWith('SONNENSEGEL');
+  };
+  // Find Fix Segel zubehoer sections; create one if missing but Fix Segel exist
+  let festZubSecs=base.sektionen.filter(sek=>sek.id==='zubehoer'&&isFestSek(sek));
+  if(festZubSecs.length===0&&(sysFull.startsWith('SONNENSEGEL')||Object.values(segelSys).some(s=>s.toUpperCase().startsWith('SONNENSEGEL')))){
+    const newSek={id:'zubehoer',name:'Zubehör',positionen:[]};
+    const monIdx=base.sektionen.findIndex(s=>s.id==='montage');
+    if(monIdx>=0)base.sektionen.splice(monIdx,0,newSek);else base.sektionen.push(newSek);
+    festZubSecs=[newSek];
+  }
+  let aeroSum=0;
+  if(festZubSecs.length===0){
+    // Fallback: no Fix Segel found, add to first zubehoer
+    const np=_makeAeroPosArr(punkte,pr);
+    aeroSum=+np.reduce((s,p)=>s+p.gesamt,0).toFixed(2);
+    let zub=base.sektionen.find(s=>s.id==='zubehoer');
+    if(zub)zub.positionen.push(...np);else base.sektionen.push({id:'zubehoer',name:'Zubehör',positionen:np});
+  } else if(festZubSecs.length===1){
+    // Single Fix Segel zubehoer (or merged): all aero positions here
+    const np=_makeAeroPosArr(punkte,pr);
+    aeroSum=+np.reduce((s,p)=>s+p.gesamt,0).toFixed(2);
+    festZubSecs[0].positionen.push(...np);
+  } else {
+    // Multiple individual Fix Segel: distribute per sail
+    const rawSails=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
+    festZubSecs.forEach((sek,i)=>{
+      let p2;
+      if(_aeroCleatPunkte!==null){
+        // Manual override: divide evenly, remainder in last
+        const pp=Math.floor(punkte/festZubSecs.length);
+        p2=i===festZubSecs.length-1?punkte-pp*(festZubSecs.length-1):pp;
+      } else {
+        // Auto: 4 punkte per Viereck, 3 per Dreieck
+        const sail=rawSails.find(p=>(Number(p.segel_nr)||1)===sek._segelNr);
+        p2=(sail?.segelform==='dreieck')?3:4;
+      }
+      const np=_makeAeroPosArr(p2,pr);
+      aeroSum=+(aeroSum+np.reduce((s,p)=>s+p.gesamt,0)).toFixed(2);
+      sek.positionen.push(...np);
+    });
+  }
   base._aeroSumAdjust=+(removedSum-aeroSum).toFixed(2);
   base._aeroCleat=true;
   return base;
