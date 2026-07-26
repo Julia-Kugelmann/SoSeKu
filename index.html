@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 06:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 07:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1447,11 +1447,11 @@ function isAufrollsystem(nr){
   return/^(78V|79V|70001B|71001B|78E|70E)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
 }
 function _hasFesteSegel(){
-  const sys=(soSeKuJSON?.system||'').toUpperCase();
-  if(sys.startsWith('SOLIDAY'))return false;
-  if(sys.startsWith('SONNENSEGEL'))return true;
   const st=(_transformedDataOrig||transformedData)?.segelTypes;
   if(st&&Object.keys(st).length>0)return Object.values(st).some(t=>t==='fest');
+  const sys=(soSeKuJSON?.system||'').toUpperCase();
+  if(sys.startsWith('SONNENSEGEL'))return true;
+  if(sys.startsWith('SOLIDAY'))return false;
   return !(soSeKuJSON?.positionen||[]).some(p=>isAufrollsystem(p.artikelnummer||''));
 }
 function _festSegelCount(){
@@ -3472,7 +3472,7 @@ function renderStep5(){
   // ═══ COL 1: Segeltuch + Wandbefestigungen ═══
   h+=`<div class="s5-col">`;
   // — Segeltuch —
-  h+=`<div class="s5-section"><div class="s5-sec-title" style="display:flex;align-items:center;gap:10px">Segeltuch<label style="font-size:10px;font-weight:400;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;user-select:none;margin-left:auto"><input type="checkbox" id="showUpfChk" checked onchange="_showUpf=this.checked;document.querySelectorAll('.upf-badge').forEach(el=>el.style.display=this.checked?'':'none')">UPF</label></div>`;
+  h+=`<div class="s5-section"><div class="s5-sec-title">Segeltuch</div>`;
   if(_sailPos.length===0){
     const stoffe0=getStoffeForSys(sys,2);
     h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Segeltuch (Gesamtpreis)</strong><span>kein qm_segel aus Extraktion</span></div>
@@ -4195,6 +4195,10 @@ function buildSevdeskPositions(){
   }
   return rows;
 }
+function toggleUpf(checked){
+  _showUpf=checked;
+  goToStep6();
+}
 function goToStep6(){
   // Start from Step 3 snapshot (clean, with AeroCleat/zusammengefasst, no prices)
   if(stepState[3])transformedData=JSON.parse(JSON.stringify(stepState[3]));
@@ -4292,10 +4296,12 @@ function renderStep6(){
     `<div class='s3-sum-left'><div class='s3-lbl'>Unveränderte Pos. (SoSeKu)</div><div class='s3-big' style='font-size:16px'>${fmtE(unmodSoSeKu)}</div><div style='font-size:10px;color:var(--muted);margin-top:4px'>${unmodArtNrs.size} Art.-Nr.</div></div>`+
     `<div class='s3-sum-right'><div class='s3-lbl'>Unveränderte Pos. (sevdesk)</div><div class='s3-big' style='font-size:16px'>${fmtE(unmodSevdesk)}</div><div style='font-size:10px;color:var(--muted);margin-top:4px'>Gegenprüfung</div></div>`+
     `<div class='s3-sum-badge ${unmodOk?"ok":"err"}'>${unmodOk?'✓ OK':'✗ '+fmtE(unmodDelta)}</div></div>`;
-  h+=`<div class="info-chips" style="margin-bottom:12px">`+
+  h+=`<div class="info-chips" style="margin-bottom:12px;display:flex;align-items:center;flex-wrap:wrap;gap:8px">`+
     `<span>Kommission: <strong>${d.kommission||'–'}</strong></span>`+
     `<span>System: <strong>${d.system||'–'}</strong></span>`+
-    `<span>Datum: <strong>${d.datum||'–'}</strong></span></div>`;
+    `<span>Datum: <strong>${d.datum||'–'}</strong></span>`+
+    `<label style="margin-left:auto;cursor:pointer;display:flex;align-items:center;gap:5px;font-size:12px;user-select:none"><input type="checkbox" ${_showUpf?'checked':''} onchange="toggleUpf(this.checked)" style="accent-color:var(--accent)">UPF in Positionsnamen</label>`+
+    `</div>`;
   h+=`<div class="sektion-body"><table class="jtable"><colgroup><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th>Name / Beschreibung</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${sevdeskPositions.map(r=>r.type==='section'?`<tr class="sek-hdr-row"><td colspan="5">${r.name}</td></tr>`:`<tr><td><div>${r.name}</div>${r.beschreibung?`<div style="font-size:10px;color:var(--muted);margin-top:3px;white-space:pre-line;line-height:1.5">${r.beschreibung}</div>`:''}</td><td class="num-r">${r.menge.toLocaleString('de-DE')}</td><td style="color:var(--muted)">${r.einheit}</td><td class="num-r">${fmt(r.preis_einheit)}</td><td class="num-r"><strong>${fmt(r.gesamt)}</strong></td></tr>`).join('')}</tbody></table></div>`;
   h+=`<div class="s6-totals" style="max-width:340px;margin-left:auto;margin-top:14px">`;
   h+=`<div class="s6-tr"><span style="color:var(--muted)">Netto Positionen</span><span>${fmtE(netto)}</span></div>`;
