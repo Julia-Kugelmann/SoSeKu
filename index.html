@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 12:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 12:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2101,10 +2101,11 @@ function renderStep3(){
   showView('viewStep3');setStep(3);
 }
 
-function _applyTransformReset(json){
+function _applyTransformReset(json,resetAero=true){
   stepState={};_s3MengeOverride={};
   transformedData=transformiere(json);
   if(transformedData.segelSystems&&Object.keys(transformedData.segelSystems).length>0)json.segelSystems=transformedData.segelSystems;
+  if(transformedData.segelNrs)json.segelNrs=transformedData.segelNrs;
   _transformedDataOrig=JSON.parse(JSON.stringify(transformedData));
   const _sails=(json.positionen||[]).filter(p=>p.qm_segel>0);
   _segelMergeSet=new Set();
@@ -2115,7 +2116,7 @@ function _applyTransformReset(json){
     Object.entries(_sb2).forEach(([_s,_sl])=>{if(_sl.length<2)return;const _qs=_sl.map(s=>s.qm_segel);const _tp=_sl.map(s=>(_transformedDataOrig.segelTypes||{})[Number(s.segel_nr)||1]||'aufrollbar');if(_tp.every(t=>t===_tp[0])&&Math.max(..._qs)-Math.min(..._qs)<=5)_segelMergeSet.add(_s);});
   }
   _segelZusammenfassen=_segelMergeSet.size>0;
-  _aeroCleat=false;_aeroCleatViereck=null;_aeroCleatDreieck=null;_aeroCleatPunkte=null;
+  if(resetAero){_aeroCleat=false;_aeroCleatViereck=null;_aeroCleatDreieck=null;_aeroCleatPunkte=null;}
   if(_segelMergeSet.size>0)transformedData=_buildSelectiveMergeData();
 }
 function _applyTransformKeep(json){
@@ -2446,8 +2447,10 @@ function swapSegelNr(nrA,nrB){
   });
   manualWeglass=new Set();
   manualWeglassArtNr=new Set();
+  _applyTransformReset(soSeKuJSON,false);
+  if(_aeroCleat)transformedData=_buildAeroCleatData();
+  stepState[3]=JSON.parse(JSON.stringify(transformedData));
   delete stepState[5];
-  _applyTransformReset(soSeKuJSON);
   renderStep3();
 }
 function s3SetMenge(artikelnummer,value){
