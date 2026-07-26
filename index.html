@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 12:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 13:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2358,7 +2358,7 @@ function _renderSegelToggle(){
         const _bill=Math.round((_avg+2)*100)/100;
         const _sysLbl=sys.startsWith('SONNENSEGEL')?'Fix Segel':sys.replace('SOLIDAY-','');
         const _chk=_segelMergeSet.has(sys)?'checked':'';
-        chkHtml+=`<label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;cursor:pointer;font-size:12px"><input type="checkbox" ${_chk} onchange="toggleSegelMerge(${JSON.stringify(sys)},this.checked)" style="margin-top:2px;accent-color:var(--accent);cursor:pointer"><span><strong>${_sysLbl}</strong> (${d.sails.length}×)<br><span style="color:var(--muted);">&Oslash; ${_avg.toFixed(2)} m&sup2; &rarr; ${_bill.toFixed(2)} m&sup2;</span></span></label>`;
+        chkHtml+=`<label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;cursor:pointer;font-size:12px"><input type="checkbox" ${_chk} onchange='toggleSegelMerge(${JSON.stringify(sys)},this.checked)' style="margin-top:2px;accent-color:var(--accent);cursor:pointer"><span><strong>${_sysLbl}</strong> (${d.sails.length}×)<br><span style="color:var(--muted);">&Oslash; ${_avg.toFixed(2)} m&sup2; &rarr; ${_bill.toFixed(2)} m&sup2;</span></span></label>`;
       });
       sections+=segelHdr+`<div style="margin-bottom:4px">${chkHtml}</div>`;
     }
