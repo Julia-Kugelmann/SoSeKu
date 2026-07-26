@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 01:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 06:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -934,7 +934,7 @@ let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtS
 let importMode='segelsystem'; // 'segelsystem' | 'reparatur'
 let repStep={montageAn:false,stunden:1,team:2,zone:2,anfahrtVoll:false};
 let _sailPos=[],_wandpl=[],_wandschellen=[],_wandSchGegen=[],_bodenpl=[],_gsMonPos=[],_gsFundPos=[];
-let _segelZusammenfassen=false,_transformedDataOrig=null;
+let _segelZusammenfassen=false,_segelMergeSet=new Set(),_transformedDataOrig=null;
 let _aeroCleat=false,_aeroCleatViereck=null,_aeroCleatDreieck=null,_aeroCleatPunkte=null;
 let _aeroPreis={done:false,seilspanner:29,seil:2.7,schaekel:6.7,schnapp:6.8};
 let modifiedArtNrsInStep5=new Set();
@@ -1291,7 +1291,7 @@ function renderStep2(){
     const qmStr=totalQm>0?` &nbsp;·&nbsp; ${totalQm.toLocaleString('de-DE',{maximumFractionDigits:2})} m² Segel`:'';
     const _segelNrs2=[...new Set(d.positionen.map(p=>Number(p.segel_nr)||1))];
     const _multiSail2=_segelNrs2.length>1;
-    const _sysLabels2=_segelNrs2.map(nr=>{const grp=d.positionen.filter(p=>(Number(p.segel_nr)||1)===nr);const det=detectSysFromPos(grp);return det?det.replace('SOLIDAY-',''):`Segel ${nr}`;});
+    const _sysLabels2=_segelNrs2.map(nr=>{const grp=d.positionen.filter(p=>(Number(p.segel_nr)||1)===nr);const isFix2=!grp.some(p=>isAufrollsystem(p.artikelnummer||''))&&grp.some(p=>p.qm_segel>0);const det=detectSysFromPos(grp);return det?det.replace('SOLIDAY-',''):isFix2?'Fix Segel':`Segel ${nr}`;});
     badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen${qmStr}</div>`
       +(_multiSail2?`<div class="val-ok" style="margin-left:8px">&#10003; ${_segelNrs2.length} Segel erkannt &nbsp;·&nbsp; ${_sysLabels2.join(' + ')}</div>`:'');
   }
@@ -1975,7 +1975,7 @@ function toggleManualWeglass(posNr,checked,artNr){
     else manualWeglass.delete(String(posNr));
   }else{
     // Remove: zusammengefasst mode → artNr-based (covers ALL sails); else pos-based
-    if(_segelZusammenfassen&&artNr) manualWeglassArtNr.add(artNr);
+    if(_segelMergeSet.size>0&&artNr) manualWeglassArtNr.add(artNr);
     else manualWeglass.add(String(posNr));
   }
   _applyTransformKeep(soSeKuJSON);
@@ -2035,7 +2035,7 @@ function renderStep3(){
     if(s.startsWith('SONNENSEGEL'))return '';
     return 'manuell aufrollbar';
   };
-  if(_segelZusammenfassen&&_transformedDataOrig){
+  if(_segelMergeSet.size>0&&_transformedDataOrig&&!transformedData.isMultiSegel){
     const _nSails=(_transformedDataOrig.segelNrs||[]).length||Object.keys(_transformedDataOrig.segelTypes||{}).length;
     const _rawSys=effectiveSys||soSeKuJSON.system||'SOLIDAY';
     const _sys=_rawSys.replace(/-/g,' ');
@@ -2044,18 +2044,29 @@ function renderStep3(){
     const lbl=_nSails>1?`${_sys}${_typPart} – ${_nSails} Segel zusammengefasst`:`${_sys}${_typPart}`;
     zusHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
   }
-  let lastSegelNr=null;
+  let lastSailKey=null;
   const tbodyRows=sektionen.map(sek=>{
-    const sekKey=sek._segelNr?`${sek.id}|${sek._segelNr}`:sek.id;
+    const sekKey=sek._segelNr?`${sek.id}|${sek._segelNr}`:sek._mergedSys?`${sek.id}|MRG_${sek._mergedSys}`:sek.id;
     let sailHdr='';
-    if(isMS&&sek._segelNr&&sek._segelNr!==lastSegelNr){
-      lastSegelNr=sek._segelNr;
-      const _rawSys=(transformedData.segelSystems||{})[sek._segelNr]||effectiveSys||soSeKuJSON.system||'SOLIDAY';
-      const _isFix=_rawSys.toUpperCase().startsWith('SONNENSEGEL');
-      const _sys=_isFix?'Fix Segel':_rawSys.replace(/-/g,' ');
-      const _typ=_isFix?'feste Sonnensegel nach Maß':_aufrollTyp(_rawSys);
-      const lbl=_typ?`${_sys} - ${_typ}`:`${_sys} - Segel ${sek._segelNr}`;
-      sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
+    const _sailKey=sek._segelNr||(sek._mergedSys?'MRG_'+sek._mergedSys:null);
+    if(isMS&&_sailKey&&_sailKey!==lastSailKey){
+      lastSailKey=_sailKey;
+      if(sek._mergedSys){
+        const _rawSys=sek._mergedSys;
+        const _isFix=_rawSys.toUpperCase().startsWith('SONNENSEGEL');
+        const _sys=_isFix?'Fix Segel':_rawSys.replace(/-/g,' ');
+        const _typ=_isFix?'feste Sonnensegel nach Maß':_aufrollTyp(_rawSys);
+        const _mc=sek._mergedCount||0;
+        const lbl=`${_sys}${_typ?' - '+_typ:''}${_mc>1?' – '+_mc+' Segel zusammengefasst':''}`;
+        sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
+      }else{
+        const _rawSys=(transformedData.segelSystems||{})[sek._segelNr]||effectiveSys||soSeKuJSON.system||'SOLIDAY';
+        const _isFix=_rawSys.toUpperCase().startsWith('SONNENSEGEL');
+        const _sys=_isFix?'Fix Segel':_rawSys.replace(/-/g,' ');
+        const _typ=_isFix?'feste Sonnensegel nach Maß':_aufrollTyp(_rawSys);
+        const lbl=_typ?`${_sys} - ${_typ}`:`${_sys} - Segel ${sek._segelNr}`;
+        sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
+      }
     }
     return sailHdr+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sekKey,i)).join('')}`;
   }).join('');
@@ -2072,19 +2083,21 @@ function _applyTransformReset(json){
   if(transformedData.segelSystems&&Object.keys(transformedData.segelSystems).length>0)json.segelSystems=transformedData.segelSystems;
   _transformedDataOrig=JSON.parse(JSON.stringify(transformedData));
   const _sails=(json.positionen||[]).filter(p=>p.qm_segel>0);
+  _segelMergeSet=new Set();
   if(_sails.length>1){
-    const _qms=_sails.map(p=>p.qm_segel);
-    const _types=Object.values(_transformedDataOrig.segelTypes||{});
-    const _sameType=_types.length===0||_types.every(t=>t===_types[0]);
-    _segelZusammenfassen=_sameType&&Math.max(..._qms)-Math.min(..._qms)<=5;
-  }else{_segelZusammenfassen=false;}
+    const _ssys2=_transformedDataOrig.segelSystems||{};
+    const _sb2={};
+    _sails.forEach(s=>{const _nr=Number(s.segel_nr)||1;const _s=_ssys2[_nr]||json.system||'';if(!_sb2[_s])_sb2[_s]=[];_sb2[_s].push(s);});
+    Object.entries(_sb2).forEach(([_s,_sl])=>{if(_sl.length<2)return;const _qs=_sl.map(s=>s.qm_segel);const _tp=_sl.map(s=>(_transformedDataOrig.segelTypes||{})[Number(s.segel_nr)||1]||'aufrollbar');if(_tp.every(t=>t===_tp[0])&&Math.max(..._qs)-Math.min(..._qs)<=5)_segelMergeSet.add(_s);});
+  }
+  _segelZusammenfassen=_segelMergeSet.size>0;
   _aeroCleat=false;_aeroCleatViereck=null;_aeroCleatDreieck=null;_aeroCleatPunkte=null;
-  if(_segelZusammenfassen)transformedData=_buildZusammengefasstData();
+  if(_segelMergeSet.size>0)transformedData=_buildSelectiveMergeData();
 }
 function _applyTransformKeep(json){
   const orig=transformiere(json);
   _transformedDataOrig=JSON.parse(JSON.stringify(orig));
-  transformedData=_segelZusammenfassen?_buildZusammengefasstData():orig;
+  transformedData=_segelMergeSet.size>0?_buildSelectiveMergeData():orig;
 }
 function _buildZusammengefasstData(){
   const orig=_transformedDataOrig;
@@ -2130,6 +2143,50 @@ function _buildZusammengefasstData(){
     if(p.artikelnummer&&_s3MengeOverride[p.artikelnummer]!=null)p.menge=_s3MengeOverride[p.artikelnummer];
   }));
   return {...orig,sektionen:order.map(id=>sektMap[id]),isMultiSegel:false,_sumAdjust};
+}
+function _buildSelectiveMergeData(){
+  const orig=_transformedDataOrig;
+  if(!orig||_segelMergeSet.size===0)return _applyMengeOverridesToData(JSON.parse(JSON.stringify(orig)));
+  const segelSys=orig.segelSystems||{};
+  const PFLEGESET=new Set(['00E13001325','00E13001321']);
+  let _sumAdjust=0;
+  const outList=[];
+  const outIndex={};
+  const getKey=sek=>{const nr=sek._segelNr;if(!nr)return sek.id;const s=segelSys[nr]||'';return _segelMergeSet.has(s)?sek.id+'\x00MRG\x00'+s:sek.id+'\x00'+nr;};
+  orig.sektionen.forEach(sek=>{
+    const key=getKey(sek);
+    const nr=sek._segelNr;
+    const sys=nr?(segelSys[nr]||''):'';
+    const isMerge=!!(nr&&_segelMergeSet.has(sys));
+    if(outIndex[key]===undefined){
+      const newSek={...sek,positionen:[],_segelNr:isMerge?undefined:nr,_mergedSys:isMerge?sys:undefined,_mergedCount:isMerge?0:undefined};
+      outList.push(newSek);outIndex[key]=outList.length-1;
+    }
+    const target=outList[outIndex[key]];
+    if(isMerge&&target._mergedCount!==undefined)target._mergedCount++;
+    sek.positionen.forEach(pos=>{
+      if(pos.qm_segel>0){
+        if(isMerge){const ex=target.positionen.find(p=>p.qm_segel>0);if(!ex){target.positionen.push({...pos,_mergedSegelCount:1});}else{ex._mergedSegelCount=(ex._mergedSegelCount||1)+1;ex.menge=ex._mergedSegelCount;_sumAdjust=+(_sumAdjust+(pos.gesamt||0)).toFixed(2);}}
+        else{target.positionen.push({...pos});}
+        return;
+      }
+      if(!pos.artikelnummer){const ex=target.positionen.find(p=>!p.artikelnummer&&p.name===pos.name);if(!ex){target.positionen.push({...pos,_mergedSegelCount:1});}else if(isMerge&&pos._gs&&ex._gs){_sumAdjust=+(_sumAdjust+(pos.gesamt||0)).toFixed(2);ex._mergedSegelCount=(ex._mergedSegelCount||1)+1;ex.menge=ex._mergedSegelCount;}return;}
+      const ex=target.positionen.find(p=>p.artikelnummer===pos.artikelnummer);
+      if(ex&&isMerge){ex.menge=+(ex.menge+pos.menge).toFixed(4);ex.gesamt=+(ex.gesamt+pos.gesamt).toFixed(2);}
+      else target.positionen.push({...pos});
+    });
+  });
+  const PFAPPLY=sek=>sek.positionen.forEach(p=>{if(PFLEGESET.has(p.artikelnummer)&&p.menge>1){_sumAdjust=+(_sumAdjust+(p.gesamt-p.preis_einheit)).toFixed(2);p.menge=1;p.gesamt=p.preis_einheit;}});
+  outList.forEach(PFAPPLY);
+  const _pl=nr=>{const m=(nr||'').match(/^PYL(?:AL|NI|DP)[01](\d+)1000$/);return m?parseInt(m[1]):null;};
+  const _len=nm=>{const m=(nm||'').match(/l=(?:bis\s*)?(\d+)m/i);return m?parseInt(m[1]):99;};
+  const _mk=p=>{const nr=p.artikelnummer||'',nm=(p.name||'').toLowerCase();const pl=_pl(nr);if(pl!==null)return 1000+pl;if(/versteifung/i.test(p.name||'')||nr==='00E13000131'||nr==='00E13000096')return 6000;if(/biegung/.test(nm)&&/mast/.test(nm))return 5000;if(/kappe/i.test(p.name||''))return 7000;if(/gleitschiene|höhenverstellung/i.test(p.name||''))return 8000;if(/zuschnitt/.test(nm))return 4000;return 2000+_len(p.name);};
+  outList.filter(s=>s.id==='masten').forEach(s=>s.positionen.sort((a,b)=>_mk(a)-_mk(b)));
+  outList.forEach(sek=>sek.positionen.forEach(p=>{if(p.artikelnummer&&_s3MengeOverride[p.artikelnummer]!=null)p.menge=_s3MengeOverride[p.artikelnummer];}));
+  const mergedGroups=[...new Set(outList.filter(s=>s._mergedSys).map(s=>s._mergedSys))];
+  const individualNrs=[...new Set(outList.filter(s=>s._segelNr!==undefined).map(s=>s._segelNr))];
+  const isMultiSegel=mergedGroups.length+individualNrs.length>1;
+  return {...orig,sektionen:outList,isMultiSegel,_sumAdjust};
 }
 function _applyMengeOverridesToData(data){
   if(!data)return data;
@@ -2206,34 +2263,36 @@ function _renderSegelToggle(){
   if(hasFest&&!_aeroPreis.done)_loadAeroCleatPreise();
   let sections='';
   if(hasMult){
-    const qms=sails.map(p=>p.qm_segel);
-    const totalQm=qms.reduce((a,b)=>a+b,0);
-    const avgQm=Math.round(totalQm/sails.length*100)/100;
-    const billQm=Math.round((avgQm+2)*100)/100;
-    const minQm=Math.min(...qms);
-    const maxQm=Math.max(...qms);
-    const range=Math.round((maxQm-minQm)*100)/100;
-    const types=Object.values((_transformedDataOrig||transformedData).segelTypes||{});
-    const sameType=types.length===0||types.every(t=>t===types[0]);
-    const canMerge=sameType;
     const _sNrs=[...new Set(sails.map(p=>Number(p.segel_nr)||1))].sort((a,b)=>a-b);
-    const sysLabels=_sNrs.map(nr=>{
+    const _segelSysCur=(soSeKuJSON?.segelSystems||transformedData?.segelSystems||{});
+    const _rawLabels=_sNrs.map(nr=>{
       const grp=(soSeKuJSON?.positionen||[]).filter(x=>(Number(x.segel_nr)||1)===nr);
+      const isFix=!grp.some(p=>isAufrollsystem(p.artikelnummer||''))&&grp.some(p=>p.qm_segel>0);
       const det=detectSysFromPos(grp);
-      return det?(det.replace('SOLIDAY-','')):`Segel ${nr}`;
+      return det?det.replace('SOLIDAY-',''):isFix?'Fix Segel':`Segel ${nr}`;
     });
+    const _lcounts={};_rawLabels.forEach(l=>{_lcounts[l]=(_lcounts[l]||0)+1;});
+    const _lidx={};
+    const sysLabels=_rawLabels.map(l=>{if(_lcounts[l]<=1)return l;_lidx[l]=(_lidx[l]||0)+1;return `${l} ${_lidx[l]}`;});
     const sysStr=sysLabels.join(' + ');
     const segelHdr=`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">${sails.length} Segel erkannt &middot; ${sysStr}</div>`;
-    if(!canMerge){
-      let reason='';
-      if(!sameType){const tc=types.reduce((m,t)=>{m[t]=(m[t]||0)+1;return m;},{});reason=Object.entries(tc).map(([t,n])=>`${n}\xD7 ${t}`).join(' + ')+' → Einzeln';}
-      else reason=`${minQm.toFixed(1)}–${maxQm.toFixed(1)} m\xB2, Diff. ${range.toFixed(1)} m\xB2`;
-      sections+=segelHdr+`<div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:4px">${reason}</div>`;
+    // Build per-system merge checkboxes
+    const _sysDat={};
+    _sNrs.forEach((nr,i)=>{const _s=_segelSysCur[nr]||soSeKuJSON?.system||'';if(!_sysDat[_s])_sysDat[_s]={sails:[],labels:[]};const sail=sails.find(p=>(Number(p.segel_nr)||1)===nr);if(sail)_sysDat[_s].sails.push(sail);_sysDat[_s].labels.push(sysLabels[i]);});
+    const _mergeableSys=Object.entries(_sysDat).filter(([,d])=>d.sails.length>1);
+    if(_mergeableSys.length===0){
+      sections+=segelHdr+`<div style="font-size:11px;color:var(--muted);line-height:1.6;margin-bottom:4px">Verschiedene Systeme – Einzeln</div>`;
     }else{
-      sections+=segelHdr+`<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:4px">
-        <div class="zone-item${_segelZusammenfassen?'':' sel'}" style="cursor:pointer" onclick="segelZusammenSet(false)"><div class="zone-num">Einzeln</div></div>
-        <div class="zone-item${_segelZusammenfassen?' sel':''}" style="cursor:pointer" onclick="segelZusammenSet(true)"><div class="zone-num">Zusammenfassen</div><div class="zone-time" style="color:#777">Ø ${avgQm.toFixed(2)} m\xB2 → ${billQm.toFixed(2)} m\xB2</div></div>
-      </div>`;
+      let chkHtml=`<div style="font-size:10px;color:#bbb;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Zusammenfassen</div>`;
+      _mergeableSys.forEach(([sys,d])=>{
+        const _qms=d.sails.map(s=>s.qm_segel);
+        const _avg=Math.round(_qms.reduce((a,b)=>a+b,0)/_qms.length*100)/100;
+        const _bill=Math.round((_avg+2)*100)/100;
+        const _sysLbl=sys.startsWith('SONNENSEGEL')?'Fix Segel':sys.replace('SOLIDAY-','');
+        const _chk=_segelMergeSet.has(sys)?'checked':'';
+        chkHtml+=`<label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px;cursor:pointer;font-size:12px"><input type="checkbox" ${_chk} onchange="toggleSegelMerge(${JSON.stringify(sys)},this.checked)" style="margin-top:2px;accent-color:var(--accent);cursor:pointer"><span><strong>${_sysLbl}</strong> (${d.sails.length}×)<br><span style="color:var(--muted);">&Oslash; ${_avg.toFixed(2)} m&sup2; &rarr; ${_bill.toFixed(2)} m&sup2;</span></span></label>`;
+      });
+      sections+=segelHdr+`<div style="margin-bottom:4px">${chkHtml}</div>`;
     }
     const _abtn=(active,onclick)=>active
       ?`<button onclick="${onclick}" style="width:20px;height:20px;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:4px;cursor:pointer;font-size:12px;line-height:1;padding:0;flex-shrink:0">`
@@ -2285,10 +2344,18 @@ function segelZusammenSet(v){
   stepState[3]=JSON.parse(JSON.stringify(transformedData));delete stepState[5];
   renderStep3();
 }
+function toggleSegelMerge(sys,checked){
+  if(checked)_segelMergeSet.add(sys);else _segelMergeSet.delete(sys);
+  _segelZusammenfassen=_segelMergeSet.size>0;
+  transformedData=_segelMergeSet.size>0?_buildSelectiveMergeData():_applyMengeOverridesToData(JSON.parse(JSON.stringify(_transformedDataOrig||transformedData)));
+  if(_aeroCleat)transformedData=_buildAeroCleatData();
+  stepState[3]=JSON.parse(JSON.stringify(transformedData));delete stepState[5];
+  renderStep3();
+}
 function aeroCleatSet(v){
   _aeroCleat=v;
   if(!v){_aeroCleatViereck=null;_aeroCleatDreieck=null;_aeroCleatPunkte=null;}
-  if(_segelZusammenfassen)transformedData=_buildZusammengefasstData();
+  if(_segelMergeSet.size>0)transformedData=_buildSelectiveMergeData();
   else transformedData=_applyMengeOverridesToData(JSON.parse(JSON.stringify(_transformedDataOrig)));
   if(v)transformedData=_buildAeroCleatData();
   stepState[3]=JSON.parse(JSON.stringify(transformedData));delete stepState[5];
@@ -2320,8 +2387,8 @@ function s3SetMenge(artikelnummer,value){
   const v=parseFloat(value)||0;
   if(v<=0)delete _s3MengeOverride[artikelnummer];
   else _s3MengeOverride[artikelnummer]=v;
-  if(_segelZusammenfassen){
-    transformedData=_buildZusammengefasstData();
+  if(_segelMergeSet.size>0){
+    transformedData=_buildSelectiveMergeData();
   }else{
     transformedData=_applyMengeOverridesToData(JSON.parse(JSON.stringify(_transformedDataOrig||transformedData)));
   }
@@ -3332,10 +3399,13 @@ function renderStep5(){
   const apDef=withMontage?(prices5.apPreis[wandartForAP]||0):0;
 
   _sailPos=(soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0);
-  if(_segelZusammenfassen&&_sailPos.length>1){
-    const _sqms=_sailPos.map(p=>p.qm_segel);
-    const _avgQm=Math.round(_sqms.reduce((a,b)=>a+b,0)/_sqms.length*100)/100;
-    _sailPos=[{..._sailPos[0],qm_segel:_avgQm,_merged:_sqms.length,_mergedSrc:_sqms}];
+  if(_segelMergeSet.size>0&&_sailPos.length>1){
+    const _segelSysMs=soSeKuJSON.segelSystems||{};
+    const _sbMs={};
+    _sailPos.forEach(p=>{const _nr=Number(p.segel_nr)||1;const _s=_segelSysMs[_nr]||soSeKuJSON.system||'';if(!_sbMs[_s])_sbMs[_s]=[];_sbMs[_s].push(p);});
+    const _newSailPos=[];
+    Object.values(_sbMs).forEach(sls=>{const _s=_segelSysMs[Number(sls[0].segel_nr)||1]||'';if(_segelMergeSet.has(_s)&&sls.length>1){const _sqms=sls.map(s=>s.qm_segel);const _avgQm=Math.round(_sqms.reduce((a,b)=>a+b,0)/_sqms.length*100)/100;_newSailPos.push({...sls[0],qm_segel:_avgQm,_merged:_sqms.length,_mergedSrc:_sqms});}else{_newSailPos.push(...sls);}});
+    _sailPos=_newSailPos;
   }
   const _isWandSchelle=p=>!!(p.artikelnummer==='00E13000243'||(/wandschelle/i.test(p.name||'')&&!/gegenplatte/i.test(p.name||'')));
   const _isWandGegenpl=p=>!!(p.artikelnummer==='00E13000110'||/gegenplatte|abstandshalter/i.test(p.name||''));
