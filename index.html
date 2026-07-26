@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 08:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 08:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2055,15 +2055,15 @@ function renderStep3(){
         const _rawSys=sek._mergedSys;
         const _isFix=_rawSys.toUpperCase().startsWith('SONNENSEGEL');
         const _sys=_isFix?'Fix Segel':_rawSys.replace(/-/g,' ');
-        const _typ=_isFix?'feste Sonnensegel nach Maß':_aufrollTyp(_rawSys);
         const _mc=sek._mergedCount||0;
+        const _typ=_isFix?(_mc>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):_aufrollTyp(_rawSys);
         const lbl=`${_sys}${_typ?' - '+_typ:''}${_mc>1?' – '+_mc+' Segel zusammengefasst':''}`;
         sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
       }else{
         const _rawSys=(transformedData.segelSystems||{})[sek._segelNr]||effectiveSys||soSeKuJSON.system||'SOLIDAY';
         const _isFix=_rawSys.toUpperCase().startsWith('SONNENSEGEL');
         const _sys=_isFix?'Fix Segel':_rawSys.replace(/-/g,' ');
-        const _typ=_isFix?'feste Sonnensegel nach Maß':_aufrollTyp(_rawSys);
+        const _typ=_isFix?'festes Sonnensegel nach Maß':_aufrollTyp(_rawSys);
         const lbl=_typ?`${_sys} - ${_typ}`:`${_sys} - Segel ${sek._segelNr}`;
         sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
       }
@@ -4171,6 +4171,7 @@ function buildSevdeskPositions(){
   if(transformedData.isMultiSegel){
     const sysFull=transformedData.effectiveSys||soSeKuJSON.system||'SOLIDAY-C';
     const segelNrs=transformedData.segelNrs||[];
+    const _fixSailCount=segelNrs.filter(n=>((transformedData.segelSystems||{})[n]||(soSeKuJSON.segelSystems||{})[n]||sysFull).toUpperCase().startsWith('SONNENSEGEL')).length;
     // Append </br> to the last position row added (for blank line before a header)
     const addBreak=()=>{for(let i=rows.length-1;i>=0;i--){if(rows[i].type==='pos'){rows[i].beschreibung=(rows[i].beschreibung||'')+'</br>';break;}}};
     segelNrs.forEach((nr,idx)=>{
@@ -4179,7 +4180,7 @@ function buildSevdeskPositions(){
       const _s=_thisSys;
       const _isFix=_s.startsWith('SONNENSEGEL');
       const _sysLbl=_isFix?'Fix Segel':_s.replace(/-/g,' ');
-      const _aufTyp=_isFix?'feste Sonnensegel nach Maß':['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':'manuell aufrollbar';
+      const _aufTyp=_isFix?(_fixSailCount>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':'manuell aufrollbar';
       rows.push({type:'section',name:`${_sysLbl} - ${_aufTyp}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
         rows.push({type:'section',name:sek.name});
