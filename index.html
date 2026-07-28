@@ -265,6 +265,17 @@ tr.drag-above>td{border-top:2px solid var(--accent)!important;background:rgba(91
 .rep-sum-total strong{font-size:15px;font-weight:800;color:var(--accent2);font-family:'DM Mono',monospace}
 .rep-split-l{min-width:0}
 .rep-split-r{min-width:0}
+.rep-edit-sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);padding:14px 0 4px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.rep-edit-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.rep-edit-row1{display:flex;gap:8px;margin-bottom:6px;align-items:center}
+.rep-edit-name{flex:1;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-weight:600;background:var(--bg);color:var(--fg)}
+.rep-edit-desc{width:100%;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:11px;background:var(--bg);color:var(--fg);resize:vertical;min-height:28px;max-height:100px;box-sizing:border-box;font-family:inherit;margin-bottom:6px}
+.rep-edit-row2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+.rep-edit-num{width:72px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--fg);text-align:right}
+.rep-edit-unit{width:60px;border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;background:var(--bg);color:var(--fg)}
+.rep-edit-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:0 4px;border-radius:4px;flex-shrink:0}
+.rep-edit-del:hover{color:#e53;background:rgba(229,53,44,.1)}
+.rep-edit-tot{font-size:13px;font-weight:700;color:var(--fg);font-family:'DM Mono',monospace;min-width:88px;text-align:right}
 @media(max-width:900px){.rep-split-wrap{grid-template-columns:1fr}}
 tr.rep-auto-row td{background:rgba(255,152,0,.07)}
 tr.rep-auto-row td:last-child{color:rgba(255,152,0,.95);font-weight:700}
@@ -301,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-28 23:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-29 00:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -534,7 +545,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <div id="viewStep7" class="hidden view-pinned">
   <div class="view-scroll" id="s7content"></div>
   <div class="btn-row" style="align-items:flex-end">
-    <button class="btn btn-s" onclick="importMode==='reparatur'?(showView('viewStepRep'),setRepMiniStep(1)):(showView('viewStep6'),setStep(6))">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-s" onclick="importMode==='reparatur'?showView('viewRepEdit'):(showView('viewStep6'),setStep(6))">&larr; Zur&uuml;ck</button>
     <div style="display:flex;flex-direction:column;align-items:center;gap:12px">
       <span style="font-size:48px;line-height:1">&#128228;</span>
       <button class="btn btn-p" onclick="goToStep8()">Jetzt importieren &rarr;</button>
@@ -785,15 +796,17 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 
     <!-- LEFT: Positions table + postable -->
     <div class="rep-split-l">
-      <div class="rep-block-title">Positionen</div>
-      <div class="sektion-body">
-        <div style="overflow-x:auto">
-          <table class="jtable">
-            <thead><tr><th>Pos.</th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
-            <tbody id="repStepRows"></tbody>
-          </table>
+      <div id="repPDFSection">
+        <div class="rep-block-title">Positionen aus PDF</div>
+        <div class="sektion-body">
+          <div style="overflow-x:auto">
+            <table class="jtable">
+              <thead><tr><th>Pos.</th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead>
+              <tbody id="repStepRows"></tbody>
+            </table>
+          </div>
+          <div id="repStepFooter" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;margin:10px 4px 4px"></div>
         </div>
-        <div id="repStepFooter" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;margin:10px 4px 4px"></div>
       </div>
       <div class="mc-postable" style="margin-top:14px">
         <div class="mc-postable-title">Positionen f&uuml;r sevdesk</div>
@@ -807,9 +820,39 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
       <!-- BLOCK 0: Reparatur-Art -->
       <div class="rep-block" id="repPresetBlock">
         <div class="rep-block-title">Reparatur-Art</div>
+        <div class="rep-btn-row" style="margin-bottom:12px">
+          <div class="zone-item sel" id="repModePDF" onclick="repSetMode(false)"><div class="zone-num">Aus PDF</div></div>
+          <div class="zone-item" id="repModeManual" onclick="repSetMode(true)"><div class="zone-num">Manuell</div><div class="zone-time">ohne PDF</div></div>
+        </div>
+        <div id="repManualInputs" class="hidden" style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px">
+          <div class="s5-irow" style="margin-bottom:6px">
+            <span class="s5-lbl">System</span>
+            <select id="repManualSysSelect" onchange="_repOnManualChange()" style="flex:1;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;background:var(--bg);color:var(--fg)">
+              <option value="SOLIDAY-ONE">SOLIDAY-ONE</option>
+              <option value="SOLIDAY-C">SOLIDAY-C</option>
+              <option value="SOLIDAY-CS">SOLIDAY-CS</option>
+              <option value="SOLIDAY-CS-DREIECK">SOLIDAY-CS-DREIECK</option>
+              <option value="SOLIDAY-CS-TWIN">SOLIDAY-CS-TWIN</option>
+              <option value="SOLIDAY-M">SOLIDAY-M</option>
+              <option value="SOLIDAY-MA">SOLIDAY-MA</option>
+              <option value="SONNENSEGEL-MAß">SONNENSEGEL-MAß (Fix)</option>
+            </select>
+          </div>
+          <div class="s5-irow">
+            <span class="s5-lbl">Segelgröße</span>
+            <input type="number" id="repManualQm" class="s5-inp s5-w90" value="" step="0.01" min="0" placeholder="0.00" oninput="_repOnManualChange()">
+            <span class="s5-unit">m²</span>
+          </div>
+        </div>
         <div id="repPresetGrid" class="rep-preset-grid">
           <span style="color:var(--muted);font-size:12px">Lade&hellip;</span>
         </div>
+      </div>
+
+      <!-- BLOCK 0.5: Segeltuch (Austausch) -->
+      <div class="rep-block hidden" id="repSegeltuchBlock">
+        <div class="rep-block-title">Segeltuch</div>
+        <div id="repSegeltuchCard" style="padding:0 2px"></div>
       </div>
 
       <!-- BLOCK 1: Montage -->
@@ -886,7 +929,24 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 
   <div class="btn-row">
     <button class="btn btn-s" onclick="resetToUpload()">&larr; Zur&uuml;ck</button>
-    <button class="btn btn-p" onclick="goRepToRunden()">Weiter &rarr; Runden</button>
+    <button class="btn btn-p" onclick="goRepToRunden()">Weiter &rarr; Vorschau</button>
+  </div>
+</div>
+
+<!-- REPARATUR EDIT VIEW -->
+<div id="viewRepEdit" class="hidden view-pinned">
+  <div class="view-scroll">
+    <div style="padding:16px 20px;max-width:900px;margin:0 auto">
+      <div style="margin-bottom:16px">
+        <div style="font-size:18px;font-weight:700;color:var(--fg)">Positionen pr&uuml;fen &amp; bearbeiten</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">Alle Felder direkt editierbar &mdash; Änderungen werden 1:1 zu sevdesk &uuml;bertragen</div>
+      </div>
+      <div id="repEditRows"></div>
+    </div>
+  </div>
+  <div class="btn-row">
+    <button class="btn btn-s" onclick="showView('viewStepRep')">&larr; Zur&uuml;ck</button>
+    <button class="btn btn-p" onclick="repEditImport()">Import zu sevdesk &rarr;</button>
   </div>
 </div>
 
@@ -944,7 +1004,7 @@ let _s3DragSrc=null;
 // === UTILS ===
 const fmt=n=>Number(n).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtE=n=>fmt(n)+' €';
-const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse','viewMontage','viewReparatur','viewStepRep'];
+const VIEWS=['viewSetup','viewUpload','viewLoading','viewStep2','viewStep3','viewStep4','viewStep5','viewStep6','viewStep7','viewStep8','viewDone','viewError','viewAdresse','viewMontage','viewReparatur','viewStepRep','viewRepEdit'];
 function fixViewPinnedHeight(){
   // Body-scroll layout — no fixed height needed
 }
@@ -1766,12 +1826,20 @@ function goToStep3(){_applyTransformReset(soSeKuJSON);renderStep3();}
 // ══════════════════════════════════════════════════════════════════════
 let _repMontageAn=false,_repZone=2,_repAnfahrtVoll=false;
 let _repPresetSel={};
+let _repManualMode=false,_repManualSys='SOLIDAY-ONE',_repManualQm=0;
+let _repSgtStoffIdx=-1;
+let _repEditRows=[];
 
 async function goToRepStep(){
   document.getElementById('stepsBar').classList.add('hidden');
   _repMontageAn=false;_repZone=2;_repAnfahrtVoll=false;_repTeam=2;_repVersandTyp='VERSAND';
-  _repPresetSel={};
+  _repPresetSel={};_repManualMode=false;_repManualSys='SOLIDAY-ONE';_repManualQm=0;_repSgtStoffIdx=-1;
   // Reset picks to defaults
+  document.getElementById('repModePDF')?.classList.add('sel');
+  document.getElementById('repModeManual')?.classList.remove('sel');
+  document.getElementById('repManualInputs')?.classList.add('hidden');
+  document.getElementById('repPDFSection')?.classList.remove('hidden');
+  document.getElementById('repSegeltuchBlock')?.classList.add('hidden');
   document.querySelectorAll('#repStepZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===2));
   document.getElementById('repMontageOhne').classList.add('sel');
   document.getElementById('repMontageMit').classList.remove('sel');
@@ -1843,6 +1911,7 @@ function repStepTogglePreset(idx){
   if(wasSelected)delete _repPresetSel[idx];
   else _repPresetSel[idx]=1;
   if(!wasSelected&&!_repMontageAn)repStepToggleMontage(true);
+  _repRenderSegeltuch();
   renderRepPresets();
   _repSyncStundenFromPresets();
   repStepCalc();
@@ -1874,6 +1943,129 @@ function _repGetCombinedTerminDesc(){
     parts.push(`Termin 1: ${t1}\nTermin 2: ${t2}`);
   });
   return parts.join('\n');
+}
+function repSetMode(manual){
+  _repManualMode=manual;_repSgtStoffIdx=-1;
+  document.getElementById('repModePDF').classList.toggle('sel',!manual);
+  document.getElementById('repModeManual').classList.toggle('sel',manual);
+  document.getElementById('repManualInputs').classList.toggle('hidden',!manual);
+  document.getElementById('repPDFSection').classList.toggle('hidden',manual);
+  if(manual){document.getElementById('repManualSysSelect').value=_repManualSys;}
+  _repRenderSegeltuch();repStepCalc();
+}
+function _repOnManualChange(){
+  _repManualSys=(document.getElementById('repManualSysSelect')?.value||'SOLIDAY-ONE').toUpperCase();
+  _repManualQm=parseFloat(document.getElementById('repManualQm')?.value)||0;
+  _repSgtStoffIdx=-1;_repRenderSegeltuch();repStepCalc();
+}
+function _repHasAustausch(){
+  return Object.keys(_repPresetSel).some(i=>rep.presets[+i]&&/austausch/i.test(rep.presets[+i].name||''));
+}
+function _repGetQmSys(){
+  if(_repManualMode)return{qm:_repManualQm,sys:_repManualSys};
+  const sailPos=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
+  const qm=sailPos.length>0?sailPos[0].qm_segel:0;
+  const sys=((soSeKuJSON?.system)||'SOLIDAY-ONE').toUpperCase();
+  return{qm,sys};
+}
+function _repSgtRecalc(){
+  const {qm,sys}=_repGetQmSys();
+  const bQm=billingQm(qm);
+  const stoffe=getStoffeForSys(sys,bQm,qm);
+  const fi=_repSgtStoffIdx>=0?_repSgtStoffIdx:defaultStoffIdx(sys,stoffe);
+  const p=parseFloat(document.getElementById('repSgtP'+fi)?.value||'0')||stoffe[fi]?.preis||0;
+  const prmEl=document.getElementById('repSgtPrm');const totEl=document.getElementById('repSgtTotal');
+  if(prmEl)prmEl.textContent=p.toFixed(2);
+  if(totEl)totEl.textContent=fmtE(Math.round(bQm*p*100)/100);
+}
+function _repSgtStoffSel(fi){
+  _repSgtStoffIdx=fi;
+  const {qm,sys}=_repGetQmSys();
+  const stoffe=getStoffeForSys(sys,billingQm(qm),qm);
+  const isFest=sys.startsWith('SONNENSEGEL');
+  stoffe.forEach((_,i)=>{const ae=document.getElementById('repSgtAlt'+i);if(ae)ae.checked=i!==fi&&(!isFest||/950|960/.test(stoffe[i].name));});
+  _repSgtRecalc();
+}
+function _repRenderSegeltuch(){
+  const block=document.getElementById('repSegeltuchBlock');if(!block)return;
+  const hasAustausch=_repHasAustausch();
+  block.classList.toggle('hidden',!hasAustausch);
+  if(!hasAustausch)return;
+  const {qm,sys}=_repGetQmSys();
+  const bQm=billingQm(qm);
+  const stoffe=getStoffeForSys(sys,bQm,qm);
+  const defIdx=defaultStoffIdx(sys,stoffe);
+  if(_repSgtStoffIdx<0)_repSgtStoffIdx=defIdx;
+  const isFest=sys.startsWith('SONNENSEGEL');
+  const card=document.getElementById('repSegeltuchCard');if(!card)return;
+  card.innerHTML=`
+    <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${sys} &middot; ${qm>0?qm.toFixed(2)+' m²':'Segelgröße nicht gesetzt'}</div>
+    <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Stoff &amp; Preis/m²</div>
+    ${stoffe.map((s,fi)=>`
+      <label class="s5-radio-row">
+        <input type="radio" name="repSgtSt" value="${fi}" ${fi===_repSgtStoffIdx?'checked':''} onchange="_repSgtStoffSel(${fi})">
+        <span class="s5-radio-name">${s.name}</span>
+        <input type="number" id="repSgtP${fi}" value="${s.preis.toFixed(2)}" step="0.01" min="0" class="s5-inp s5-w70" oninput="_repSgtRecalc()" style="text-align:right;font-size:12px">
+        <span style="font-size:10px;color:var(--muted)">€/m²</span>
+        <label style="display:flex;align-items:center;gap:3px;font-size:10px;color:var(--muted);cursor:pointer;margin-left:4px;user-select:none"><input type="checkbox" id="repSgtAlt${fi}" ${fi!==defIdx&&(!isFest||/950|960/.test(s.name))?'checked':''} style="width:11px;height:11px;cursor:pointer">Alt.</label>
+      </label>`).join('')}
+    <div class="s5-calc"><span style="color:var(--muted)">(${bQm.toFixed(2)}) m² × <span id="repSgtPrm">&ndash;</span> €/m² =</span><strong id="repSgtTotal">&ndash;</strong></div>`;
+  _repSgtRecalc();
+}
+function goRepToRunden(){showRepEditView();}
+function showRepEditView(){
+  _repEditRows=buildRepSevdeskPositions();
+  _renderRepEditRows();showView('viewRepEdit');
+}
+function _renderRepEditRows(){
+  const container=document.getElementById('repEditRows');if(!container)return;
+  let h='';
+  _repEditRows.forEach((row,i)=>{
+    if(row.type==='section'){h+=`<div class="rep-edit-sec">${row.name}</div>`;return;}
+    const nameEsc=(row.name||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+    h+=`<div class="rep-edit-card" id="repEditCard${i}">
+      <div class="rep-edit-row1">
+        <input class="rep-edit-name" value="${nameEsc}" placeholder="Bezeichnung">
+        <button class="rep-edit-del" title="Entfernen" onclick="repEditDelRow(${i})">&#215;</button>
+      </div>
+      <textarea class="rep-edit-desc" placeholder="Beschreibung (optional)">${(row.beschreibung||'').replace(/</g,'&lt;')}</textarea>
+      <div class="rep-edit-row2">
+        <input type="number" class="rep-edit-num" id="repEditQty${i}" value="${Number(row.menge||1).toFixed(4)}" step="0.01" min="0" oninput="repEditRecalc(${i})">
+        <input class="rep-edit-unit" value="${(row.einheit||'Stk.').replace(/"/g,'&quot;')}">
+        <span>×</span>
+        <input type="number" class="rep-edit-num" id="repEditPrice${i}" value="${Number(row.preis_einheit||0).toFixed(2)}" step="0.01" oninput="repEditRecalc(${i})">
+        <span>€ =</span>
+        <strong class="rep-edit-tot" id="repEditTot${i}">${fmtE(Number(row.gesamt||0))}</strong>
+      </div>
+    </div>`;
+  });
+  container.innerHTML=h;
+}
+function repEditDelRow(i){
+  const el=document.getElementById('repEditCard'+i);
+  if(el){el.style.opacity='0.3';el.style.pointerEvents='none';el.style.textDecoration='line-through';}
+  _repEditRows[i]._deleted=true;
+}
+function repEditRecalc(i){
+  const qty=parseFloat(document.getElementById('repEditQty'+i)?.value||'0')||0;
+  const price=parseFloat(document.getElementById('repEditPrice'+i)?.value||'0')||0;
+  const totEl=document.getElementById('repEditTot'+i);
+  if(totEl)totEl.textContent=fmtE(Math.round(qty*price*100)/100);
+}
+function repEditImport(){
+  const rows=[];
+  _repEditRows.forEach((row,i)=>{
+    if(row._deleted)return;
+    if(row.type==='section'){rows.push(row);return;}
+    const card=document.getElementById('repEditCard'+i);if(!card)return;
+    const name=card.querySelector('.rep-edit-name')?.value||row.name;
+    const beschreibung=card.querySelector('.rep-edit-desc')?.value||'';
+    const menge=parseFloat(document.getElementById('repEditQty'+i)?.value||'0')||row.menge;
+    const einheit=card.querySelector('.rep-edit-unit')?.value||row.einheit;
+    const preis_einheit=parseFloat(document.getElementById('repEditPrice'+i)?.value||'0')||0;
+    rows.push({...row,name,beschreibung,menge,einheit,preis_einheit,gesamt:Math.round(menge*preis_einheit*100)/100});
+  });
+  sevdeskPositions=rows;goToStep7();
 }
 function _repPresetName(){
   const entries=Object.entries(_repPresetSel);
@@ -1991,8 +2183,35 @@ function repStepCalc(){
 }
 function buildRepSevdeskPositions(){
   const rows=[];
-  for(const p of (soSeKuJSON?.positionen||[])){
-    rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});
+  if(!_repManualMode){
+    for(const p of (soSeKuJSON?.positionen||[])){
+      rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});
+    }
+  }
+  // Segeltuch position from Reparatur stoff picker (Austausch)
+  if(_repHasAustausch()&&_repSgtStoffIdx>=0){
+    const {qm,sys}=_repGetQmSys();
+    const bQm=billingQm(qm);
+    const stoffe=getStoffeForSys(sys,bQm,qm);
+    const stoff=stoffe[_repSgtStoffIdx];
+    if(stoff&&qm>0){
+      const p=parseFloat(document.getElementById('repSgtP'+_repSgtStoffIdx)?.value||'0')||stoff.preis;
+      const tot=Math.round(bQm*p*100)/100;
+      const sn=stoff.name;
+      const _upfTag=name=>{const n=(name||'').toLowerCase();if(n.includes('soltis'))return' - UPF 11-25';if(n.includes('950'))return' - UPF 11-25';if(n.includes('960'))return' - UPF 20-50';if(n.includes('nano')||n.includes('lotus')||n.includes('austrosail'))return' - UPF 50+';return'';};
+      const _fmtG=n=>Math.round(n).toLocaleString('de-DE')+',- €';
+      const altLines=stoffe.map((s,i)=>{
+        if(i===_repSgtStoffIdx)return null;
+        if(!document.getElementById('repSgtAlt'+i)?.checked)return null;
+        const ap=parseFloat(document.getElementById('repSgtP'+i)?.value||'0')||s.preis;
+        return _fmtG(Math.ceil(bQm*ap))+' '+s.name+(_showUpf?_upfTag(s.name):'');
+      }).filter(Boolean);
+      const isFest=sys.startsWith('SONNENSEGEL');
+      let desc;
+      if(isFest){desc='mit eingenähtem Gurtband und D-Ringen\nSeitenkanten konkav'+(altLines.length?'\nAlternativ:\n'+altLines.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers':'\nFarbe nach Wahl aus Farbfächer des Herstellers');}
+      else{desc=altLines.length?'Alternativ:\n'+altLines.join('\n')+'\nFarbe nach Wahl aus Farbfächer des Herstellers':'Farbe nach Wahl aus Farbfächer des Herstellers';}
+      rows.push({type:'pos',name:`Segeltuch - ${sn}${_showUpf?_upfTag(sn):''}`,beschreibung:desc,menge:bQm,einheit:'m²',preis_einheit:p,gesamt:tot,artikelnummer:''});
+    }
   }
   rows.push({type:'section',name:'Montage und Fracht'});
   const v=prices5.fracht[_repVersandTyp]||0;
@@ -2009,10 +2228,6 @@ function buildRepSevdeskPositions(){
   }
   rows.push({type:'pos',name:vName,beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:v,gesamt:v,artikelnummer:_repVersandTyp});
   return rows;
-}
-function goRepToRunden(){
-  sevdeskPositions=buildRepSevdeskPositions();
-  goToStep7();
 }
 function toggleManualWeglass(posNr,checked,artNr){
   if(checked){
