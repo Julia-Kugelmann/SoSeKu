@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-26 13:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-28 12:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1134,7 +1134,7 @@ Wichtig:
 Format:
 {"kommission":"string","datum":"string","system":"string","variante":"string/null","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,
 "positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null,"segelform":"viereck"/"dreieck"/null,"segel_nr":1}],
-"teuerungszuschlag_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
+"teuerungszuschlag_netto":number/null,"versand_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
 
 // === CLAUDE API ===
 async function callClaude(base64,model,sysPrompt,userPrompt){
@@ -1293,9 +1293,10 @@ async function processFile(file,correctionHint){
 function validateSum(d){
   const sumPos=d.positionen.reduce((s,p)=>s+(p.gesamt||0),0);
   const teu=Number(d.teuerungszuschlag_netto||0);
-  const total=sumPos+teu;
+  const versand=Number(d.versand_netto||0);
+  const total=sumPos+teu+versand;
   const diff=Math.abs(total-Number(d.netto_gesamt));
-  return{sumPos,teu,total,diff,ok:Math.round(diff*100)===0};
+  return{sumPos,teu,versand,total,diff,ok:Math.round(diff*100)===0};
 }
 function renderStep2(){
   const d=soSeKuJSON;
@@ -1348,6 +1349,7 @@ function renderStep2(){
   document.getElementById('s2footer').innerHTML=
     `<span style="color:var(--muted)">Netto Positionen: <strong>${fmtE(v.sumPos)}</strong></span>`+
     (teu?`<span style="color:var(--accent2)">+ Teuerungszuschlag: <strong>${fmtE(teu)}</strong></span>`:'')+
+    (v.versand?`<span style="color:var(--accent2)">+ Versand: <strong>${fmtE(v.versand)}</strong></span>`:'')+
     `<span style="color:var(--muted)">Netto gesamt: <strong>${fmtE(d.netto_gesamt)}</strong></span>`+
     `<span style="color:var(--muted)">MwSt.: <strong>${fmtE(d.mwst)}</strong></span>`+
     `<span style="font-size:16px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt)}</strong></span>`;
@@ -1880,8 +1882,10 @@ function renderRepStepPositions(){
     <td class="num-r"><strong>${fmt(p.gesamt)}</strong></td>
   </tr>`).join('');
   const teu=Number(d.teuerungszuschlag_netto||0);
+  const versandR=Number(d.versand_netto||0);
   document.getElementById('repStepFooter').innerHTML=
     (teu?`<span style="color:var(--muted)">+ Teuerungszuschlag: <strong>${fmtE(teu)}</strong></span>`:'')+
+    (versandR?`<span style="color:var(--muted)">+ Versand: <strong>${fmtE(versandR)}</strong></span>`:'')+
     `<span style="color:var(--muted)">Netto gesamt: <strong>${fmtE(d.netto_gesamt||0)}</strong></span>`+
     `<span style="color:var(--muted)">MwSt.: <strong>${fmtE(d.mwst||0)}</strong></span>`+
     `<span style="font-size:15px;color:var(--accent2)"><strong>${fmtE(d.brutto_gesamt||0)}</strong></span>`;
