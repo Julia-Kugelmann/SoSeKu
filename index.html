@@ -301,7 +301,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-28 12:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-07-28 23:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1809,8 +1809,9 @@ async function _repLoadAndRenderPresets(){
           const prev=rep.presets[rep.presets.length-1];
           prev.hatMenge=true;prev.weitereStd=std;
         } else {
-          const termine=/reinigung/i.test(name)?2:1;
-          rep.presets.push({name,std,termine,hatMenge:false,weitereStd:0});
+          const termine=/reinigung|austausch/i.test(name)?2:1;
+          const beschreibung=(r[2]||'').trim().replace(/^\(|\)$/g,'');
+          rep.presets.push({name,std,termine,hatMenge:false,weitereStd:0,beschreibung});
         }
       });
     }catch(e){}
@@ -1859,6 +1860,18 @@ function _repCalcPresetTermine(){
   const keys=Object.keys(_repPresetSel);
   if(!keys.length)return 1;
   return Math.max(1,...keys.map(i=>rep.presets[+i]?.termine||1));
+}
+function _repGetCombinedTerminDesc(){
+  const parts=[];
+  Object.keys(_repPresetSel).forEach(i=>{
+    const p=rep.presets[+i];
+    if(!p||p.termine<=1||!p.beschreibung)return;
+    const steps=p.beschreibung.split(' - ');
+    const t1=steps.slice(0,-1).join(' · ');
+    const t2=steps[steps.length-1];
+    parts.push(`Termin 1: ${t1}\nTermin 2: ${t2}`);
+  });
+  return parts.join('\n');
 }
 function _repPresetName(){
   const entries=Object.entries(_repPresetSel);
@@ -1945,9 +1958,11 @@ function repStepCalc(){
     const vorschau=document.getElementById('repMontageVorschau');
     if(vorschau){
       const termLabel=_pTermine>1?` · ${_pTermine} Termine`:'';
+      const _tDesc=_repGetCombinedTerminDesc();
       vorschau.innerHTML=
         `<div class="rep-sum-row"><span>Arbeitszeit</span><strong>${fmt(std)} Std. &times; ${fmtE(teamRate)} = ${fmtE(arbeit)}</strong></div>`+
         `<div class="rep-sum-row"><span>Anfahrt Zone ${_repZone}${termLabel}</span><strong>${fmtE(anfahrt)}</strong></div>`+
+        (_tDesc?`<div class="rep-sum-row" style="font-size:11px;color:var(--muted);white-space:pre-line"><span>${_tDesc}</span><span></span></div>`:'')+
         `<div class="rep-sum-total"><span>Montage gesamt</span><strong>${fmtE(montagePreis)}</strong></div>`;
     }
   }
@@ -1987,7 +2002,8 @@ function buildRepSevdeskPositions(){
     const satz=_repAnfahrtVoll?prices5.stundensatz:prices5.anfahrtSatz;
     const anfahrt=calcAnfahrtPreis(_repZone,_repCalcPresetTermine(),satz);
     const mp=arbeit+anfahrt;
-    rows.push({type:'pos',name:'Montage inkl. Anfahrt',beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
+    const _terminBeschr=_repGetCombinedTerminDesc();
+    rows.push({type:'pos',name:_repPresetName(),beschreibung:_terminBeschr,menge:1,einheit:'pauschal',preis_einheit:mp,gesamt:mp,artikelnummer:''});
   }
   rows.push({type:'pos',name:vName,beschreibung:'',menge:1,einheit:'pauschal',preis_einheit:v,gesamt:v,artikelnummer:_repVersandTyp});
   return rows;
