@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 18:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 18:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1643,8 +1643,8 @@ function _transformiereKern(json){
             const gleit=(p2.name||'').match(/Gleitschiene\s+inkl\.?\s+Gleitschlitten\s+mit\s+(Doppelrolle|B[üu]gel)/i);
             if(gleit){p2.name=`Höhenverstellung - Gleitschiene - ${gleit[1]}`;}
             else if(/höhenverstell\./i.test(p2.name)){
-              // "Höhenverstell. mit Funk (C12 R40+) für Droppole-Mast, bidirektional" → "Höhenverstellung mit Funk für Droppole-Mast"
-              p2.name=p2.name.replace(/Höhenverstell\./i,'Höhenverstellung').replace(/\s*\([^)]*\)/g,'').replace(/,?\s*bidirektional/i,'').replace(/\s{2,}/g,' ').trim();
+              // "Höhenverstell. mit Funk (C12 R40+) für Droppole-Mast, bidirektional" → "elektrische Höhenverstellung mit Funk für Droppole-Mast"
+              p2.name=p2.name.replace(/Höhenverstell\./i,'elektrische Höhenverstellung').replace(/\s*\([^)]*\)/g,'').replace(/,?\s*bidirektional/i,'').replace(/\s{2,}/g,' ').trim();
             }
             else{p2.name=p2.name.replace(/Aluminium-Mast/g,'Aluminium Rund-Mast').replace(/Edelstahl-Mast/g,'Edelstahl Rund-Mast');}
           }
