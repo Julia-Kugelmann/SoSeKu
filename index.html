@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 18:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 18:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1537,12 +1537,12 @@ const NR2SEK={};
 function isAufrollsystem(nr){
   return/^(78V|79V|70001B|71001B|73001B|78E|70E|7[0-9]002B)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
 }
-// Detect electric height adjustment for C/CS systems — only when "elektrisch" is in the position name
+// Detect electric height adjustment for C/CS systems (name: "Höhenverstellung mit Funk ..." or "... elektrisch ...")
 function _hasElektrischeHV(){
   const sysU=(soSeKuJSON?.system||'').toUpperCase();
   if(!['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sysU))return false;
   const allPos=(transformedData?.sektionen||[]).flatMap(s=>s.positionen||[]);
-  return allPos.some(p=>/elektrisch/i.test(p.name||'')&&/höhenverstellung/i.test(p.name||''));
+  return allPos.some(p=>{const nm=p.name||'';return/höhenverst/i.test(nm)&&/funk|elektr|c12/i.test(nm);});
 }
 function _hasFesteSegel(){
   const st=(_transformedDataOrig||transformedData)?.segelTypes;
