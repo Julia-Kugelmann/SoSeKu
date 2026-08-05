@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 15:55 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 16:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -671,6 +671,11 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
             <span class="s5-lbl">Anzahl Schraubfundamente</span>
             <input type="number" class="s5-inp s5-w70" id="mcSchraubfund" value="2" min="0" oninput="mcCalc()">
             <span class="s5-unit">Stk.</span>
+          </div>
+          <div class="s5-irow" id="mcElekHvRow" style="display:none">
+            <span class="s5-lbl">Elektr. H&ouml;henverstellung</span>
+            <input type="checkbox" id="mcElekHvCheck" onchange="mcCalc()" style="width:18px;height:18px;margin:0;accent-color:var(--accent);cursor:pointer">
+            <span class="s5-unit" style="color:var(--muted);font-size:11px">C-System</span>
           </div>
         </div>
       </div>
@@ -1531,6 +1536,15 @@ const NR2SEK={};
 
 function isAufrollsystem(nr){
   return/^(78V|79V|70001B|71001B|73001B|78E|70E|7[0-9]002B)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
+}
+// Detect electric height adjustment (Gleitschiene) for C/CS systems
+const _ELEK_HV_NR=new Set(['00E13000052','00E13000027','00E13001866','00E13001865']);
+function _hasElektrischeHV(){
+  const sysU=(soSeKuJSON?.system||'').toUpperCase();
+  if(!['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sysU))return false;
+  const mastPos=(transformedData?.sektionen||[]).find(s=>s.id==='masten')?.positionen||[];
+  return mastPos.some(p=>_ELEK_HV_NR.has(p.artikelnummer)||
+    (/gleitschiene|höhenverstellung/i.test(p.name||'')&&!/droppole|seilbremse|seilzug/i.test(p.name||'')));
 }
 function _hasFesteSegel(){
   const st=(_transformedDataOrig||transformedData)?.segelTypes;
@@ -3203,7 +3217,7 @@ function findMontSysCol(hdrRow,sysU){
   return 1; // fallback: col B
 }
 function parseMontKalkMatrix(rows,sysU){
-  const result={grundpreis:0,weiteresSegel:0,schraubfund:0,verbZuschlag:0,ap10:0,ap18:0,ok:false};
+  const result={grundpreis:0,weiteresSegel:0,schraubfund:0,verbZuschlag:0,ap10:0,ap18:0,elekHoeh:0,ok:false};
   if(!rows||rows.length<4)return result;
   // Find header row: first row where col B or C has system-like text
   let hdrIdx=-1;
@@ -3222,6 +3236,7 @@ function parseMontKalkMatrix(rows,sysU){
     else if(lbl.includes('schraubfundament'))      result.schraubfund=parseDE(r[1])||result.schraubfund;
     else if(lbl.includes('10cm')||lbl.includes('10 cm')) result.ap10=parseDE(r[1])||result.ap10;
     else if(lbl.includes('18cm')||lbl.includes('18 cm')) result.ap18=parseDE(r[1])||result.ap18;
+    else if(lbl.includes('elektrisch')&&(lbl.includes('höhenverstellung')||lbl.includes('c-system')||lbl.includes('c system'))) result.elekHoeh=parseDE(r[1])||result.elekHoeh;
   }
   result.ok=result.grundpreis>0;
   return result;
@@ -3342,9 +3357,10 @@ function calcInstData(){
   const verbCount=noVerbinder?0:(prices5.verbByWelle[wellenM]||0);
   // In multi-system mode sum verbH from each sailRow; single-system uses global verbCount
   const totalVerbH=multiDiff?sailRows.reduce((s,r)=>s+(r.verbH||0),0):verbCount*(mk.verbZuschlag||0);
-  const hwH=apH+sfCount*mk.schraubfund+totalVerbH;
+  const elekHoehH=_hasElektrischeHV()?(mk.elekHoeh||0):0;
+  const hwH=apH+sfCount*mk.schraubfund+totalVerbH+elekHoehH;
   const totalH=sailH+hwH;
-  return{price:Math.ceil(totalH*prices5.stundensatz/10)*10,sailH,hwH,totalH,sailRows,mk,sfCount,verbCount,wellenM,apH,apCntWand:0,totalVerbH};
+  return{price:Math.ceil(totalH*prices5.stundensatz/10)*10,sailH,hwH,totalH,sailRows,mk,sfCount,verbCount,wellenM,apH,apCntWand:0,totalVerbH,elekHoehH};
 }
 function calcInstPreis(){return calcInstData().price;}
 // Anfahrt: Zone-Minuten (einfache Fahrt) × 2 (Hin+Rück) × Anzahl Termine × reduzierter Anfahrt-Stundensatz
@@ -3496,7 +3512,13 @@ function mcCalc(){
   const sfH=mkUniversal?mkUniversal.schraubfund:0;
   sfHTotal=schraubfund*sfH;
 
-  totalH=sailHTotal+apHTotal+sfHTotal+verbHTotal;
+  const hasCCS=mc.rows.some(r=>['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(r.sys));
+  const elekHvChecked=hasCCS&&!!document.getElementById('mcElekHvCheck')?.checked;
+  const elekHvH=elekHvChecked?(mkUniversal?.elekHoeh||0):0;
+  // Show/hide the checkbox row
+  const elekHvRow=document.getElementById('mcElekHvRow');
+  if(elekHvRow)elekHvRow.style.display=hasCCS?'':'none';
+  totalH=sailHTotal+apHTotal+sfHTotal+verbHTotal+elekHvH;
   const raw=totalH*mc.stundensatz;
   const instPreis=mc.stundensatz?Math.ceil(raw/10)*10:0;
   const servLogPreis=calcAnfahrtPreis(zone,termine,anfahrtVoll?mc.stundensatz:mc.anfahrtSatz);
@@ -3528,6 +3550,7 @@ function mcCalc(){
     if(g.anzahl>0) t1+=`<div class="mc-row"><span>${g.label} (${g.anzahl}&times;${fmt(g.ap)} AP)</span><span>${fmt(g.h)} Std.</span></div>`;
   });
   t1+=`<div class="mc-row"><span>Schraubfundamente (${schraubfund}&times;)</span><span>${fmt(sfHTotal)} Std.</span></div>`;
+  if(elekHvH>0) t1+=`<div class="mc-row"><span>Elektr. H&ouml;henverstellung C</span><span>${fmt(elekHvH)} Std.</span></div>`;
   t1+=`<div class="mc-total"><span>Montage-Stunden gesamt</span><span>${fmt(totalH)} Std.</span></div></div>`;
 
   // Tile 2: Anfahrt & Termine
@@ -3756,7 +3779,8 @@ function renderStep5(){
   const verbCnt2=_instData.verbCount||(noVerb2?0:(prices5.verbByWelle[wellenM2]||0));
   // Use pre-summed totalVerbH from calcInstData (multi-system sums per-system verbH correctly)
   const verbH2=_instData.totalVerbH!==undefined?_instData.totalVerbH:verbCnt2*(mk2?.verbZuschlag||0);
-  const hwH2=apH2+sfCnt2*(mk2?.schraubfund||0)+verbH2;
+  const elekHoehH2=(_instData.elekHoehH||0);
+  const hwH2=apH2+sfCnt2*(mk2?.schraubfund||0)+verbH2+elekHoehH2;
   const totalH2=sailH2+hwH2;
   _s5CachedTotalH=totalH2; // cache for selS5Termine button switching
   _s5CachedSailH=sailH2;
@@ -4062,6 +4086,7 @@ function renderStep5(){
             ${apCnt2Boden>0?`<div>${totalMengeB2}x Bodenplatte (${apCnt2Boden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${apH2Boden.toFixed(2)}h</div>`:''}
             ${sfCnt2>0?`<div>Schraubfundamente (${sfCnt2} &times; ${mk2.schraubfund.toFixed(2)}h): ${(sfCnt2*mk2.schraubfund).toFixed(2)}h</div>`:''}
             ${verbCnt2>0?`<div>Wellen-Verbinder (${verbCnt2} &times; ${mk2.verbZuschlag.toFixed(2)}h): ${(verbCnt2*mk2.verbZuschlag).toFixed(2)}h</div>`:''}
+            ${elekHoehH2>0?`<div>Elektr. H&ouml;henverstellung (${elekHoehH2.toFixed(2)}h)</div>`:''}
           </div>
           <div class="s5-irow" style="margin-top:6px">
             <span class="s5-lbl">Zusatzstunden</span>
