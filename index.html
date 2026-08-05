@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-07-31 10:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 15:55 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1253,7 +1253,7 @@ function detectSysFromPos(positionen){
     if(det)return det;
   }
   // Pass 2: aufrollsystem article numbers + position names
-  const _isAufrollNr=nr=>/^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((nr||'').toUpperCase());
+  const _isAufrollNr=nr=>/^(78V|79V|70001B|71001B|73001B|78E|70E|7[0-9]002B)/.test((nr||'').toUpperCase());
   for(const p of (positionen||[])){
     if(!_isAufrollNr(p.artikelnummer||''))continue;
     const nm=(p.name||'').toUpperCase();
@@ -1530,7 +1530,7 @@ const NR2SEK={};
 ['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
 
 function isAufrollsystem(nr){
-  return/^(78V|79V|70001B|71001B|73001B|78E|70E)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
+  return/^(78V|79V|70001B|71001B|73001B|78E|70E|7[0-9]002B)/.test(nr)||/^78\d{3}[A-Z]/.test(nr);
 }
 function _hasFesteSegel(){
   const st=(_transformedDataOrig||transformedData)?.segelTypes;
