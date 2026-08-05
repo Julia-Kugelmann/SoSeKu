@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 17:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 17:25 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1582,6 +1582,8 @@ function assignSek(p){
   if(nr==='00E13000417'){const sek=(p.soliday_sektion||'').toLowerCase();return sek.includes('segelzubeh')?'segeltuch':'zubehoer';}
   if(nr==='00E13000107')return'zubehoer';
   const nm=(p.name||'').toLowerCase();
+  // Elektrische Höhenverstellung immer ins Segelsystem (auch wenn Soliday sie unter Hardware listet)
+  if(/höhenverst/i.test(nm)&&/funk|elektr|c12/i.test(nm))return'segelsystem';
   if(/biegung/.test(nm)&&/mast/.test(nm))return'masten';
   if(/wandschelle/.test(nm))return'wandbefestigungen';
   const s=(p.soliday_sektion||'').toLowerCase();
@@ -1657,12 +1659,16 @@ function _transformiereKern(json){
   });
   const map={segeltuch:[],segelsystem:[],masten:[],fundamente:[],wandbefestigungen:[],zubehoer:[],montage:[]};
   merged.forEach(p=>map[assignSek(p)].push(p));
-  // Segelsystem-Reihenfolge: Aufrollsystem → Motor → Anschlussleitung(en) → Handsender → Windsensor → Rest
+  // Segelsystem-Reihenfolge: Aufrollsystem → Motor → Anschlussleitung(en) → Handsender → Windsensor → [HV → HV-Kabel]
   const _SEGSYS_ORDER=['00E13002183','00E13000591','00E13000743','00E13001905','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002076','00E13002077','00E13002063'];
   const _segsysSortKey=p=>{
     if(p._isAufroll||isAufrollsystem(p.artikelnummer))return -2;
-    if(p.artikelnummer==='00E13002183')return -1; // motor
-    if(p._isMotorKabel)return 0; // Anschlussleitung direkt nach Motor
+    if(p.artikelnummer==='00E13002183')return -1; // Aufpreis Rohrmotor
+    if(p._isMotorKabel&&p.artikelnummer==='00E13000850')return 0; // Becker Motor 2m direkt nach Motor
+    // Elektrische Höhenverstellung → ans Ende, ihr Kabel direkt dahinter
+    const nm=(p.name||'').toLowerCase();
+    if(/höhenverst/i.test(nm)&&/funk|elektr|c12/i.test(nm))return 890;
+    if(p._isMotorKabel)return 891; // HV-Anschlusskabel direkt nach HV
     const idx=_SEGSYS_ORDER.indexOf(p.artikelnummer);
     return idx<0?999:idx+1;
   };
