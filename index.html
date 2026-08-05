@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 17:40 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 17:50 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1675,6 +1675,7 @@ function _transformiereKern(json){
     return idx<0?999:idx+1;
   };
   map.segelsystem.sort((a,b)=>_segsysSortKey(a)-_segsysSortKey(b));
+  if(_hasElektrHV){const _hvK=map.segelsystem.find(p=>p.artikelnummer==='00E13000850');if(_hvK&&!_hvK.name.includes('Höhenverstellung'))_hvK.name+=' - Höhenverstellung';}
   // Original Soliday-Segeltuch entfernen, Preis auf SoSeKu-Placeholder übertragen
   const sailOriginals=map.segeltuch.filter(p=>p.qm_segel>0);
   const sailTotal=sailOriginals.reduce((s,p)=>s+(p.gesamt||0),0);
