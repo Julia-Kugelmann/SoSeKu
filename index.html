@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-05 18:25 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-07 10:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -763,7 +763,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
       </div>
 
       <div class="s5-card" style="grid-area:anfahrt">
-        <div class="s5-card-hdr"><strong>Anfahrt</strong><span>Zone &middot; Satz</span></div>
+        <div class="s5-card-hdr"><strong>Anfahrt</strong><span>Zone &middot; Termine &middot; Satz</span></div>
         <div class="s5-card-body">
           <div class="s5-irow" style="flex-direction:column;align-items:flex-start;gap:8px">
             <span class="s5-lbl">Anfahrtszone</span>
@@ -774,6 +774,14 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
               <div class="zone-item" data-z="4" onclick="repSelZone(4)"><div class="zone-num">Zone 4</div><div class="zone-time">bis 60 min</div></div>
               <div class="zone-item" data-z="5" onclick="repSelZone(5)"><div class="zone-num">Zone 5</div><div class="zone-time">bis 75 min</div></div>
               <div class="zone-item" data-z="6" onclick="repSelZone(6)"><div class="zone-num">Zone 6</div><div class="zone-time">bis 90 min</div></div>
+            </div>
+          </div>
+          <div class="s5-irow">
+            <span class="s5-lbl">Termine</span>
+            <div class="mc-pick-row" id="repTerminePicks">
+              <div class="mc-pick sel" data-v="1" onclick="repPick('repTerminePicks',this);_repTermine=1;repCalc()">1 Termin</div>
+              <div class="mc-pick" data-v="2" onclick="repPick('repTerminePicks',this);_repTermine=2;repCalc()">2 Termine</div>
+              <div class="mc-pick" data-v="3" onclick="repPick('repTerminePicks',this);_repTermine=3;repCalc()">3 Termine</div>
             </div>
           </div>
           <div class="s5-irow">
@@ -3668,7 +3676,7 @@ function repBQty(idx,delta){
   _repBQty[idx]=Math.max(0,(_repBQty[idx]||0)+delta);
   renderRepBausteine();repCalc();
 }
-let _repBQty={},_repBSel={},_repStdZone=2;
+let _repBQty={},_repBSel={},_repStdZone=2,_repTermine=1;
 function repSelZone(z){
   _repStdZone=z;
   document.querySelectorAll('#repZoneGrid .zone-item').forEach(el=>el.classList.toggle('sel',+el.dataset.z===z));
@@ -3695,9 +3703,10 @@ function repCalc(){
   const raw=totalStd*teamRate;
   const montagePreis=teamRate?Math.ceil(raw/10)*10:0;
   const satz=anfahrtVoll?rep.stundensatz:rep.anfahrtSatz;
-  const servLogPreis=calcAnfahrtPreis(zone,1,satz);
-  const servLogRed=calcAnfahrtPreis(zone,1,rep.anfahrtSatz);
-  const servLogFull=calcAnfahrtPreis(zone,1,rep.stundensatz);
+  const termine=_repTermine||1;
+  const servLogPreis=calcAnfahrtPreis(zone,termine,satz);
+  const servLogRed=calcAnfahrtPreis(zone,termine,rep.anfahrtSatz);
+  const servLogFull=calcAnfahrtPreis(zone,termine,rep.stundensatz);
   const gesamt=montagePreis+servLogPreis;
 
   const ok=rep.stundensatz>0;
@@ -3713,13 +3722,13 @@ function repCalc(){
 
   let t2=`<h4>Preise</h4><div class="mc-tile-sm">`;
   t2+=`<div class="mc-row"><span>Montage (${team===2?'2 Pers.':'1 Pers.'} &times; ${fmt(teamRate)}/h)</span><span>${fmtE(montagePreis)}</span></div>`;
-  t2+=`<div class="mc-row"><span>Service &amp; Logistik (Zone ${zone})</span><span>${fmtE(servLogPreis)}</span></div>`;
+  t2+=`<div class="mc-row"><span>Service &amp; Logistik (Zone ${zone}${termine>1?`, ${termine} Termine`:', 1 Termin'})</span><span>${fmtE(servLogPreis)}</span></div>`;
   t2+=`<div class="mc-sub">${anfahrtVoll?'':'&#10003; '}Reduzierter Anfahrt-Satz (${fmtE(rep.anfahrtSatz)}/h): ${fmtE(servLogRed)} &nbsp;&middot;&nbsp; ${anfahrtVoll?'&#10003; ':''}Voller Team-Stundensatz (${fmtE(rep.stundensatz)}/h): ${fmtE(servLogFull)}</div>`;
   t2+=`<div class="mc-total"><span>Gesamt</span><span>${fmtE(gesamt)}</span></div></div>`;
 
   let tp=`<div class="mc-postable"><div class="mc-postable-title">Positionen f&uuml;r Angebot</div>`;
   tp+=`<div class="mc-posrow"><span>Reparatur-Montage</span><strong>${fmtE(montagePreis)}</strong></div>`;
-  tp+=`<div class="mc-posrow"><span>Service &amp; Logistik (Zone ${zone})</span><strong>${fmtE(servLogPreis)}</strong></div>`;
+  tp+=`<div class="mc-posrow"><span>Service &amp; Logistik (Zone ${zone}${termine>1?`, ${termine} Termine`:', 1 Termin'})</span><strong>${fmtE(servLogPreis)}</strong></div>`;
   tp+=`<div class="mc-grandtotal"><span>Gesamt</span><strong>${fmtE(gesamt)}</strong></div>`;
   tp+=`</div>`;
 
