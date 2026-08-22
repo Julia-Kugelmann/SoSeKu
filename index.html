@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 20:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 21:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2899,17 +2899,17 @@ function _calcTerminEmpfehlung(zone){
     .filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0);
   const sysS={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX'}[sys]||sys.replace('SOLIDAY-','');
   const noVerb=['M','FLEX'].includes(sysS)||sys.startsWith('SONNENSEGEL');
-  const verbCount=noVerb?0:(_terminPreload.verbByWelle[wellenM]||0);
+  const sysCount=[...new Set((soSeKuJSON?.positionen||[]).map(p=>Number(p.segel_nr)||1))].length;
+  const verbCount=noVerb?0:sysCount*(_terminPreload.verbByWelle[wellenM]||0);
   const sfH=sfCount*(mk.schraubfund||0);
   const verbH=verbCount*(mk.verbZuschlag||0);
   const hwH=apH+sfH+verbH;
   const totalH=sailH+hwH;
   const anfahrtH=((ZONE_MIN[zone||2]||0)*2)/60;
   const effH=Math.max(0.1,8-anfahrtH);
-  // The final appointment is always exactly 1 day for all systems:
-  // aufrollbar 1.5h/sail, feste Segel 0.5h/sail — both fit in one day.
-  // Hardware time (Ankerpunkte, Fundamente, Verbinder) fills the other appointments.
-  const empfohlene=Math.max(2,Math.ceil(hwH/effH)+1);
+  const hwDaysMin=(!noVerb&&sysCount>=2)?2:1; // 2+ aufrollbare Systeme → immer mind. 2 HW-Tage
+  const hwDays=hwH>0?Math.max(hwDaysMin,Math.ceil(hwH/effH)):0;
+  const empfohlene=Math.max(2,hwDays+1);
   return{sailH,apH,sfH,verbH,hwH,totalH,anfahrtH,empfohlene};
 }
 // Generate per-term hour breakdown HTML for Terminempfehlung
@@ -3363,7 +3363,8 @@ function calcInstData(){
     const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
     sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
     const noVerb=['M','FLEX'].includes(sysU.replace('SOLIDAY-',''))||sysU.startsWith('SONNENSEGEL');
-    const verbCount=noVerb?0:(prices5.verbByWelle[wellenM]||0);
+    const numSystems=[...new Set((_sailPos||[]).map(p=>Number(p.segel_nr)||1))].length;
+    const verbCount=noVerb?0:numSystems*(prices5.verbByWelle[wellenM]||0);
     sailRows.push({sys:sysU,count:sailCount,mk,h:sailH,welle:wellenM,fraction:1,isFix:mcIsFix(sysU),hasNonFix:false,verbCount,verbH:verbCount*(mk.verbZuschlag||0)});
   }
 
@@ -3375,13 +3376,13 @@ function calcInstData(){
   const sfCount=(transformedData?.sektionen||[]).filter(s=>s.id==='fundamente').flatMap(s=>s.positionen||[]).filter(p=>p.artikelnummer==='00E13000227').reduce((s,p)=>s+Math.round(p.menge||0),0);
   const sysShort=sysU.replace('SOLIDAY-','');
   const noVerbinder=['M','FLEX'].includes(sysShort)||sysU.startsWith('SONNENSEGEL');
-  const verbCount=noVerbinder?0:(prices5.verbByWelle[wellenM]||0);
-  // In multi-system mode sum verbH from each sailRow; single-system uses global verbCount
-  const totalVerbH=multiDiff?sailRows.reduce((s,r)=>s+(r.verbH||0),0):verbCount*(mk.verbZuschlag||0);
+  // sailRows always has correct verbH per system (numSystems already factored in for same-type multi)
+  const totalVerbH=sailRows.reduce((s,r)=>s+(r.verbH||0),0);
+  const totalVerbCount=sailRows.reduce((s,r)=>s+(r.verbCount||0),0);
   const elekHoehH=_hasElektrischeHV()?(mk.elekHoeh||0):0;
   const hwH=apH+sfCount*mk.schraubfund+totalVerbH+elekHoehH;
   const totalH=sailH+hwH;
-  return{price:Math.ceil(totalH*prices5.stundensatz/10)*10,sailH,hwH,totalH,sailRows,mk,sfCount,verbCount,wellenM,apH,apCntWand:0,totalVerbH,elekHoehH};
+  return{price:Math.ceil(totalH*prices5.stundensatz/10)*10,sailH,hwH,totalH,sailRows,mk,sfCount,verbCount:totalVerbCount,wellenM,apH,apCntWand:0,totalVerbH,elekHoehH};
 }
 function calcInstPreis(){return calcInstData().price;}
 // Anfahrt: Zone-Minuten (einfache Fahrt) × 2 (Hin+Rück) × Anzahl Termine × reduzierter Anfahrt-Stundensatz
