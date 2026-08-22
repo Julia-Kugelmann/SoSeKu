@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 22:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 23:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3391,12 +3391,27 @@ function calcInstData(){
       sailRows.push({sys:s,count,mk:mk_s,h,welle,fraction:count/totalCount,isFix,hasNonFix,verbCount,verbH,nrs:nrsBySys[s]||[]});
     });
   }else{
-    const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
-    sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
     const noVerb=['M','FLEX'].includes(sysU.replace('SOLIDAY-',''))||sysU.startsWith('SONNENSEGEL');
-    const numSystems=(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1;
-    const verbCount=noVerb?0:numSystems*(prices5.verbByWelle[wellenM]||0);
-    sailRows.push({sys:sysU,count:sailCount,mk,h:sailH,welle:wellenM,fraction:1,isFix:mcIsFix(sysU),hasNonFix:false,verbCount,verbH:verbCount*(mk.verbZuschlag||0)});
+    const isFix=mcIsFix(sysU);
+    const multiSameUnmerged=(_sailPos||[]).length>1&&!_segelMergeSet.has(sysU);
+    if(multiSameUnmerged){
+      // Per-sail rows for unmerged same-type systems (e.g. 2×CS not merged)
+      _sailPos.forEach((sail,si)=>{
+        const nr=Number(sail.segel_nr)||1;
+        const h=si===0?mk.grundpreis:mk.weiteresSegel;
+        sailH+=h;
+        const sysRawPos=(soSeKuJSON.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
+        const welle=_extractWelle(sysRawPos)||(isFix?null:wellenM);
+        const verbCount=noVerb?0:(prices5.verbByWelle[welle]||0);
+        sailRows.push({sys:sysU,count:1,mk,h,welle,fraction:1/(_sailPos.length||1),isFix,hasNonFix:false,verbCount,verbH:verbCount*(mk.verbZuschlag||0),nrs:[nr]});
+      });
+    }else{
+      const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
+      sailH=mk.grundpreis+Math.max(0,sailCount-1)*mk.weiteresSegel;
+      const numSystems=(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1;
+      const verbCount=noVerb?0:numSystems*(prices5.verbByWelle[wellenM]||0);
+      sailRows.push({sys:sysU,count:sailCount,mk,h:sailH,welle:wellenM,fraction:1,isFix,hasNonFix:false,verbCount,verbH:verbCount*(mk.verbZuschlag||0)});
+    }
   }
 
   // Hardware hours (ankerpunkte, schraubfundamente, wellenverbinder) — universal
