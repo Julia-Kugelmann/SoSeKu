@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 00:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 00:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1202,7 +1202,7 @@ Wichtig:
 - "system": "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA" oder ""
 - "variante": Angebotsvariante/Version wie z.B. "V05", "V05X", "V05XX" – erkennbar im Dokumentkopf, im Angebotsnamen oder der Versionsnummer; null wenn nicht vorhanden
 - "kommission": Wert aus Feld Kommission ohne Klammerzusaetze
-- "segel_nr": Segelnummer (1 fuer erstes Segel, 2 fuer zweites usw.). Bei einem einzigen Segel immer 1. Bei mehrsegligen Angeboten (erkennbar an Ueberschriften wie "1 SOLIDAY-C", "2 SOLIDAY-C") die zugehoerige Nummer einsetzen.
+- "segel_nr": Segelnummer (1 fuer erstes Segel, 2 fuer zweites usw.). Bei einem einzigen Segel immer 1. Bei mehrsegligen Angeboten (erkennbar an Ueberschriften wie "1 SOLIDAY-CS", "2 SOLIDAY-CS") ALLE Positionen dieser Sektion – also Aufrollsystem, Segel, Zubehoer, Wandbefestigungen, Fundamente, Montage – mit der Segelnummer dieser Sektion kennzeichnen. Nie nur das Segeltuch, sondern jede einzelne Position der Sektion.
 
 Format:
 {"kommission":"string","datum":"string","system":"string","variante":"string/null","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,
@@ -3401,7 +3401,9 @@ function calcInstData(){
         const h=si===0?mk.grundpreis:mk.weiteresSegel;
         sailH+=h;
         const sysRawPos=(soSeKuJSON.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
-        const welle=_extractWelle(sysRawPos)||_extractWelle(soSeKuJSON.positionen||[])||(isFix?null:wellenM);
+        // Wave from this segel's raw positions; fallback: segelsystem section of same _segelNr in transformed data
+        const sysTrPos=(transformedData?.sektionen||[]).filter(s=>s._segelNr===nr&&s.id==='segelsystem').flatMap(s=>s.positionen||[]);
+        const welle=_extractWelle(sysRawPos)||_extractWelle(sysTrPos)||(isFix?null:wellenM);
         const verbCount=noVerb?0:(prices5.verbByWelle[welle]||0);
         sailRows.push({sys:sysU,count:1,mk,h,welle,fraction:1/(_sailPos.length||1),isFix,hasNonFix:false,verbCount,verbH:verbCount*(mk.verbZuschlag||0),nrs:[nr]});
       });
