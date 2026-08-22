@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 21:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 22:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1259,6 +1259,27 @@ function _sysFromText(txt){
   if(/RAFF.*F[ÜU]HRUNGS|F[ÜU]HRUNGS.*RAFF/i.test(t))return'RAFF-M-FUEHRUNGSSCHIENE';
   return null;
 }
+// Build {segel_nr → system} from soliday_sektion across ALL positions of the offer.
+// Segel-Positionen (qm_segel>0) have full section headings like "1 SOLIDAY-CS Punkt A"
+// and are scanned first; hardware sections like "Punkt C" often omit the system name.
+function _buildSegelNrSysMap(positionen){
+  const map={};
+  const all=positionen||[];
+  // Pass 1: segel positions (most reliable — section heading always includes system)
+  for(const p of all){
+    const nr=Number(p.segel_nr)||1;
+    if(map[nr])continue;
+    if((p.qm_segel||0)>0){const det=_sysFromText(p.soliday_sektion);if(det)map[nr]=det;}
+  }
+  // Pass 2: any position with detectable system in sektion
+  for(const p of all){
+    const nr=Number(p.segel_nr)||1;
+    if(map[nr])continue;
+    const det=_sysFromText(p.soliday_sektion)||_sysFromText(p.name);
+    if(det)map[nr]=det;
+  }
+  return map;
+}
 function detectSysFromPos(positionen){
   // Pass 1: soliday_sektion headings (most reliable — directly from PDF section titles)
   for(const p of (positionen||[])){
@@ -1297,11 +1318,14 @@ function normalizeExtractedSystem(json){
       return json;
     }
   }
+  // Build segel_nr→system map from sektion headings across all positions
+  const _snSysMap=_buildSegelNrSysMap(json.positionen||[]);
+  if(Object.keys(_snSysMap).length>0)json._segelNrSysMap=_snSysMap;
   // Cross-check: detect system from sail-1 positions only (avoid mixed-system override)
   // For multi-sail offers: don't fall back to ALL positions (another sail's system would override sail-1)
   const sail1Pos=(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===1);
   const hasMult=(json.positionen||[]).some(p=>(Number(p.segel_nr)||1)>1);
-  const det=detectSysFromPos(sail1Pos)||(hasMult?null:detectSysFromPos(json.positionen));
+  const det=(_snSysMap[1])||detectSysFromPos(sail1Pos)||(hasMult?null:detectSysFromPos(json.positionen));
   if(det&&det!==json.system)json.system=det;
   return json;
 }
@@ -1390,7 +1414,7 @@ function renderStep2(){
     const qmStr=totalQm>0?` &nbsp;·&nbsp; ${totalQm.toLocaleString('de-DE',{maximumFractionDigits:2})} m² Segel`:'';
     const _segelNrs2=[...new Set(d.positionen.map(p=>Number(p.segel_nr)||1))];
     const _multiSail2=_segelNrs2.length>1;
-    const _sysLabels2=_segelNrs2.map(nr=>{const grp=d.positionen.filter(p=>(Number(p.segel_nr)||1)===nr);const det=detectSysFromPos(grp);const grpSys=(det||(soSeKuJSON?.system||'')).toUpperCase();const isFix2=grpSys.startsWith('SONNENSEGEL')&&!grp.some(p=>isAufrollsystem(p.artikelnummer||''))&&grp.some(p=>p.qm_segel>0);return isFix2?'Fix Segel':det?det.replace('SOLIDAY-',''):grpSys.replace('SOLIDAY-','')||`Segel ${nr}`;});
+    const _sysLabels2=_segelNrs2.map(nr=>{const grp=d.positionen.filter(p=>(Number(p.segel_nr)||1)===nr);const det=(soSeKuJSON?._segelNrSysMap||{})[nr]||detectSysFromPos(grp);const grpSys=(det||(soSeKuJSON?.system||'')).toUpperCase();const isFix2=grpSys.startsWith('SONNENSEGEL')&&!grp.some(p=>isAufrollsystem(p.artikelnummer||''))&&grp.some(p=>p.qm_segel>0);return isFix2?'Fix Segel':det?det.replace('SOLIDAY-',''):grpSys.replace('SOLIDAY-','')||`Segel ${nr}`;});
     badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen${qmStr}</div>`
       +(_multiSail2?`<div class="val-ok" style="margin-left:8px">&#10003; ${_segelNrs2.length} Segel erkannt &nbsp;·&nbsp; ${_sysLabels2.join(' + ')}</div>`:'');
   }
@@ -1798,7 +1822,7 @@ function transformiere(json){
   const segelSystems={};
   segelNrs.forEach((nr,nrIdx)=>{
     const groupPos=(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
-    const _detGrpSys=detectSysFromPos(groupPos);
+    const _detGrpSys=(json._segelNrSysMap||{})[nr]||detectSysFromPos(groupPos);
     const _sailSysFallback=_detGrpSys||json.system;
     const _grpIsFest=(_sailSysFallback||'').toUpperCase().startsWith('SONNENSEGEL')&&!groupPos.some(p=>isAufrollsystem(p.artikelnummer||''));
     segelTypes[nr]=_grpIsFest?'fest':'aufrollbar';
@@ -2609,7 +2633,7 @@ function _renderSegelToggle(){
     const _segelSysCur=(soSeKuJSON?.segelSystems||transformedData?.segelSystems||{});
     const _rawLabels=_sNrs.map(nr=>{
       const grp=(soSeKuJSON?.positionen||[]).filter(x=>(Number(x.segel_nr)||1)===nr);
-      const det=detectSysFromPos(grp);
+      const det=(soSeKuJSON?._segelNrSysMap||{})[nr]||detectSysFromPos(grp);
       const grpSysU=(det||(soSeKuJSON?.system||'')).toUpperCase();
       const isFix=grpSysU.startsWith('SONNENSEGEL')&&!grp.some(p=>isAufrollsystem(p.artikelnummer||''))&&grp.some(p=>p.qm_segel>0);
       return isFix?'Fix Segel':det?det.replace('SOLIDAY-',''):grpSysU.replace('SOLIDAY-','')||`Segel ${nr}`;
