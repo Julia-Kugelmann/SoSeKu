@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 01:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 01:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1331,45 +1331,14 @@ function normalizeExtractedSystem(json){
   const hasMult=(json.positionen||[]).some(p=>(Number(p.segel_nr)||1)>1);
   const det=(_snSysMap[1])||detectSysFromPos(sail1Pos)||(hasMult?null:detectSysFromPos(json.positionen));
   if(det&&det!==json.system)json.system=det;
-  // Build segel_nr→Wellenlänge map (in m) — extracted once, used everywhere consistently
-  const _isAufrollNrW=nr=>/^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((nr||'').toUpperCase());
-  const _extractWelleFromList=pos=>{
-    for(const p of (pos||[])){
-      if(!_isAufrollNrW(p.artikelnummer||''))continue;
-      const wm=(p.artikelnummer||'').match(/(\d+)$/);const fromNr=wm?parseInt(wm[1]):null;
-      const nmM=(p.name||'').match(/(?:welle)\D{0,5}(\d+)\s*m|(\d+)\s*m\D{0,5}(?:welle)/i);const fromName=nmM?parseInt(nmM[1]||nmM[2]):null;
-      const w=(fromNr&&fromNr>=1&&fromNr<=30)?fromNr:(fromName&&fromName>=1&&fromName<=30)?fromName:null;
-      if(w)return w;
-    }
-    return null;
-  };
+  // Build segel_nr→Wellenlänge map (in m) from Claude's wellenlaenge_pro_segel field
   const segelNrs=[...new Set((json.positionen||[]).map(p=>Number(p.segel_nr)||1))].sort((a,b)=>a-b);
-  if(segelNrs.length>1){
+  if(segelNrs.length>1&&json.wellenlaenge_pro_segel){
     const wellenMap={};
-    const globalWelle=json.wellenlaenge_aufrollsystem_mm?Math.ceil(json.wellenlaenge_aufrollsystem_mm/1000):null;
-    // 1. Claude-extracted per-segel wave lengths (most reliable — from Segelsystem position name)
-    const _claudeWellen=json.wellenlaenge_pro_segel||null;
-    if(_claudeWellen){
-      segelNrs.forEach(nr=>{
-        const v=_claudeWellen[String(nr)]||_claudeWellen[nr];
-        if(v)wellenMap[nr]=Math.ceil(Number(v)/1000);
-      });
-    }
-    // 2. Fallback: all aufroll articles sorted by position number in document
-    if(Object.keys(wellenMap).length<segelNrs.length){
-      const _allAufrollSorted=(json.positionen||[])
-        .filter(p=>_isAufrollNrW(p.artikelnummer||''))
-        .sort((a,b)=>(a.pos||0)-(b.pos||0));
-      const _wellenInOrder=_allAufrollSorted
-        .map(p=>{const wm=(p.artikelnummer||'').match(/(\d+)$/);const n=wm?parseInt(wm[1]):null;return(n>=1&&n<=30)?n:null;})
-        .filter(Boolean);
-      segelNrs.forEach((nr,i)=>{
-        if(wellenMap[nr])return; // already set by Claude
-        const grp=(json.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
-        const w=_extractWelleFromList(grp)||_wellenInOrder[i]||globalWelle;
-        if(w)wellenMap[nr]=w;
-      });
-    }
+    segelNrs.forEach(nr=>{
+      const v=(json.wellenlaenge_pro_segel)[String(nr)]||(json.wellenlaenge_pro_segel)[nr];
+      if(v)wellenMap[nr]=Math.ceil(Number(v)/1000);
+    });
     if(Object.keys(wellenMap).length>0)json._wellenProSegel=wellenMap;
   }
   return json;
@@ -3424,10 +3393,8 @@ function calcInstData(){
       const hasNonFix=Object.keys(sailsBySys).some(s2=>!mcIsFix(s2));
       const h=(isFix&&hasNonFix)?count*mk_s.weiteresSegel:mk_s.grundpreis+Math.max(0,count-1)*mk_s.weiteresSegel;
       sailH+=h;
-      const sysRawPos=(soSeKuJSON.positionen||[]).filter(p=>(nrsBySys[s]||[]).includes(Number(p.segel_nr)||1));
       const _nrsForSys=nrsBySys[s]||[];
-      const _precomputedWelle=_nrsForSys.reduce((w,nr)=>{const pw=(soSeKuJSON._wellenProSegel||{})[nr];return pw||w;},null);
-      const welle=_precomputedWelle||_extractWelle(sysRawPos)||(isFix?null:wellenM);
+      const welle=_nrsForSys.reduce((w,nr)=>(soSeKuJSON._wellenProSegel||{})[nr]||w,null)||(isFix?null:wellenM);
       const noVerb=isFix||['M','FLEX'].includes(s.replace('SOLIDAY-',''));
       const verbCount=noVerb?0:(prices5.verbByWelle[welle]||0);
       const verbH=verbCount*(mk_s.verbZuschlag||mk.verbZuschlag||0);
@@ -3443,11 +3410,7 @@ function calcInstData(){
         const nr=Number(sail.segel_nr)||1;
         const h=si===0?mk.grundpreis:mk.weiteresSegel;
         sailH+=h;
-        const sysRawPos=(soSeKuJSON.positionen||[]).filter(p=>(Number(p.segel_nr)||1)===nr);
-        // Wave: use pre-computed _wellenProSegel map (set per segel during normalization),
-        // then raw position scan, then transformed segelsystem section, then global wellenM
-        const sysTrPos=(transformedData?.sektionen||[]).filter(s=>s._segelNr===nr&&s.id==='segelsystem').flatMap(s=>s.positionen||[]);
-        const welle=(soSeKuJSON._wellenProSegel||{})[nr]||_extractWelle(sysRawPos)||_extractWelle(sysTrPos)||(isFix?null:wellenM);
+        const welle=(soSeKuJSON._wellenProSegel||{})[nr]||(isFix?null:wellenM);
         const verbCount=noVerb?0:(prices5.verbByWelle[welle]||0);
         sailRows.push({sys:sysU,count:1,mk,h,welle,fraction:1/(_sailPos.length||1),isFix,hasNonFix:false,verbCount,verbH:verbCount*(mk.verbZuschlag||0),nrs:[nr]});
       });
