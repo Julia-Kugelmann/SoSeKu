@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 23:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 23:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3886,6 +3886,7 @@ function renderStep5(){
           <span class="s5-unit">&euro;</span></div>
       </div></div>`;
   } else {
+    const _allSailNrs=[...new Set((soSeKuJSON.positionen||[]).filter(p=>p.qm_segel>0).map(p=>Number(p.segel_nr)||1))].sort((a,b)=>a-b);
     _sailPos.forEach((sail,si)=>{
       const _sailNr=Number(sail.segel_nr)||1;
       const _sailSys=((soSeKuJSON?.segelSystems||{})[_sailNr]||sys).toUpperCase();
@@ -3896,14 +3897,16 @@ function renderStep5(){
       const stoffe=getStoffeForSys(_sailSys,bQm,qm);
       const isFest=_isFix;
       const soltisFiltered=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_sailSys)&&qm>55;
-      const sailNrLabel=sail._merged?` &ndash; ${sail._merged} Segel zusammengefasst`:(transformedData.isMultiSegel?` &ndash; Segel ${sail.segel_nr||si+1}`:'');
       const sailQmPrefix=sail._merged?'∅ ':'';
-    const stkCount=sail._merged||1;
-    const stkExtra=stkCount>1?'<span id="sUnit'+si+'" style="font-size:13px;font-weight:700;color:var(--accent2)">&ndash;</span><span style="font-size:10px;color:var(--muted)">&nbsp;/Stk.&nbsp;&rarr;&nbsp;'+stkCount+'&times;&nbsp;</span>':'';
-      const _mergedBadge=sail._merged?`<span style="font-size:13px;font-weight:700;color:#ffb300;margin-left:4px">${sail._merged}× Segel</span>`:'';
+      const stkCount=sail._merged||1;
+      const stkExtra=stkCount>1?'<span id="sUnit'+si+'" style="font-size:13px;font-weight:700;color:var(--accent2)">&ndash;</span><span style="font-size:10px;color:var(--muted)">&nbsp;/Stk.&nbsp;&rarr;&nbsp;'+stkCount+'&times;&nbsp;</span>':'';
+      const _sailNrLabel=sail._merged
+        ?'Segel '+_allSailNrs.join(' + ')
+        :(transformedData.isMultiSegel?`Segel ${sail.segel_nr||si+1}`:'');
+      const _nrBadge=_sailNrLabel?`<span style="font-size:11px;font-weight:600;color:#ffb300;margin-left:6px">&middot; ${_sailNrLabel}${sail._merged?' (zusammengef.)':''}</span>`:'';
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:center">
-          <span style="display:flex;align-items:center;gap:0;flex-wrap:wrap"><strong>Segeltuch &ndash; ${_sailLbl}</strong>${_mergedBadge}</span>
+          <span style="display:flex;align-items:center;gap:0;flex-wrap:wrap"><strong>Segeltuch &ndash; ${_sailLbl}</strong>${_nrBadge}</span>
           <span id="sailHdrQm${si}" style="font-size:14px;font-weight:700;color:var(--accent2)">${sailQmPrefix}${qm.toFixed(2)} m&sup2;</span>
         </div>
         <div class="s5-card-body">
