@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 22:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-22 22:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1241,18 +1241,22 @@ fi.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files
 function _sysFromText(txt){
   const t=(txt||'').toUpperCase();
   if(!t)return null;
-  if(/SOLIDAY-FLEX/.test(t))return'SOLIDAY-FLEX';
-  if(/SOLIDAY-CS-TWIN/.test(t))return'SOLIDAY-CS-TWIN';
-  if(/SOLIDAY-CS[^-]*(DREIECK|3ECK)/.test(t)||/SOLIDAY-CS-DREIECK/.test(t))return'SOLIDAY-CS-DREIECK';
-  if(/SOLIDAY-ONE/.test(t))return'SOLIDAY-ONE';
-  if(/SOLIDAY-XS-DREIECK/.test(t))return'SOLIDAY-XS-DREIECK';
-  if(/SOLIDAY-XS(?!-DREIECK)/.test(t))return'SOLIDAY-XS';
-  if(/SOLIDAY-X(?!S)/.test(t))return'SOLIDAY-X';
-  if(/SOLIDAY-CS(?!-TWIN|-DREIECK)/.test(t))return'SOLIDAY-CS';
-  if(/SOLIDAY-C(?!S)/.test(t))return'SOLIDAY-C';
-  if(/SOLIDAY-MA(?!SS)/.test(t))return'SOLIDAY-MA';
-  if(/SOLIDAY-M(?!A|ASS)/.test(t))return'SOLIDAY-M';
-  if(/SOLIDAY-SANDY/.test(t))return'SOLIDAY-SANDY';
+  // Match both "SOLIDAY-X" and "SOLIDAY X" and "SYSTEM X" patterns (e.g. position name "Soliday System CS Sonnensegel")
+  const _cs=s=>/SOLIDAY[-\s]CS[-\s]TWIN|SYSTEM\s+CS[-\s]TWIN/i.test(s);
+  const _csDreck=s=>/SOLIDAY[-\s]CS[^-]*(DREIECK|3ECK)|SOLIDAY[-\s]CS[-\s]DREIECK|SYSTEM\s+CS[^-]*(DREIECK|3ECK)/i.test(s);
+  const _xsDreck=s=>/SOLIDAY[-\s]XS[-\s]DREIECK|SYSTEM\s+XS[-\s]DREIECK/i.test(s);
+  if(/SOLIDAY[-\s]FLEX|SYSTEM\s+FLEX/.test(t))return'SOLIDAY-FLEX';
+  if(_cs(t))return'SOLIDAY-CS-TWIN';
+  if(_csDreck(t))return'SOLIDAY-CS-DREIECK';
+  if(/SOLIDAY[-\s]ONE|SYSTEM\s+ONE/.test(t))return'SOLIDAY-ONE';
+  if(_xsDreck(t))return'SOLIDAY-XS-DREIECK';
+  if(/SOLIDAY[-\s]XS(?![-\s]DREIECK)|SYSTEM\s+XS(?!\s*DREIECK)/.test(t))return'SOLIDAY-XS';
+  if(/SOLIDAY[-\s]X(?!S)|SYSTEM\s+X(?!S)/.test(t))return'SOLIDAY-X';
+  if(/SOLIDAY[-\s]CS(?![-\s]TWIN|[-\s]DREIECK)|SYSTEM\s+CS(?!\s*(TWIN|DREIECK))/.test(t))return'SOLIDAY-CS';
+  if(/SOLIDAY[-\s]C(?!S)|SYSTEM\s+C(?!S)/.test(t))return'SOLIDAY-C';
+  if(/SOLIDAY[-\s]MA(?!SS)|SYSTEM\s+MA(?!SS)/.test(t))return'SOLIDAY-MA';
+  if(/SOLIDAY[-\s]M(?!A|ASS)|SYSTEM\s+M(?!A|ASS)/.test(t))return'SOLIDAY-M';
+  if(/SOLIDAY[-\s]SANDY|SYSTEM\s+SANDY/.test(t))return'SOLIDAY-SANDY';
   if(/SONNENSEGEL[^A-Z]*(MAß|MA[ÃŸ]|MASS)[^A-Z]*(SNAP|SCHNAPP)/i.test(t)||/SONNENSEGEL.*SNAP.*MAß|SNAP.*SONNENSEGEL.*MAß/i.test(t))return'SONNENSEGEL-MAß-SNAP';
   if(/SONNENSEGEL[^A-Z]*(MAß|MA[ÃŸ]|MASS)|MAß[-\s]*SEGEL|NACH\s*MAß|AUF\s*MAß|NACH MA[ÃŸ]/i.test(t))return'SONNENSEGEL-MAß';
   if(/RAFF.*DRAHTSEIL|DRAHTSEIL.*RAFF/i.test(t))return'RAFF-M-DRAHTSEIL';
