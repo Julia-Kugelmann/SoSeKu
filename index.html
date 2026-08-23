@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 02:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 02:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1288,26 +1288,16 @@ function _buildSegelNrSysMap(positionen){
   for(const p of all){
     const nr=Number(p.segel_nr)||1;
     if(map[nr])continue;
-    const det=_sysFromText(p.soliday_sektion)||_sysFromText(p.name);
+    const det=_sysFromText(p.soliday_sektion);
     if(det)map[nr]=det;
   }
   return map;
 }
 function detectSysFromPos(positionen){
-  // Pass 1: soliday_sektion headings (most reliable — directly from PDF section titles)
+  // Only section headings — never article names or numbers
   for(const p of (positionen||[])){
     const det=_sysFromText(p.soliday_sektion);
     if(det)return det;
-  }
-  // Pass 2: aufrollsystem article numbers + position names
-  const _isAufrollNr=nr=>/^(78V|79V|70001B|71001B|73001B|78E|70E|7[0-9]002B)/.test((nr||'').toUpperCase());
-  for(const p of (positionen||[])){
-    if(!_isAufrollNr(p.artikelnummer||''))continue;
-    const nm=(p.name||'').toUpperCase();
-    const nr=(p.artikelnummer||'').toUpperCase();
-    const det=_sysFromText(nm)||_sysFromText(nr);
-    if(det)return det;
-    if(/SANDY/i.test(nm))return'SOLIDAY-SANDY';
   }
   return null;
 }
@@ -1316,18 +1306,20 @@ function normalizeExtractedSystem(json){
   const s=(json.system||'').trim();
   const su=s.toUpperCase();
   const KNOWN=['SOLIDAY-','SONNENSEGEL','RAFF-M'];
+  // Always check: no aufroll article + no wave length → feste Segel (overrides whatever Claude returned)
+  {
+    const hasAufroll=(json.positionen||[]).some(p=>
+      /^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((p.artikelnummer||'').toUpperCase())||
+      /SOLIDAY-(?:C|CS|ONE|M|MA|X|XS|FLEX|SANDY)/i.test(p.soliday_sektion||''));
+    if(!hasAufroll&&!(json.wellenlaenge_aufrollsystem_mm>0)&&(json.positionen||[]).some(p=>p.qm_segel>0)){
+      json.system=su.includes('SNAP')?'SONNENSEGEL-MAß-SNAP':'SONNENSEGEL-MAß';
+      return json;
+    }
+  }
   if(!KNOWN.some(p=>su.startsWith(p))){
     // Normalize free-text variants Claude might produce
     if(su.includes('SONNENSEGEL')||su.includes('FIX SEGEL')||su.includes('FIX-SEGEL')||su.includes('FESTES SEGEL')||su.includes('SONNENSEGEL-MASS')){
       json.system=su.includes('SNAP')?'SONNENSEGEL-MAß-SNAP':'SONNENSEGEL-MAß';
-      return json;
-    }
-    // Infer from positions: no aufroll article + no wave length → feste Segel
-    const hasAufroll=(json.positionen||[]).some(p=>
-      /^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((p.artikelnummer||'').toUpperCase())||
-      /SOLIDAY-(?:C|CS|ONE|M|MA|X|XS|FLEX|SANDY)/i.test(p.soliday_sektion||''));
-    if(!hasAufroll&&!(json.wellenlaenge_aufrollsystem_mm>0)){
-      json.system='SONNENSEGEL-MAß';
       return json;
     }
   }
