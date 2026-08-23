@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 03:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 03:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1395,14 +1395,22 @@ async function processFile(file,correctionHint){
     // Truncation: stop_reason=max_tokens even on HTTP 200
     if(!usedSonnet&&data.stop_reason==='max_tokens')data=await trySonnet('Antwort zu lang');
     prog.style.width='75%';
-    const text=(data.content||[]).find(b=>b.type==='text')?.text||'';
-    if(!text)throw new Error('Leere Antwort von Claude');
-    const clean=text.replace(/```json\n?|```\n?/g,'').trim();
-    // If still truncated after Sonnet, try one more time with Sonnet
+    const _extractClean=d=>(d.content||[]).find(b=>b.type==='text')?.text?.replace(/```json\n?|```\n?/g,'').trim()||'';
+    let clean=_extractClean(data);
+    if(!clean)throw new Error('Leere Antwort von Claude');
+    // If Claude returned non-JSON text (starts with letter, not '{'), retry with explicit JSON instruction
+    if(!clean.startsWith('{')){
+      prog.style.width='40%';sub.textContent='Antwort kein JSON – erneuter Versuch...';
+      const retryPrompt=prompt+'\n\nWICHTIG: Deine letzte Antwort enthielt Text statt JSON. Antworte AUSSCHLIESSLICH mit dem JSON-Objekt. KEIN Text davor, KEINE Erklaerung, KEIN Markdown.';
+      data=await callClaude(pdfBase64,usedSonnet?'claude-sonnet-4-6':'claude-haiku-4-5-20251001',retryPrompt);
+      clean=_extractClean(data);
+      if(!clean.startsWith('{'))data=await trySonnet('JSON-Retry fehlgeschlagen');
+      clean=_extractClean(data);
+    }
+    // If still truncated after potential Sonnet fallback, try one more time with Sonnet
     if(!clean.endsWith('}')){
       if(!usedSonnet){data=await trySonnet('Antwort unvollständig');prog.style.width='75%';}
-      const text2=(data.content||[]).find(b=>b.type==='text')?.text||'';
-      const clean2=text2.replace(/```json\n?|```\n?/g,'').trim();
+      const clean2=_extractClean(data);
       if(!clean2.endsWith('}'))throw new Error('Claude-Antwort konnte nicht vollständig geladen werden. Mögliche Ursache: Das PDF enthält verschiedene Soliday-Systeme (z.B. SOLIDAY-ONE + SOLIDAY-C). Mehrere Segel desselben Systems werden unterstützt, aber unterschiedliche Systemtypen bitte in separate Angebote aufteilen.');
       const parsed2=JSON.parse(clean2);soSeKuJSON=normalizeExtractedSystem(parsed2);_showUpf=_isNurFestSegel(soSeKuJSON);prog.style.width='100%';setTimeout(renderStep2,300);return;
     }
