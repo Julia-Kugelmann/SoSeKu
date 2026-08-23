@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 03:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 03:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1249,9 +1249,9 @@ fi.addEventListener('change',e=>{if(e.target.files[0])processFile(e.target.files
 
 // === STEP 1 ===
 function _sysFromText(txt){
-  const t=(txt||'').toUpperCase();
-  if(!t)return null;
-  // Match both "SOLIDAY-X" and "SOLIDAY X" and "SYSTEM X" patterns (e.g. position name "Soliday System CS Sonnensegel")
+  if(!txt)return null;
+  // Uppercase then normalize ß/ẞ → SS so "Maß" → "MASS" regardless of JS engine
+  const t=(txt).toUpperCase().replace(/[ßẞ]/g,'SS');
   const _cs=s=>/SOLIDAY[-\s]CS[-\s]TWIN|SYSTEM\s+CS[-\s]TWIN/i.test(s);
   const _csDreck=s=>/SOLIDAY[-\s]CS[^-]*(DREIECK|3ECK)|SOLIDAY[-\s]CS[-\s]DREIECK|SYSTEM\s+CS[^-]*(DREIECK|3ECK)/i.test(s);
   const _xsDreck=s=>/SOLIDAY[-\s]XS[-\s]DREIECK|SYSTEM\s+XS[-\s]DREIECK/i.test(s);
@@ -1265,12 +1265,14 @@ function _sysFromText(txt){
   if(/SOLIDAY[-\s]CS(?![-\s]TWIN|[-\s]DREIECK)|SYSTEM\s+CS(?!\s*(TWIN|DREIECK))/.test(t))return'SOLIDAY-CS';
   if(/SOLIDAY[-\s]C(?!S)|SYSTEM\s+C(?!S)/.test(t))return'SOLIDAY-C';
   if(/SOLIDAY[-\s]MA(?!SS)|SYSTEM\s+MA(?!SS)/.test(t))return'SOLIDAY-MA';
-  if(/SOLIDAY[-\s]M(?!A|ASS)|SYSTEM\s+M(?!A|ASS)/.test(t))return'SOLIDAY-M';
+  if(/SOLIDAY[-\s]M(?!A|SS)|SYSTEM\s+M(?!A|SS)/.test(t))return'SOLIDAY-M';
   if(/SOLIDAY[-\s]SANDY|SYSTEM\s+SANDY/.test(t))return'SOLIDAY-SANDY';
-  if(/SONNENSEGEL[^A-Z]*(MAß|MA[ÃŸ]|MASS)[^A-Z]*(SNAP|SCHNAPP)/i.test(t)||/SONNENSEGEL.*SNAP.*MAß|SNAP.*SONNENSEGEL.*MAß/i.test(t))return'SONNENSEGEL-MAß-SNAP';
-  if(/SONNENSEGEL[^A-Z]*(MAß|MA[ÃŸ]|MASS)|MAß[-\s]*SEGEL|NACH\s*MAß|AUF\s*MAß|NACH MA[ÃŸ]/i.test(t))return'SONNENSEGEL-MAß';
-  if(/RAFF.*DRAHTSEIL|DRAHTSEIL.*RAFF/i.test(t))return'RAFF-M-DRAHTSEIL';
-  if(/RAFF.*F[ÜU]HRUNGS|F[ÜU]HRUNGS.*RAFF/i.test(t))return'RAFF-M-FUEHRUNGSSCHIENE';
+  // After ß→SS normalization: "nach Maß"→"NACH MASS", "auf Maß"→"AUF MASS" etc.
+  // Use .* so "SONNENSEGEL AUF MASS" matches (not just adjacent "SONNENSEGEL MASS")
+  if(/SONNENSEGEL.*MASS.*(SNAP|SCHNAPP)|SONNENSEGEL.*(SNAP|SCHNAPP).*MASS/.test(t))return'SONNENSEGEL-MAß-SNAP';
+  if(/SONNENSEGEL.*MASS|MASS[-\s]*SEGEL|NACH\s*MASS|AUF\s*MASS/.test(t))return'SONNENSEGEL-MAß';
+  if(/RAFF.*DRAHTSEIL|DRAHTSEIL.*RAFF/.test(t))return'RAFF-M-DRAHTSEIL';
+  if(/RAFF.*F[ÜU]HRUNGS|F[ÜU]HRUNGS.*RAFF/.test(t))return'RAFF-M-FUEHRUNGSSCHIENE';
   return null;
 }
 // Build {segel_nr → system} from soliday_sektion across ALL positions of the offer.
