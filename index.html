@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 02:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 02:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1203,9 +1203,10 @@ Wichtig:
 - Nutze immer den VK Netto Preis (nicht EK)
 - Alle Zahlen als Dezimalpunkt (nicht Komma)
 - Artikelnummer exakt aus der Positionszeile extrahieren
-- "sektionen": Lies ALLE Sektionsueberschriften direkt aus dem PDF und liste sie in der Reihenfolge wie sie im Dokument erscheinen. Beispiel mehrseglig: ["1 SOLIDAY-CS","2 SOLIDAY-CS"]. Beispiel einseglig aufrollbar: ["Segel","Segelzubehoer","Hardware","Punkt A","Punkt B"]. Beispiel festes Segel: ["Sonnensegel nach Mass","Segelzubehoer"]. Nie aus dem Kontext inferieren – nur was wirklich als Ueberschrift im PDF steht.
-- "system": Direkt aus den Sektionsueberschriften ablesen. Enthalten die Ueberschriften einen SOLIDAY-Systemnamen (z.B. "1 SOLIDAY-CS", "2 SOLIDAY-CS") → entsprechenden Wert verwenden. Stehen in den Ueberschriften keine SOLIDAY-Systemnamen (z.B. nur "Segel", "Segelzubehoer", "Sonnensegel nach Mass") → "SONNENSEGEL-MAß". Gueltige Werte: "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA","SOLIDAY-FLEX","SOLIDAY-SANDY","SONNENSEGEL-MAß"
-- "soliday_sektion": Exakt die Sektionsueberschrift aus dem PDF unter der diese Position steht. Bei mehrsegligen Angeboten Hauptueberschrift + Untersektion kombiniert: "1 SOLIDAY-CS / Segelzubehoer". Bei einsegligen Angeboten nur die Untersektion: "Segel", "Segelzubehoer", "Punkt A" usw.
+- "sektionen": Nur die HAUPTSEKTIONEN die das System identifizieren – keine Unterabschnitte. Bei mehrsegligen Angeboten z.B. ["1 SOLIDAY-CS","2 SOLIDAY-CS"]. Bei einsegligen Angeboten der Systemname aus dem Dokumentkopf z.B. ["SOLIDAY-ONE"]. Bei festen Segeln z.B. ["Sonnensegel nach Mass"]. Nie Unterabschnitte wie "Punkt A" oder "Segelzubehoer" eintragen.
+- "system": Aus den Hauptsektionen (sektionen) ablesen. Enthalten die Hauptsektionen einen SOLIDAY-Systemnamen → diesen verwenden. Enthalten sie keinen SOLIDAY-Systemnamen (z.B. nur "Sonnensegel nach Mass") → "SONNENSEGEL-MAß". Gueltige Werte: "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA","SOLIDAY-FLEX","SOLIDAY-SANDY","SONNENSEGEL-MAß"
+- "soliday_sektion": Nur die HAUPTSEKTION (eine der Eintraege aus sektionen) unter der diese Position steht. Z.B. "1 SOLIDAY-CS" oder "SOLIDAY-ONE" oder "Sonnensegel nach Mass". Keine Unterabschnitte.
+- "soliday_untersektion": Der Unterabschnitt unter der diese Position im PDF steht: z.B. "Segel", "Segelzubehoer", "Hardware", "Punkt A", "Punkt B", "Punkt C", "Punkt D". Leer ("") wenn kein Unterabschnitt.
 - "segel_nr": Nummer der Hauptsektion. Einseglig: immer 1. Mehrseglig: "1 SOLIDAY-CS" → 1, "2 SOLIDAY-CS" → 2. ALLE Positionen einer Hauptsektion (Segelsystem, Segel, Zubehoer, Wandbefestigungen, Fundamente) erhalten dieselbe segel_nr.
 - "qm_segel": Segelflaeche in qm wenn Segeltuch, sonst null
 - "segelform": nur bei festen Segeln nach Mass: "viereck" oder "dreieck"; bei aufrollbaren Segeln und allen anderen Positionen immer null
@@ -1216,7 +1217,7 @@ Wichtig:
 
 Format:
 {"kommission":"string","datum":"string","system":"string","variante":"string/null","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,"wellenlaenge_pro_segel":{"1":number,"2":number}/null,"sektionen":["string"],
-"positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null,"segelform":"viereck"/"dreieck"/null,"segel_nr":1}],
+"positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","soliday_untersektion":"string","qm_segel":number/null,"segelform":"viereck"/"dreieck"/null,"segel_nr":1}],
 "teuerungszuschlag_netto":number/null,"versand_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
 
 // === CLAUDE API ===
@@ -1306,11 +1307,11 @@ function normalizeExtractedSystem(json){
   if(!json) return json;
   const su=(json.system||'').trim().toUpperCase();
 
-  // Collect all section-heading text Claude read from the PDF:
-  // the explicit sektionen list + every soliday_sektion tag on individual positions.
+  // Collect section-heading text Claude read from the PDF:
+  // sektionen = top-level sections only; soliday_sektion per position = same top-level tag.
   const allSekText=[
     ...(json.sektionen||[]),
-    ...(json.positionen||[]).map(p=>p.soliday_sektion||'')
+    ...(json.positionen||[]).map(p=>p.soliday_sektion||'')  // now also top-level only → clean
   ];
 
   // Does any section heading identify an aufrollbar SOLIDAY system?
@@ -1461,7 +1462,7 @@ function renderStep2(){
     <tr>
       <td>${p.pos}</td>
       <td><span class="tag">${p.artikelnummer||'–'}</span></td>
-      <td><span class="tag tag-s">${p.soliday_sektion||'–'}</span></td>
+      <td><span class="tag tag-s">${p.soliday_sektion||'–'}</span>${p.soliday_untersektion?`<span class="tag tag-s" style="opacity:.65;margin-top:2px;display:block">${p.soliday_untersektion}</span>`:''}</td>
       <td><div>${p.name}</div>${p.qm_segel?`<div style="font-size:10px;color:var(--muted)">${p.qm_segel} m²</div>`:''}</td>
       <td class="num-r">${Number(p.menge).toLocaleString('de-DE')}</td>
       <td style="color:var(--muted)">${p.einheit}</td>
@@ -1637,14 +1638,15 @@ function assignSek(p){
   if(NR2SEK[nr])return NR2SEK[nr];
   if(nr&&/^PYL/.test(nr))return'masten';
   if(nr&&isAufrollsystem(nr))return'segelsystem';
-  if(nr==='00E13000417'){const sek=(p.soliday_sektion||'').toLowerCase();return sek.includes('segelzubeh')?'segeltuch':'zubehoer';}
+  if(nr==='00E13000417'){const sek=(p.soliday_untersektion||p.soliday_sektion||'').toLowerCase();return sek.includes('segelzubeh')?'segeltuch':'zubehoer';}
   if(nr==='00E13000107')return'zubehoer';
   const nm=(p.name||'').toLowerCase();
   // Elektrische Höhenverstellung immer ins Segelsystem (auch wenn Soliday sie unter Hardware listet)
   if(/höhenverst/i.test(nm)&&/funk|elektr|c12/i.test(nm))return'segelsystem';
   if(/biegung/.test(nm)&&/mast/.test(nm))return'masten';
   if(/wandschelle/.test(nm))return'wandbefestigungen';
-  const s=(p.soliday_sektion||'').toLowerCase();
+  // Sub-section keywords: prefer soliday_untersektion, fall back to soliday_sektion
+  const s=(p.soliday_untersektion||p.soliday_sektion||'').toLowerCase();
   if(s.includes('hardware'))return'zubehoer';
   if(s.includes('punkt')||s.includes('point')||s.includes('aufroll')||s.includes('welle'))return'segelsystem';
   if(s.includes('montage')||s.includes('fracht'))return'montage';
