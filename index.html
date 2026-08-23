@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 01:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 02:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1000,7 +1000,15 @@ let _s5CachedHardwareH=0;
 let _s5CachedSailCount=0;
 let _s5CachedIsFest=false;
 let _s5CachedMultiTotalSubH=0; // sum of raw per-system hours in multi mode
-let _showUpf=true;
+function _isNurFestSegel(json){
+  if(!json)return false;
+  const sys=(json.system||'').toUpperCase();
+  if(sys.startsWith('SONNENSEGEL'))return true;
+  // All positions with qm_segel > 0 must be fix (no aufroll article in offer)
+  const hasAufroll=(json.positionen||[]).some(p=>/^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((p.artikelnummer||'').toUpperCase()));
+  return !hasAufroll&&(json.positionen||[]).some(p=>p.qm_segel>0);
+}
+let _showUpf=false;
 let _terminPreload={done:false,mk:null,stundensatz:0,apAnzahl:{},verbByWelle:{},sys:''};
 let sevdeskPositions=null;
 let prices5={stoffe:[],stofFeste:[],stofSandy:[],apPreis:{},apAnzahl:{},anfahrtSatz:0,fracht:{},stundensatz:0,schraubfundament:0};
@@ -1392,9 +1400,10 @@ async function processFile(file,correctionHint){
       const text2=(data.content||[]).find(b=>b.type==='text')?.text||'';
       const clean2=text2.replace(/```json\n?|```\n?/g,'').trim();
       if(!clean2.endsWith('}'))throw new Error('Claude-Antwort konnte nicht vollständig geladen werden. Mögliche Ursache: Das PDF enthält verschiedene Soliday-Systeme (z.B. SOLIDAY-ONE + SOLIDAY-C). Mehrere Segel desselben Systems werden unterstützt, aber unterschiedliche Systemtypen bitte in separate Angebote aufteilen.');
-      const parsed2=JSON.parse(clean2);soSeKuJSON=normalizeExtractedSystem(parsed2);prog.style.width='100%';setTimeout(renderStep2,300);return;
+      const parsed2=JSON.parse(clean2);soSeKuJSON=normalizeExtractedSystem(parsed2);_showUpf=_isNurFestSegel(soSeKuJSON);prog.style.width='100%';setTimeout(renderStep2,300);return;
     }
     soSeKuJSON=normalizeExtractedSystem(JSON.parse(clean));
+    _showUpf=_isNurFestSegel(soSeKuJSON);
     prog.style.width='100%';
     setTimeout(renderStep2,300);
   }catch(e){showError(e.message);}
