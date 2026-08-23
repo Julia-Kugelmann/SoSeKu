@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 07:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 08:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1612,7 +1612,8 @@ const NR2SEK={};
 ['00E13002183','00E13000850','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002076','00E13002063','VPVSTEILEONE','VPVSTEILE','VPVS008','VPVS009','VPVS011','VPVS013','00E13000059','00E13000591','00E13000743'].forEach(n=>NR2SEK[n]='segelsystem');
 ['00E13000335','00E13000338','00E13000347','00E13000348','00E13000336','00E13000337','00E13000235','00E13000238','00E13001650','00E13001652','00E13000135','00E13001766','00E13000131','00E13000096','00E13001135','00E13000133','00E13000217','00E13000216','00E13001689','00E13000052','00E13000027','00E13000204','00E13000764'].forEach(n=>NR2SEK[n]='masten');
 ['00E13000227','00E13000324','00E13001870','00E13001872','00E13001782','00E13001604','00E13001606','00E13000244','00E13000302','00E13000304','00E13001600','00E13001412'].forEach(n=>NR2SEK[n]='fundamente');
-['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13001940','00E13000248','00E13000320','00E13000321','00E13000322','00E13000112','00E13001025','00E13000603','00E13002077','75002S'].forEach(n=>NR2SEK[n]='wandbefestigungen');
+['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13001940','00E13000248','00E13000320','00E13000321','00E13000322','00E13000112','00E13001025','00E13000603','00E13002077'].forEach(n=>NR2SEK[n]='wandbefestigungen');
+['75002S'].forEach(n=>NR2SEK[n]='segelsystem');
 ['00E13001787','00E13001742','00E13001741','00E13000206','00E13001937','00E13001735','00E13001734','00E13000843','00E13002149','00E13001965','00E13000042','00E13000026','00E13000066','00E13000127',
  '00E13000023','00E13000053'].forEach(n=>NR2SEK[n]='zubehoer');
 ['00E13001416','00E13001325','00E13001321','73004A001','71004A010','71004A011','70004A007','71004A003','71004A020','00E13001929','00E13001885','75936B','00E13001784'].forEach(n=>NR2SEK[n]='segeltuch');
@@ -1774,8 +1775,8 @@ function _transformiereKern(json){
       p._raffSail=true;
       return p;
     });
-    // Update 75002S (ALL-IN-ONE Hardware bundle) description with Wandplatten count
-    const hw=map.wandbefestigungen.find(p=>p.artikelnummer==='75002S');
+    // Update 75002S (ALL-IN-ONE Hardware bundle, in Segelsystem) description with Wandplatten count
+    const hw=map.segelsystem.find(p=>p.artikelnummer==='75002S');
     if(hw){hw._raffFuehrungen=raffFuehr;hw.beschreibung=`Inkl. ${raffFuehr*2} Wandplatten mit Klebeanker`;}
   } else {
     sailOriginals.forEach(p=>removed.push({...p,_transferred:true}));
@@ -2419,6 +2420,7 @@ function renderStep3(){
     if(['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(s))return 'semi-automatisch aufrollbar';
     if(s==='SOLIDAY-SANDY')return '';
     if(s.startsWith('SONNENSEGEL'))return '';
+    if(s.startsWith('RAFF'))return 'raffbar';
     return 'manuell aufrollbar';
   };
   if(_segelMergeSet.size>0&&_transformedDataOrig&&!transformedData.isMultiSegel){
@@ -2447,8 +2449,10 @@ function renderStep3(){
         sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
       }else{
         const _rawSys=(transformedData.segelSystems||{})[sek._segelNr]||effectiveSys||soSeKuJSON.system||'SOLIDAY';
-        const _isFix=_rawSys.toUpperCase().startsWith('SONNENSEGEL');
-        const _sys=_isFix?'Fix Segel':_rawSys.replace(/-/g,' ');
+        const _rawU=_rawSys.toUpperCase();
+        const _isFix=_rawU.startsWith('SONNENSEGEL');
+        const _isRaffSek=_rawU.startsWith('RAFF');
+        const _sys=_isFix?'Fix Segel':_isRaffSek?'Raffbares Segel':_rawSys.replace(/-/g,' ');
         const _typ=_isFix?'festes Sonnensegel nach Maß':_aufrollTyp(_rawSys);
         const lbl=`${_sys}${_typ?' - '+_typ:''} – Segel ${sek._segelNr}`;
         sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
@@ -2918,7 +2922,7 @@ const WANDPLATTEN_NR=new Set(['00E13000709','00E13000711','00E13000046','00E1300
 function hasWandplatten(){
   if(!transformedData) return false;
   return transformedData.sektionen.filter(s=>s.id==='wandbefestigungen')
-    .some(sek=>sek.positionen.some(p=>WANDPLATTEN_NR.has(p.artikelnummer)||p.artikelnummer==='75002S'));
+    .some(sek=>sek.positionen.some(p=>WANDPLATTEN_NR.has(p.artikelnummer)));
 }
 function backToStep3(){
   // Restore Step 3 state — downstream states stay valid until Step 3 actually changes
@@ -4026,8 +4030,8 @@ function renderStep5(){
   // ═══ COL 2: Wandbefestigungen ═══
   h+=`<div class="s5-col">`;
   h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
-  // RAFF-M: Hardware Bundle 75002S card
-  const _raff75002S=sys.startsWith('RAFF')?transformedData.sektionen.filter(s=>s.id==='wandbefestigungen').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S'):null;
+  // RAFF-M: Hardware Bundle 75002S card (liegt in Segelsystem, Wandbefestigungen entfällt)
+  const _raff75002S=sys.startsWith('RAFF')?transformedData.sektionen.filter(s=>s.id==='segelsystem').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S'):null;
   if(_raff75002S){
     const raffFuehr=_raff75002S._raffFuehrungen||0;
     const wCnt=raffFuehr*2;
@@ -4511,7 +4515,7 @@ function updWand(wi){
 
 function updRaff75(){
   const apInp=document.getElementById('raff75APP');const ap2=parseFloat(apInp?.value||'0')||0;
-  const allWS=transformedData?.sektionen?.filter(s=>s.id==='wandbefestigungen')||[];
+  const allWS=transformedData?.sektionen?.filter(s=>s.id==='segelsystem')||[];
   const hw=allWS.flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S');
   if(!hw)return;
   const fuehr=hw._raffFuehrungen||0;const wCnt=fuehr*2;
@@ -4659,9 +4663,10 @@ function applyPrices5(){
       }
     }
   }
-  // 5B: RAFF-M — Klebeanker für Hardware Bundle 75002S
-  if(sys.startsWith('RAFF')&&fragebogen.montage!==false&&allWandSeks.length>0){
-    const hw75=allWandSeks.flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S');
+  // 5B: RAFF-M — Klebeanker für Hardware Bundle 75002S (liegt in Segelsystem)
+  if(sys.startsWith('RAFF')&&fragebogen.montage!==false){
+    const hw75=transformedData.sektionen.filter(s=>s.id==='segelsystem').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S')
+      ||(allWandSeks.flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S'));
     if(hw75){
       const raffTypAP={'typ1':2,'typ2':3,'typ3':4};
       const apPerWandplatte=raffTypAP[fragebogen.raffWandplattenTyp||'typ1']||2;
@@ -4795,9 +4800,9 @@ function buildSevdeskPositions(){
       const _thisSys=((transformedData.segelSystems||{})[nr]||(soSeKuJSON.segelSystems||{})[nr]||sysFull).toUpperCase();
       const _s=_thisSys;
       const _isFix=_s.startsWith('SONNENSEGEL');
-      const _sysLbl=_isFix?'Fix Segel':_s.replace(/-/g,' ');
-      const _aufTyp=_isFix?(_fixSailCount>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':'manuell aufrollbar';
-      rows.push({type:'section',name:`${_sysLbl} - ${_aufTyp}`});
+      const _sysLbl=_isFix?'Fix Segel':_s.startsWith('RAFF')?'Raffbares Segel':_s.replace(/-/g,' ');
+      const _aufTyp=_isFix?(_fixSailCount>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':_s.startsWith('RAFF')?'raffbar':'manuell aufrollbar';
+      rows.push({type:'section',name:`${_sysLbl}${_aufTyp?' - '+_aufTyp:''}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
         rows.push({type:'section',name:sek.name});
         sek.positionen.forEach(addPos);
