@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 03:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 07:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -507,6 +507,24 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
           </div>
         </div>
 
+      </div>
+      <!-- RAFF-M Konfiguration (nur sichtbar wenn Raff-M System) -->
+      <div id="raffFgSection" style="display:none;gap:24px;margin-top:24px;flex-wrap:wrap;max-width:700px;margin-left:auto;margin-right:auto">
+        <div class="fg-col" style="flex:1;min-width:220px">
+          <div class="fg-title">Raff-M &ndash; Wandplatten-Typ</div>
+          <div class="zone-grid" id="raffWandTypGrid">
+            <div class="zone-item sel" data-v="typ1" onclick="selRaffTyp('typ1')"><div class="zone-num">Typ 1</div><div class="zone-time">2 Ankerpunkte</div></div>
+            <div class="zone-item" data-v="typ2" onclick="selRaffTyp('typ2')"><div class="zone-num">Typ 2 extra lang</div><div class="zone-time">3 Ankerpunkte</div></div>
+            <div class="zone-item" data-v="typ3" onclick="selRaffTyp('typ3')"><div class="zone-num">Typ 3 Viereck</div><div class="zone-time">4 Ankerpunkte</div></div>
+          </div>
+        </div>
+        <div class="fg-col" style="flex:0 0 auto">
+          <div class="fg-title">Raff-M &ndash; Montage Stunden</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <input type="number" id="raffMonStunden" value="0" min="0" step="0.5" style="width:80px;padding:8px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg2);color:var(--text);font-size:16px;text-align:right" oninput="selRaffMonStunden=parseFloat(this.value)||0">
+            <span style="font-size:13px;color:var(--muted)">Stunden gesamt</span>
+          </div>
+        </div>
       </div>
     </div>
     <div style="max-width:700px;margin:32px auto 0">
@@ -991,7 +1009,7 @@ let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
 let manualWeglassArtNr=new Set(); // artikelnummern-basierte Ausschlüsse (zusammengefasst-Modus)
 let _s3MengeOverride={}; // manuell geänderte Mengen im zusammengefasst-Modus {artikelnummer: menge}
-let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,extractAttempts=0,maxStep=0;
+let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,selRaffWandTyp='typ1',selRaffMonStunden=0,extractAttempts=0,maxStep=0;
 let stepState={};
 let selManualH=null;
 let _s5CachedTotalH=0; // cached from renderStep5 for selS5Termine
@@ -1594,11 +1612,11 @@ const NR2SEK={};
 ['00E13002183','00E13000850','00E13001921','00E13001922','71003A045','71003A032','00E13001919','00E13002076','00E13002063','VPVSTEILEONE','VPVSTEILE','VPVS008','VPVS009','VPVS011','VPVS013','00E13000059','00E13000591','00E13000743'].forEach(n=>NR2SEK[n]='segelsystem');
 ['00E13000335','00E13000338','00E13000347','00E13000348','00E13000336','00E13000337','00E13000235','00E13000238','00E13001650','00E13001652','00E13000135','00E13001766','00E13000131','00E13000096','00E13001135','00E13000133','00E13000217','00E13000216','00E13001689','00E13000052','00E13000027','00E13000204','00E13000764'].forEach(n=>NR2SEK[n]='masten');
 ['00E13000227','00E13000324','00E13001870','00E13001872','00E13001782','00E13001604','00E13001606','00E13000244','00E13000302','00E13000304','00E13001600','00E13001412'].forEach(n=>NR2SEK[n]='fundamente');
-['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13001940','00E13000248','00E13000320','00E13000321','00E13000322','00E13000112','00E13001025','00E13000603','00E13002077'].forEach(n=>NR2SEK[n]='wandbefestigungen');
+['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13001940','00E13000248','00E13000320','00E13000321','00E13000322','00E13000112','00E13001025','00E13000603','00E13002077','75002S'].forEach(n=>NR2SEK[n]='wandbefestigungen');
 ['00E13001787','00E13001742','00E13001741','00E13000206','00E13001937','00E13001735','00E13001734','00E13000843','00E13002149','00E13001965','00E13000042','00E13000026','00E13000066','00E13000127',
  '00E13000023','00E13000053'].forEach(n=>NR2SEK[n]='zubehoer');
-['00E13001416','00E13001325','00E13001321','73004A001','71004A010','71004A011','70004A007','71004A003','71004A020','00E13001929','00E13001885'].forEach(n=>NR2SEK[n]='segeltuch');
-['00E13000263','00E13001959'].forEach(n=>NR2SEK[n]='segelsystem');
+['00E13001416','00E13001325','00E13001321','73004A001','71004A010','71004A011','70004A007','71004A003','71004A020','00E13001929','00E13001885','75936B','00E13001784'].forEach(n=>NR2SEK[n]='segeltuch');
+['00E13000263','00E13001959','00E13002067'].forEach(n=>NR2SEK[n]='segelsystem');
 ['00E13000208','00E13000988','00E13001874','00E13001875','00E13001866','00E13001865'].forEach(n=>NR2SEK[n]='masten');
 ['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
 
@@ -1744,11 +1762,28 @@ function _transformiereKern(json){
   // Original Soliday-Segeltuch entfernen, Preis auf SoSeKu-Placeholder übertragen
   const sailOriginals=map.segeltuch.filter(p=>p.qm_segel>0);
   const sailTotal=sailOriginals.reduce((s,p)=>s+(p.gesamt||0),0);
-  sailOriginals.forEach(p=>removed.push({...p,_transferred:true}));
-  map.segeltuch=map.segeltuch.filter(p=>!(p.qm_segel>0));
-  const _stNmMap={'SOLIDAY-M':'Austronet 950','SOLIDAY-MA':'Austronet 950','SOLIDAY-FLEX':'Austronet 960','SOLIDAY-X':'Austrosail Lotus Linear','SOLIDAY-XS':'Austrosail Lotus Linear'};
-  const stName='Segeltuch - '+(_stNmMap[sys]||'Austrosail Nano');
-  map.segeltuch.unshift({artikelnummer:'',name:stName,beschreibung:'',preis_einheit:sailTotal,menge:1,einheit:'Stk.',gesamt:sailTotal,_gs:true});
+  if(sys.startsWith('RAFF')){
+    // RAFF-M: keep sail positions but format description (remove Farbe line), extract Führungen
+    let raffFuehr=0;
+    map.segeltuch=map.segeltuch.map(p=>{
+      if(!(p.qm_segel>0))return p;
+      const rawDesc=p.beschreibung||'';
+      const fuM=rawDesc.match(/F[üu]hrungen[:\s,]*(\d+)/i);
+      if(fuM)raffFuehr=Math.max(raffFuehr,parseInt(fuM[1])||0);
+      p.beschreibung=rawDesc.split('\n').filter(l=>!/^\s*Farbe[:\s]/i.test(l)).join('\n').trim();
+      p._raffSail=true;
+      return p;
+    });
+    // Update 75002S (ALL-IN-ONE Hardware bundle) description with Wandplatten count
+    const hw=map.wandbefestigungen.find(p=>p.artikelnummer==='75002S');
+    if(hw){hw._raffFuehrungen=raffFuehr;hw.beschreibung=`Inkl. ${raffFuehr*2} Wandplatten mit Klebeanker`;}
+  } else {
+    sailOriginals.forEach(p=>removed.push({...p,_transferred:true}));
+    map.segeltuch=map.segeltuch.filter(p=>!(p.qm_segel>0));
+    const _stNmMap={'SOLIDAY-M':'Austronet 950','SOLIDAY-MA':'Austronet 950','SOLIDAY-FLEX':'Austronet 960','SOLIDAY-X':'Austrosail Lotus Linear','SOLIDAY-XS':'Austrosail Lotus Linear'};
+    const stName='Segeltuch - '+(_stNmMap[sys]||'Austrosail Nano');
+    map.segeltuch.unshift({artikelnummer:'',name:stName,beschreibung:'',preis_einheit:sailTotal,menge:1,einheit:'Stk.',gesamt:sailTotal,_gs:true});
+  }
   if(sys==='SOLIDAY-ONE'){const sp=map.segeltuch.find(p=>p.artikelnummer==='00E13001416');if(sp)sp.beschreibung='* nur beim Austrosail Nano Stoff möglich';}
   // Segeltuch: Segel → Segelplatten → Befestigungsset → Schnappschäkel → Schutzhülle → Schutzabdeckung → Pflegeset
   const _SEG_KEY={'00E13001416':10,'00E13001929':20,'00E13001885':20,'00E13000417':30,'73004A001':40,'71004A010':40,'71004A011':40,'70004A007':40,'71004A003':50,'71004A020':50,'00E13001325':60,'00E13001321':60};
@@ -1756,9 +1791,9 @@ function _transformiereKern(json){
     if(a._gs&&!b._gs)return -1;if(!a._gs&&b._gs)return 1;
     return (_SEG_KEY[a.artikelnummer]||55)-(_SEG_KEY[b.artikelnummer]||55);
   });
-  const instNr={'SOLIDAY-C':'INST-C','SOLIDAY-CS':'INST-CS','SOLIDAY-ONE':'INST-ONE','SOLIDAY-M':'INST-M'}[sys]||'INST-X';
-  const _slMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY','SONNENSEGEL-MAß':'Fix Segel','SONNENSEGEL-MAß-SNAP':'Fix Segel SNAP','SONNENSEGEL-MASS':'Fix Segel','SONNENSEGEL-MASS-SNAP':'Fix Segel SNAP'};
-  const sysLabel=sys.startsWith('SONNENSEGEL')?(_slMap[sys]||'Fix Segel'):'SOLIDAY '+(_slMap[sys]||sys.replace('SOLIDAY-',''));
+  const instNr={'SOLIDAY-C':'INST-C','SOLIDAY-CS':'INST-CS','SOLIDAY-ONE':'INST-ONE','SOLIDAY-M':'INST-M','RAFF-M-DRAHTSEIL':'INST-RAFF','RAFF-M-FUEHRUNGSSCHIENE':'INST-RAFF'}[sys]||'INST-X';
+  const _slMap={'SOLIDAY-C':'C','SOLIDAY-CS':'CS','SOLIDAY-CS-DREIECK':'CS - Dreieck','SOLIDAY-CS-TWIN':'CS-Twin','SOLIDAY-ONE':'ONE','SOLIDAY-M':'M','SOLIDAY-MA':'MA','SOLIDAY-X':'X','SOLIDAY-XS':'XS','SOLIDAY-FLEX':'FLEX','SOLIDAY-SANDY':'SANDY','SONNENSEGEL-MAß':'Fix Segel','SONNENSEGEL-MAß-SNAP':'Fix Segel SNAP','SONNENSEGEL-MASS':'Fix Segel','SONNENSEGEL-MASS-SNAP':'Fix Segel SNAP','RAFF-M-DRAHTSEIL':'Raff-M Drahtseil','RAFF-M-FUEHRUNGSSCHIENE':'Raff-M Führungsschiene'};
+  const sysLabel=sys.startsWith('SONNENSEGEL')?(_slMap[sys]||'Fix Segel'):sys.startsWith('RAFF')?(_slMap[sys]||sys.replace('RAFF-M-','')):('SOLIDAY '+(_slMap[sys]||sys.replace('SOLIDAY-','')));
   const hasMasten=map.masten.length>0;
   const isRaff=(soSeKuJSON.system||'').toUpperCase().startsWith('RAFF');
   const useVorfracht=hasMasten||isRaff;
@@ -1803,7 +1838,8 @@ function _transformiereKern(json){
     '00E13000417':50,'00E13000026':50,'00E13000066':50,'00E13000127':50 // Rest
   };
   // Feste Segel: kein Aufrollsystem → Segelsystem-Inhalte in Zubehör verschieben
-  if(!map.segelsystem.some(p=>p._isAufroll||isAufrollsystem(p.artikelnummer))){
+  // (RAFF-M hat kein klassisches Aufrollsystem, aber behält Segelsystem-Sektion)
+  if(!sys.startsWith('RAFF')&&!map.segelsystem.some(p=>p._isAufroll||isAufrollsystem(p.artikelnummer))){
     map.zubehoer.push(...map.segelsystem);
     map.segelsystem=[];
   }
@@ -2805,6 +2841,10 @@ function selWand(v){
   selWandart=v;
   document.querySelectorAll('#wandGrid .zone-item').forEach(el=>el.classList.toggle('sel',el.dataset.v===v));
 }
+function selRaffTyp(v){
+  selRaffWandTyp=v;
+  document.querySelectorAll('#raffWandTypGrid .zone-item').forEach(el=>el.classList.toggle('sel',el.dataset.v===v));
+}
 function toggleDach(){
   selDach=!selDach;
   document.getElementById('dachCard').classList[selDach?'add':'remove']('sel');
@@ -2878,7 +2918,7 @@ const WANDPLATTEN_NR=new Set(['00E13000709','00E13000711','00E13000046','00E1300
 function hasWandplatten(){
   if(!transformedData) return false;
   return transformedData.sektionen.filter(s=>s.id==='wandbefestigungen')
-    .some(sek=>sek.positionen.some(p=>WANDPLATTEN_NR.has(p.artikelnummer)));
+    .some(sek=>sek.positionen.some(p=>WANDPLATTEN_NR.has(p.artikelnummer)||p.artikelnummer==='75002S'));
 }
 function backToStep3(){
   // Restore Step 3 state — downstream states stay valid until Step 3 actually changes
@@ -2906,6 +2946,15 @@ function goToStep4(){
   document.getElementById('mitMontCard').classList[selMontage?'add':'remove']('sel');
   document.getElementById('ohneMontCard').classList[selMontage?'remove':'add']('sel');
   document.getElementById('montageOptions').style.display=selMontage?'flex':'none';
+  // RAFF-M: show/hide Raff-M config section
+  const isRaffSys=(soSeKuJSON?.system||'').toUpperCase().startsWith('RAFF');
+  const raffSec=document.getElementById('raffFgSection');
+  if(raffSec) raffSec.style.display=isRaffSys?'flex':'none';
+  if(isRaffSys){
+    document.querySelectorAll('#raffWandTypGrid .zone-item').forEach(el=>el.classList.toggle('sel',el.dataset.v===selRaffWandTyp));
+    const rmsEl=document.getElementById('raffMonStunden');
+    if(rmsEl) rmsEl.value=selRaffMonStunden||0;
+  }
   showView('viewStep4');setStep(4);
   _loadTerminPreload();
 }
@@ -3061,7 +3110,9 @@ async function initStep5(){
     wandaufpreis:selWandaufpreis,
     montage:selMontage,
     anfahrtVoll:selAnfahrtVoll,
-    freitext:document.getElementById('fgFrei').value
+    freitext:document.getElementById('fgFrei').value,
+    raffWandplattenTyp:selRaffWandTyp,
+    raffMonStunden:parseFloat(document.getElementById('raffMonStunden')?.value||'0')||selRaffMonStunden||0
   };
   const _prevFb=stepState[4]?JSON.stringify(stepState[4]):null;
   stepState[4]=JSON.parse(JSON.stringify(fragebogen));
@@ -3913,6 +3964,18 @@ function renderStep5(){
     _sailPos.forEach((sail,si)=>{
       const _sailNr=Number(sail.segel_nr)||1;
       const _sailSys=((soSeKuJSON?.segelSystems||{})[_sailNr]||sys).toUpperCase();
+      // RAFF-M: show sail info display-only (no stoff selection)
+      if(_sailSys.startsWith('RAFF')||sys.startsWith('RAFF')){
+        const raffDesc=(sail.beschreibung||'').split('\n').filter(l=>!/^\s*Farbe[:\s]/i.test(l)).join('\n').trim();
+        h+=`<div class="s5-card">
+          <div class="s5-card-hdr"><strong>Segeltuch &ndash; Raff-M</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${sail.qm_segel?sail.qm_segel.toFixed(2)+' m²':''}</span></div>
+          <div class="s5-card-body">
+            <div style="font-size:12px;white-space:pre-line;line-height:1.7;color:var(--text)">${raffDesc||sail.name||''}</div>
+            <div class="s5-calc" style="margin-top:8px"><span style="color:var(--muted)">Preis aus Angebot:</span>&nbsp;<strong>${fmtE(sail.gesamt||sail.preis_einheit||0)}</strong></div>
+          </div>
+        </div>`;
+        return;
+      }
       const _isFix=_sailSys.startsWith('SONNENSEGEL');
       const _sailLbl=_isFix?'Fix Segel':_sailSys.startsWith('SOLIDAY-')?'Soliday '+_sailSys.replace('SOLIDAY-',''):_sailSys;
       const qm=sail.qm_segel;
@@ -3963,9 +4026,39 @@ function renderStep5(){
   // ═══ COL 2: Wandbefestigungen ═══
   h+=`<div class="s5-col">`;
   h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
-  if(_wandpl.length===0&&_wandschellen.length===0&&_bodenpl.length===0){
+  // RAFF-M: Hardware Bundle 75002S card
+  const _raff75002S=sys.startsWith('RAFF')?transformedData.sektionen.filter(s=>s.id==='wandbefestigungen').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S'):null;
+  if(_raff75002S){
+    const raffFuehr=_raff75002S._raffFuehrungen||0;
+    const wCnt=raffFuehr*2;
+    const raffTypNames={'typ1':'Typ 1 (2 AP)','typ2':'Typ 2 extra lang (3 AP)','typ3':'Typ 3 Viereck (4 AP)'};
+    const raffTypAP={'typ1':2,'typ2':3,'typ3':4};
+    const selTyp=fragebogen.raffWandplattenTyp||selRaffWandTyp||'typ1';
+    const apPerWP=raffTypAP[selTyp]||2;
+    const ap2=apDef||0;
+    h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Raff-M Hardware Bundle</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${_raff75002S.artikelnummer}</span></div>
+      <div class="s5-card-body">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Führungen: ${raffFuehr} &rarr; ${wCnt} Wandplatten</div>
+        <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
+          <span class="s5-lbl">Typ:</span>
+          <span style="font-size:12px;font-weight:600">${raffTypNames[selTyp]||selTyp}</span>
+        </div>
+        <div class="s5-irow" style="flex-wrap:wrap;gap:4px;margin-top:4px">
+          <span class="s5-lbl">Klebeanker:</span>
+          <span style="font-size:12px">${wCnt} &times; ${apPerWP} AP &times;</span>
+          <input type="number" class="s5-inp s5-w90" id="raff75APP" value="${ap2.toFixed(2)}" step="0.01" min="0" oninput="updRaff75()">
+          <span class="s5-unit">&euro;/AP</span>
+        </div>
+        <div class="s5-calc">
+          <span style="color:var(--muted)">${fmtE(_raff75002S.preis_einheit)} + <span id="raff75Auf">&ndash;</span> =</span>
+          <strong id="raff75Tot">&ndash;</strong>
+        </div>
+      </div>
+    </div>`;
+  }
+  if(_wandpl.length===0&&_wandschellen.length===0&&_bodenpl.length===0&&!_raff75002S){
     h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
-  } else {
+  } else if(!_raff75002S){
     // WANDPLATTEN box
     if(_wandpl.length>0){
       const totalMenge=_wandpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
@@ -4170,17 +4263,20 @@ function renderStep5(){
       const sailHdr=sailCount2>1?`<span style="color:#ffb300">${sailCount2}× Segel</span>`:'';
       const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
       const elekHvHdr=elekHoehH2>0?'elektr. Höhenverst.':'';
-      const hdrChips=[welleHdr,sailHdr,plateParts.join(' '),sfHdr,elekHvHdr].filter(Boolean).join('<br>');
+      const _raffHdr=sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'';
+      const hdrChips=[welleHdr,sailHdr,plateParts.join(' '),sfHdr,elekHvHdr,_raffHdr].filter(Boolean).join('<br>');
       if(mk2?.ok)_s5CachedMultiTotalSubH=totalH2;
       const _gpStoredS=Number(_gsMonPos[mi]?.preis_einheit||0);
-      const _gpInitS=_gpStoredS>0?_gpStoredS:(mk2?.ok?Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10:gp);
+      const _raffH=sys.startsWith('RAFF')?(fragebogen.raffMonStunden||0):0;
+      const _gpInitS=_gpStoredS>0?_gpStoredS:(_raffH>0?Math.ceil(_raffH*(prices5.stundensatz||0)/10)*10:(mk2?.ok?Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10:gp));
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:flex-start">
           <strong>${instPos.name}</strong>
           <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${hdrChips}</span>
         </div>
         <div class="s5-card-body">
-          ${mk2?.ok?`<div class="s5-calc-detail">
+          ${sys.startsWith('RAFF')?`<div class="s5-calc-detail" style="margin-bottom:6px"><div>Manuelle Stunden aus Schritt 4: ${_raffH}h</div>${_raffH>0&&prices5.stundensatz>0?`<div>${_raffH}h &times; ${fmtE(prices5.stundensatz)} = ${fmtE(Math.ceil(_raffH*(prices5.stundensatz||0)/10)*10)}</div>`:''}</div>`:''}
+          ${!sys.startsWith('RAFF')&&mk2?.ok?`<div class="s5-calc-detail">
             <div>Segel (${sailCount2}${sailCount2>1?` Stk. &middot; GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
             ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
             ${apCnt2Boden>0?`<div>${totalMengeB2}x Bodenplatte (${apCnt2Boden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${apH2Boden.toFixed(2)}h</div>`:''}
@@ -4197,7 +4293,7 @@ function renderStep5(){
             <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${_gpInitS.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
             <span class="s5-unit">&euro;</span>
           </div>
-          ${mk2?.ok?`<div class="s5-calc">
+          ${!sys.startsWith('RAFF')&&mk2?.ok?`<div class="s5-calc">
             <span style="color:var(--muted)" id="mInstGesamtCalcLbl">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
             <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10)}</strong><span class="s5-raw" id="mInstGesamtRaw">${(()=>{const raw=totalH2*(prices5.stundensatz||0);const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
           </div>`:''}
@@ -4333,6 +4429,7 @@ function renderStep5(){
   _sailPos.forEach((_,si)=>updSail(si));
   _wandpl.forEach((_,wi)=>updWand(wi));
   _wandschellen.forEach((_,wi)=>updWandS(wi));
+  if(sys.startsWith('RAFF'))updRaff75();
   updMonSum();
 }
 
@@ -4412,6 +4509,18 @@ function updWand(wi){
   if(er)er.textContent=Math.ceil(unitPrice)!==Math.round(unitPrice*100)/100?`(${fmt(unitPrice)})` : '';
 }
 
+function updRaff75(){
+  const apInp=document.getElementById('raff75APP');const ap2=parseFloat(apInp?.value||'0')||0;
+  const allWS=transformedData?.sektionen?.filter(s=>s.id==='wandbefestigungen')||[];
+  const hw=allWS.flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S');
+  if(!hw)return;
+  const fuehr=hw._raffFuehrungen||0;const wCnt=fuehr*2;
+  const raffTypAP={'typ1':2,'typ2':3,'typ3':4};const apPerWP=raffTypAP[fragebogen.raffWandplattenTyp||selRaffWandTyp||'typ1']||2;
+  const auf=wCnt*apPerWP*ap2;
+  const el=document.getElementById('raff75Auf'),et=document.getElementById('raff75Tot');
+  if(el)el.textContent=fmtE(auf);
+  if(et)et.textContent=fmtE(Math.ceil((hw.preis_einheit||hw.gesamt||0)+auf));
+}
 function updWandS(wi){
   const pl=_wandschellen[wi];
   if(!pl)return;
@@ -4434,7 +4543,7 @@ function applyPrices5(){
 
   // 5A: Segeltuch — transformedData already has merged sektionen if _segelZusammenfassen=true
   const segSeks=transformedData.sektionen.filter(s=>s.id==='segeltuch');
-  if(segSeks.length>0){
+  if(segSeks.length>0&&!sys.startsWith('RAFF')){
     if(_sailPos.length===0){
       const stoffe0=getStoffeForSys(sys,2);
       const si=parseInt(document.getElementById('sailStoffSel')?.value||'0');
@@ -4448,6 +4557,8 @@ function applyPrices5(){
       _sailPos.forEach((sail,si)=>{
         const _sailNr2=Number(sail.segel_nr)||1;
         const _sailSys2=((soSeKuJSON?.segelSystems||{})[_sailNr2]||sys).toUpperCase();
+        // RAFF-M sails: price comes from PDF, no stoff selection — skip
+        if(_sailSys2.startsWith('RAFF'))return;
         const multiplier=sail._merged||1;
         const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
         const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
@@ -4546,6 +4657,25 @@ function applyPrices5(){
       if(!firstWsk.positionen.find(p=>p.artikelnummer==='WAND-AUFPREIS')){
         firstWsk.positionen.push({artikelnummer:'WAND-AUFPREIS',name:'Aufpreis Wandbefestigung - Sonderkonfiguration',beschreibung:'',preis_einheit:wpVal,menge:1,einheit:'pauschal',gesamt:wpVal,_gs:true});
       }
+    }
+  }
+  // 5B: RAFF-M — Klebeanker für Hardware Bundle 75002S
+  if(sys.startsWith('RAFF')&&fragebogen.montage!==false&&allWandSeks.length>0){
+    const hw75=allWandSeks.flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S');
+    if(hw75){
+      const raffTypAP={'typ1':2,'typ2':3,'typ3':4};
+      const apPerWandplatte=raffTypAP[fragebogen.raffWandplattenTyp||'typ1']||2;
+      const fuehr=hw75._raffFuehrungen||0;
+      const wandplattenCnt=fuehr*2;
+      const ap2=prices5.apPreis[wa5]||prices5.apPreis['ziegel-10']||0;
+      const klebAnker=wandplattenCnt*apPerWandplatte*ap2;
+      const origGesamt=hw75.gesamt||0;
+      hw75.gesamt=Math.ceil(origGesamt+klebAnker);
+      hw75.preis_einheit=hw75.gesamt;
+      const typName={'typ1':'Typ 1','typ2':'Typ 2 extra lang','typ3':'Typ 3 Viereck'}[fragebogen.raffWandplattenTyp||'typ1']||'Typ 1';
+      hw75.beschreibung=`Inkl. ${wandplattenCnt} Wandplatten (${typName}) mit Klebeanker\n${wdesc5[wa5]||wdesc5['ziegel-10']}`;
+      hw75._modified=true;
+      modifiedArtNrsInStep5.add('75002S');
     }
   }
   // 5B: Bodenplatten — update ALL fundamente sektionen (multi-sail)
