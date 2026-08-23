@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 02:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 02:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1203,18 +1203,19 @@ Wichtig:
 - Nutze immer den VK Netto Preis (nicht EK)
 - Alle Zahlen als Dezimalpunkt (nicht Komma)
 - Artikelnummer exakt aus der Positionszeile extrahieren
-- "soliday_sektion": Vollstaendiger Abschnittstitel. Bei mehrsegligen Angeboten (Ueberschriften wie "1 SOLIDAY-CS", "2 SOLIDAY-CS") immer den Systemabschnitt mit Unterabschnitt kombinieren, z.B. "1 SOLIDAY-CS - Punkt A", "2 SOLIDAY-CS - Punkt C". Nie nur "Punkt A" ohne Systemzugehoerigkeit angeben.
+- "sektionen": Lies ALLE Sektionsueberschriften direkt aus dem PDF und liste sie in der Reihenfolge wie sie im Dokument erscheinen. Beispiel mehrseglig: ["1 SOLIDAY-CS","2 SOLIDAY-CS"]. Beispiel einseglig aufrollbar: ["Segel","Segelzubehoer","Hardware","Punkt A","Punkt B"]. Beispiel festes Segel: ["Sonnensegel nach Mass","Segelzubehoer"]. Nie aus dem Kontext inferieren – nur was wirklich als Ueberschrift im PDF steht.
+- "system": Direkt aus den Sektionsueberschriften ablesen. Enthalten die Ueberschriften einen SOLIDAY-Systemnamen (z.B. "1 SOLIDAY-CS", "2 SOLIDAY-CS") → entsprechenden Wert verwenden. Stehen in den Ueberschriften keine SOLIDAY-Systemnamen (z.B. nur "Segel", "Segelzubehoer", "Sonnensegel nach Mass") → "SONNENSEGEL-MAß". Gueltige Werte: "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA","SOLIDAY-FLEX","SOLIDAY-SANDY","SONNENSEGEL-MAß"
+- "soliday_sektion": Exakt die Sektionsueberschrift aus dem PDF unter der diese Position steht. Bei mehrsegligen Angeboten Hauptueberschrift + Untersektion kombiniert: "1 SOLIDAY-CS / Segelzubehoer". Bei einsegligen Angeboten nur die Untersektion: "Segel", "Segelzubehoer", "Punkt A" usw.
+- "segel_nr": Nummer der Hauptsektion. Einseglig: immer 1. Mehrseglig: "1 SOLIDAY-CS" → 1, "2 SOLIDAY-CS" → 2. ALLE Positionen einer Hauptsektion (Segelsystem, Segel, Zubehoer, Wandbefestigungen, Fundamente) erhalten dieselbe segel_nr.
 - "qm_segel": Segelflaeche in qm wenn Segeltuch, sonst null
-- "segelform": nur bei festen Segeln nach Mass (nicht aufrollbare Systeme): "viereck" oder "dreieck" je nach Form; bei aufrollbaren Segeln und allen anderen Positionen immer null
-- "wellenlaenge_aufrollsystem_mm": Wellenlaenge des ersten / einzigen Segels in mm, null wenn nicht angegeben
-- "wellenlaenge_pro_segel": Nur bei mehrsegligen Angeboten: Dictionary segel_nr -> Wellenlaenge in mm. Die Wellenlaenge steht in der Segelsystem-Position jeder Sektion (z.B. "Soliday CS Segelsystem - 6m Welle"). Beispiel: {"1":6000,"2":8000}. Bei nur einem Segel: null.
-- "system": "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA" oder ""
-- "variante": Angebotsvariante/Version wie z.B. "V05", "V05X", "V05XX" – erkennbar im Dokumentkopf, im Angebotsnamen oder der Versionsnummer; null wenn nicht vorhanden
+- "segelform": nur bei festen Segeln nach Mass: "viereck" oder "dreieck"; bei aufrollbaren Segeln und allen anderen Positionen immer null
+- "wellenlaenge_aufrollsystem_mm": Wellenlaenge des ersten/einzigen Segels in mm aus der Segelsystem-Position, null wenn kein Aufrollsystem
+- "wellenlaenge_pro_segel": Nur bei mehrsegligen Angeboten: {"1":6000,"2":8000} in mm aus den Segelsystem-Positionen jeder Sektion. Bei einem Segel: null.
+- "variante": Angebotsvariante wie "V05", null wenn nicht vorhanden
 - "kommission": Wert aus Feld Kommission ohne Klammerzusaetze
-- "segel_nr": Wird durch die Sektionsueberschrift bestimmt. Die erste Sektionsueberschrift (z.B. "1 SOLIDAY-CS") ist Segel 1, die zweite (z.B. "2 SOLIDAY-CS") ist Segel 2 usw. ALLE Positionen innerhalb einer Sektion – Segelsystem, Segel, Zubehoer, Wandbefestigungen, Fundamente, Montage – erhalten die segel_nr dieser Sektion. Bei einem einzigen Segel immer 1.
 
 Format:
-{"kommission":"string","datum":"string","system":"string","variante":"string/null","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,"wellenlaenge_pro_segel":{"1":number,"2":number}/null,
+{"kommission":"string","datum":"string","system":"string","variante":"string/null","snap":true/false,"wellenlaenge_aufrollsystem_mm":number/null,"wellenlaenge_pro_segel":{"1":number,"2":number}/null,"sektionen":["string"],
 "positionen":[{"pos":number,"artikelnummer":"string","name":"string","beschreibung":"string","preis_einheit":number,"menge":number,"einheit":"string","gesamt":number,"soliday_sektion":"string","qm_segel":number/null,"segelform":"viereck"/"dreieck"/null,"segel_nr":1}],
 "teuerungszuschlag_netto":number/null,"versand_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
 
@@ -1303,27 +1304,35 @@ function detectSysFromPos(positionen){
 }
 function normalizeExtractedSystem(json){
   if(!json) return json;
-  const s=(json.system||'').trim();
-  const su=s.toUpperCase();
-  const KNOWN=['SOLIDAY-','SONNENSEGEL','RAFF-M'];
-  // Always check: no aufroll article + no wave length → feste Segel (overrides whatever Claude returned)
-  {
-    const hasAufroll=(json.positionen||[]).some(p=>
-      /^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((p.artikelnummer||'').toUpperCase())||
-      /SOLIDAY-(?:C|CS|ONE|M|MA|X|XS|FLEX|SANDY)/i.test(p.soliday_sektion||''));
-    if(!hasAufroll&&!(json.wellenlaenge_aufrollsystem_mm>0)&&(json.positionen||[]).some(p=>p.qm_segel>0)){
+  const su=(json.system||'').trim().toUpperCase();
+
+  // Collect all section-heading text Claude read from the PDF:
+  // the explicit sektionen list + every soliday_sektion tag on individual positions.
+  const allSekText=[
+    ...(json.sektionen||[]),
+    ...(json.positionen||[]).map(p=>p.soliday_sektion||'')
+  ];
+
+  // Does any section heading identify an aufrollbar SOLIDAY system?
+  const aufrollDetected=allSekText.some(s=>_sysFromText(s)&&_sysFromText(s).startsWith('SOLIDAY-'));
+
+  // If no section heading points to an aufrollbar system, check for aufroll articles
+  // as a secondary signal, then conclude feste Segel or normalize free-text.
+  if(!aufrollDetected){
+    const hasAufrollArt=(json.positionen||[]).some(p=>
+      /^(78V|79V|70001B|71001B|73001B|78E|70E)/.test((p.artikelnummer||'').toUpperCase()));
+    const hasSails=(json.positionen||[]).some(p=>p.qm_segel>0);
+    if(!hasAufrollArt&&!(json.wellenlaenge_aufrollsystem_mm>0)&&hasSails){
+      json.system=su.includes('SNAP')?'SONNENSEGEL-MAß-SNAP':'SONNENSEGEL-MAß';
+      return json;
+    }
+    if(su.includes('SONNENSEGEL')||su.includes('FIX SEGEL')||su.includes('FIX-SEGEL')||su.includes('FESTES SEGEL')){
       json.system=su.includes('SNAP')?'SONNENSEGEL-MAß-SNAP':'SONNENSEGEL-MAß';
       return json;
     }
   }
-  if(!KNOWN.some(p=>su.startsWith(p))){
-    // Normalize free-text variants Claude might produce
-    if(su.includes('SONNENSEGEL')||su.includes('FIX SEGEL')||su.includes('FIX-SEGEL')||su.includes('FESTES SEGEL')||su.includes('SONNENSEGEL-MASS')){
-      json.system=su.includes('SNAP')?'SONNENSEGEL-MAß-SNAP':'SONNENSEGEL-MAß';
-      return json;
-    }
-  }
-  // Build segel_nr→system map from sektion headings across all positions
+
+  // Build segel_nr→system map from section headings on positions
   const _snSysMap=_buildSegelNrSysMap(json.positionen||[]);
   if(Object.keys(_snSysMap).length>0)json._segelNrSysMap=_snSysMap;
   // Cross-check: detect system from sail-1 positions only (avoid mixed-system override)
@@ -1331,6 +1340,7 @@ function normalizeExtractedSystem(json){
   const hasMult=(json.positionen||[]).some(p=>(Number(p.segel_nr)||1)>1);
   const det=(_snSysMap[1])||detectSysFromPos(sail1Pos)||(hasMult?null:detectSysFromPos(json.positionen));
   if(det&&det!==json.system)json.system=det;
+
   // Build segel_nr→Wellenlänge map (in m) from Claude's wellenlaenge_pro_segel field
   const segelNrs=[...new Set((json.positionen||[]).map(p=>Number(p.segel_nr)||1))].sort((a,b)=>a-b);
   if(segelNrs.length>1&&json.wellenlaenge_pro_segel){
