@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 08:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 09:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1490,7 +1490,7 @@ function renderStep2(){
       <td>${p.pos}</td>
       <td><span class="tag">${p.artikelnummer||'–'}</span></td>
       <td><span class="tag tag-s">${p.soliday_sektion||'–'}</span></td>
-      <td><div>${p.name}</div>${p.qm_segel?`<div style="font-size:10px;color:var(--muted)">${p.qm_segel} m²</div>`:''}</td>
+      <td><div>${p.name}</div>${p.qm_segel?`<div style="font-size:10px;color:var(--muted)">${p.qm_segel} m²</div>`:''}${p.beschreibung?`<div style="font-size:10px;color:var(--muted);white-space:pre-line;margin-top:2px">${p.beschreibung}</div>`:''}</td>
       <td class="num-r">${Number(p.menge).toLocaleString('de-DE')}</td>
       <td style="color:var(--muted)">${p.einheit}</td>
       <td class="num-r">${fmt(p.preis_einheit)}</td>
@@ -1615,10 +1615,10 @@ const NR2SEK={};
 ['00E13000709','00E13000711','00E13000046','00E13002080','00E13001855','00E13001857','00E13001856','00E13001910','00E13000243','00E13000110','00E13001940','00E13000248','00E13000320','00E13000321','00E13000322','00E13000112','00E13001025','00E13000603','00E13002077'].forEach(n=>NR2SEK[n]='wandbefestigungen');
 ['75002S'].forEach(n=>NR2SEK[n]='segelsystem');
 ['00E13001787','00E13001742','00E13001741','00E13000206','00E13001937','00E13001735','00E13001734','00E13000843','00E13002149','00E13001965','00E13000042','00E13000026','00E13000066','00E13000127',
- '00E13000023','00E13000053'].forEach(n=>NR2SEK[n]='zubehoer');
+ '00E13000023','00E13000053','00E13001874','00E13001875'].forEach(n=>NR2SEK[n]='zubehoer');
 ['00E13001416','00E13001325','00E13001321','73004A001','71004A010','71004A011','70004A007','71004A003','71004A020','00E13001929','00E13001885','75936B','00E13001784'].forEach(n=>NR2SEK[n]='segeltuch');
 ['00E13000263','00E13001959','00E13002067'].forEach(n=>NR2SEK[n]='segelsystem');
-['00E13000208','00E13000988','00E13001874','00E13001875','00E13001866','00E13001865'].forEach(n=>NR2SEK[n]='masten');
+['00E13000208','00E13000988','00E13001866','00E13001865'].forEach(n=>NR2SEK[n]='masten');
 ['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
 
 function isAufrollsystem(nr){
@@ -2401,7 +2401,7 @@ function renderStep3(){
   const _row=(p,sekId='',pidx=0)=>`<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''} ondragover="s3RowDragOver(event,this)" ondrop="s3RowDrop(event,'${sekId}',${pidx})">` +
     `<td>${_cb(p)}</td>` +
     `<td>${!p._gs?`<span class="s3-move-btn" onclick="s3ShowMover(event,'${sekId}',${pidx})" title="Verschieben">⇅</span>`:''}${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
-    `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'&#216; Preis aus Schritt 5'}${(p._mergedSegelCount||0)>1?' &ndash; '+p._mergedSegelCount+' Segel zusammengefasst':''}</div>`:''}</td>` +
+    `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'&#216; Preis aus Schritt 5'}${(p._mergedSegelCount||0)>1?' &ndash; '+p._mergedSegelCount+' Segel zusammengefasst':''}</div>`:''}${p.beschreibung?`<div style="font-size:9px;color:var(--muted);white-space:pre-line;margin-top:2px">${escHtml(p.beschreibung)}</div>`:''}</td>` +
     `<td class="num-r">${p.artikelnummer&&!(p.qm_segel>0)&&!p._gs?`<input type="number" value="${Number(p.menge||0)}" step="0.01" min="0" style="width:52px;text-align:right;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--text);font-size:11px;font-family:inherit" onchange="s3SetMenge('${p.artikelnummer}',this.value)">`:Number(p.menge||0).toLocaleString('de-DE')}</td>` +
     `<td style="color:var(--muted)">${p.einheit||'–'}</td>` +
     `<td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td>` +
@@ -2426,8 +2426,9 @@ function renderStep3(){
   if(_segelMergeSet.size>0&&_transformedDataOrig&&!transformedData.isMultiSegel){
     const _nSails=(_transformedDataOrig.segelNrs||[]).length||Object.keys(_transformedDataOrig.segelTypes||{}).length;
     const _rawSys=effectiveSys||soSeKuJSON.system||'SOLIDAY';
-    const _sys=_rawSys.replace(/-/g,' ');
-    const _typ=_aufrollTyp(_rawSys);
+    const _isRaffHdr=_rawSys.toUpperCase().startsWith('RAFF');
+    const _sys=_isRaffHdr?'SOLIDAY - Raff-M - raffbares Segel':_rawSys.replace(/-/g,' ');
+    const _typ=_isRaffHdr?'':_aufrollTyp(_rawSys);
     const _typPart=_typ?' – '+_typ:'';
     const lbl=_nSails>1?`${_sys}${_typPart} – ${_nSails} Segel zusammengefasst`:`${_sys}${_typPart}`;
     zusHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
@@ -2442,9 +2443,10 @@ function renderStep3(){
       if(sek._mergedSys){
         const _rawSys=sek._mergedSys;
         const _isFix=_rawSys.toUpperCase().startsWith('SONNENSEGEL');
-        const _sys=_isFix?'Fix Segel':_rawSys.replace(/-/g,' ');
+        const _isRaffMrg=_rawSys.toUpperCase().startsWith('RAFF');
+        const _sys=_isFix?'Fix Segel':_isRaffMrg?'SOLIDAY - Raff-M - raffbares Segel':_rawSys.replace(/-/g,' ');
         const _mc=sek._mergedCount||0;
-        const _typ=_isFix?(_mc>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):_aufrollTyp(_rawSys);
+        const _typ=_isFix?(_mc>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):(_isRaffMrg?'':_aufrollTyp(_rawSys));
         const lbl=`${_sys}${_typ?' - '+_typ:''}${_mc>1?' – '+_mc+' Segel zusammengefasst':''}`;
         sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
       }else{
@@ -2452,8 +2454,8 @@ function renderStep3(){
         const _rawU=_rawSys.toUpperCase();
         const _isFix=_rawU.startsWith('SONNENSEGEL');
         const _isRaffSek=_rawU.startsWith('RAFF');
-        const _sys=_isFix?'Fix Segel':_isRaffSek?'Raffbares Segel':_rawSys.replace(/-/g,' ');
-        const _typ=_isFix?'festes Sonnensegel nach Maß':_aufrollTyp(_rawSys);
+        const _sys=_isFix?'Fix Segel':_isRaffSek?'SOLIDAY - Raff-M - raffbares Segel':_rawSys.replace(/-/g,' ');
+        const _typ=_isFix?'festes Sonnensegel nach Maß':(_isRaffSek?'':_aufrollTyp(_rawSys));
         const lbl=`${_sys}${_typ?' - '+_typ:''} – Segel ${sek._segelNr}`;
         sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
       }
@@ -4800,8 +4802,8 @@ function buildSevdeskPositions(){
       const _thisSys=((transformedData.segelSystems||{})[nr]||(soSeKuJSON.segelSystems||{})[nr]||sysFull).toUpperCase();
       const _s=_thisSys;
       const _isFix=_s.startsWith('SONNENSEGEL');
-      const _sysLbl=_isFix?'Fix Segel':_s.startsWith('RAFF')?'Raffbares Segel':_s.replace(/-/g,' ');
-      const _aufTyp=_isFix?(_fixSailCount>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':_s.startsWith('RAFF')?'raffbar':'manuell aufrollbar';
+      const _sysLbl=_isFix?'Fix Segel':_s.startsWith('RAFF')?'SOLIDAY - Raff-M - raffbares Segel':_s.replace(/-/g,' ');
+      const _aufTyp=_isFix?(_fixSailCount>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(_s)?'elektrisch aufrollbar':['SOLIDAY-X','SOLIDAY-XS','SOLIDAY-XS-DREIECK'].includes(_s)?'semi-automatisch aufrollbar':_s==='SOLIDAY-SANDY'?'':_s.startsWith('RAFF')?'':'manuell aufrollbar';
       rows.push({type:'section',name:`${_sysLbl}${_aufTyp?' - '+_aufTyp:''}`});
       transformedData.sektionen.filter(s=>s._segelNr===nr).forEach(sek=>{
         rows.push({type:'section',name:sek.name});
