@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-23 09:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 09:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4037,21 +4037,23 @@ function renderStep5(){
   if(_raff75002S){
     const raffFuehr=_raff75002S._raffFuehrungen||0;
     const wCnt=raffFuehr*2;
-    const raffTypNames={'typ1':'Typ 1 (2 AP)','typ2':'Typ 2 extra lang (3 AP)','typ3':'Typ 3 Viereck (4 AP)'};
     const raffTypAP={'typ1':2,'typ2':3,'typ3':4};
     const selTyp=fragebogen.raffWandplattenTyp||selRaffWandTyp||'typ1';
     const apPerWP=raffTypAP[selTyp]||2;
     const ap2=apDef||0;
-    h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Raff-M Hardware Bundle</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${_raff75002S.artikelnummer}</span></div>
+    const _raffTypDefs=[
+      {v:'typ1',label:'Raff-M Drahtseil Wandplatte Typ 1',ap:2},
+      {v:'typ2',label:'Raff-M Drahtseil Wandplatte Typ 2 - extra lang',ap:3},
+      {v:'typ3',label:'Raff-M Drahtseil Wandplatte Typ 3 - Viereck',ap:4}
+    ];
+    const _raffRadios=_raffTypDefs.map(t=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)"><input type="radio" name="raffWandTyp5" value="${t.v}"${selTyp===t.v?' checked':''} onchange="selRaffTyp5('${t.v}')" style="accent-color:var(--accent);cursor:pointer"><span><strong>${t.label}</strong>&ensp;<span style="color:var(--muted)">&#8212; ${t.ap} Klebeanker/Platte</span></span></label>`).join('');
+    h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Raff-M Wandplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${wCnt}&times; Platten</span></div>
       <div class="s5-card-body">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:6px">Führungen: ${raffFuehr} &rarr; ${wCnt} Wandplatten</div>
-        <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
-          <span class="s5-lbl">Typ:</span>
-          <span style="font-size:12px;font-weight:600">${raffTypNames[selTyp]||selTyp}</span>
-        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${raffFuehr} F&uuml;hrung${raffFuehr!==1?'en':''} &times; 2 = <strong>${wCnt} Wandplatten</strong> &nbsp;&mdash;&nbsp; Typ aus Angebot entnehmen:</div>
+        <div style="display:flex;flex-direction:column;margin-bottom:14px">${_raffRadios}</div>
         <div class="s5-irow" style="flex-wrap:wrap;gap:4px;margin-top:4px">
           <span class="s5-lbl">Klebeanker:</span>
-          <span style="font-size:12px">${wCnt} &times; ${apPerWP} AP &times;</span>
+          <span id="raff75CalcRow" style="font-size:12px">${wCnt} &times; ${apPerWP} AP &times;</span>
           <input type="number" class="s5-inp s5-w90" id="raff75APP" value="${ap2.toFixed(2)}" step="0.01" min="0" oninput="updRaff75()">
           <span class="s5-unit">&euro;/AP</span>
         </div>
@@ -4526,6 +4528,13 @@ function updRaff75(){
   const el=document.getElementById('raff75Auf'),et=document.getElementById('raff75Tot');
   if(el)el.textContent=fmtE(auf);
   if(et)et.textContent=fmtE(Math.ceil((hw.preis_einheit||hw.gesamt||0)+auf));
+  const cr=document.getElementById('raff75CalcRow');
+  if(cr)cr.textContent=`${wCnt} × ${apPerWP} AP ×`;
+}
+function selRaffTyp5(v){
+  selRaffWandTyp=v;
+  fragebogen.raffWandplattenTyp=v;
+  updRaff75();
 }
 function updWandS(wi){
   const pl=_wandschellen[wi];
