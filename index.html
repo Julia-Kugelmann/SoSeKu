@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 00:36 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 00:48 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4319,11 +4319,15 @@ function renderStep5(){
     // Bedienset-Komponenten aus Sheet
     if(_isHauswand&&!_raffBedienPreis.done)_loadRaffBedienPreise();
     const _isDbl=_selBedien==='hauswand-doppelt';
-    let _bRows='',_bTotal=0;
+    let _bRows='',_bTotal=0,_bMaterial=0,_bKlebe=0;
     _raffBedienPreis.items.forEach(it=>{
       const q=_isDbl?it.qtyD:it.qtyE;if(!q)return;
       const apTotal=(it.apCount||0)*q;
-      const lineP=+(it.price*q+apTotal*_bedienAPRate).toFixed(2);
+      const matP=+(it.price*q).toFixed(2);
+      const klebeP=+(apTotal*_bedienAPRate).toFixed(2);
+      const lineP=+(matP+klebeP).toFixed(2);
+      _bMaterial=+(_bMaterial+matP).toFixed(2);
+      _bKlebe=+(_bKlebe+klebeP).toFixed(2);
       _bTotal=+(_bTotal+lineP).toFixed(2);
       const _rNote=apTotal>0?`&ensp;<span style="font-size:10px;color:var(--muted)">+ ${apTotal}&times; Klebeanker</span>`:'';
       _bRows+=`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:2px 0;border-bottom:1px solid var(--border)">`+
@@ -4332,7 +4336,7 @@ function renderStep5(){
     });
     const _bList=_raffBedienPreis.done
       ?(_raffBedienPreis.items.length>0
-        ?`<div style="border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:10px">${_bRows}<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding-top:6px"><span>Material gesamt:</span><span style="color:var(--accent2)">${fmtE(_bTotal)}</span></div></div>`
+        ?`<div style="border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:8px">${_bRows}</div>`
         :`<div style="font-size:11px;color:var(--warn);margin-bottom:8px">Tab "Raff-M Bedienset Wandmontage" nicht gefunden</div>`)
       :`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wird geladen…</div>`;
     const _abbrevBedien=nm=>{
@@ -4366,7 +4370,7 @@ function renderStep5(){
         <div style="border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px">${_mkRadio('soliday','Standard Soliday Bedienset <span style="font-size:10px;font-weight:normal;color:var(--muted)">(Pergola Montage)</span>')</div>
         <div style="font-size:12px;font-weight:600;color:var(--fg);margin:6px 0 4px">Bedienset Wandmontage <span style="font-size:10px;font-weight:normal;color:var(--muted)">&mdash; Ziegel / Beton / Holzst&auml;nder</span></div>
         <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'12px':'4px'}">${_mkRadio('hauswand-einfach','einfache Umlenkung')}${_mkRadio('hauswand-doppelt','doppelte Umlenkung')}</div>
-        ${_isHauswand?`${_bList}<div class="s5-calc" style="margin-bottom:12px"><span style="color:var(--muted)">Neuer Bedienset-Preis:</span><strong style="color:var(--accent2)">${fmtE(_bTotal)}</strong></div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm D&auml;mmung':'bis 10cm D&auml;mmung'}):</div>
+        ${_isHauswand?`${_bList}<div class="s5-calc" style="margin-bottom:4px"><span style="color:var(--muted)">${fmtE(_bMaterial)} + ${fmtE(_bKlebe)} =</span><strong style="color:var(--accent2)">${fmtE(_bTotal)}</strong></div><div style="font-size:9px;color:var(--muted);text-align:right;margin-bottom:12px">Neuer Bedienset-Preis &rarr; ersetzt Standard Soliday Bedienset im JSON</div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm D&auml;mmung':'bis 10cm D&auml;mmung'}):</div>
         <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
           <span class="s5-lbl">${_bedienAPCnt} AP &times;</span>
           <input type="number" class="s5-inp s5-w90" id="raffBedienAPP" value="${_bedienAPRate.toFixed(2)}" step="0.01" min="0" oninput="updRaffBedien()">
