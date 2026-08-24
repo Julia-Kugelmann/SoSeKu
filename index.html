@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:40 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 14:46 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1222,10 +1222,11 @@ Wichtig:
 - Alle Zahlen als Dezimalpunkt (nicht Komma)
 - Artikelnummer exakt aus der Positionszeile extrahieren
 - "sektionen": Nur die HAUPTSEKTIONEN die das System oder Segel identifizieren – keine Unterabschnitte wie "Punkt A" oder "Segelzubehoer". Lies sie direkt als Ueberschriften aus dem PDF. Beispiele: ["1 SOLIDAY-CS","2 SOLIDAY-CS"] (mehrseglig), ["SOLIDAY-ONE"] (einseglig), ["Sonnensegel nach Mass"] (festes Segel), ["SOLIDAY-M"], ["SOLIDAY-MA"] usw. Nie Unterabschnitte eintragen.
-- "system": Direkt aus den Hauptsektionen ablesen. Enthalten die Hauptsektionen einen SOLIDAY-Systemnamen → diesen verwenden. Enthalten sie keinen SOLIDAY-Systemnamen → "SONNENSEGEL-MAß". Gueltige Werte: "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA","SOLIDAY-FLEX","SOLIDAY-SANDY","SONNENSEGEL-MAß"
+- "system": Direkt aus den Hauptsektionen ablesen. Enthalten die Hauptsektionen einen SOLIDAY-Systemnamen → diesen verwenden. Bei Raff-M Systemen "RAFF-M-DRAHTSEIL" oder "RAFF-M-FUEHRUNGSSCHIENE" verwenden. Enthalten sie keinen bekannten Systemnamen → "SONNENSEGEL-MAß". Gueltige Werte: "SOLIDAY-C","SOLIDAY-CS","SOLIDAY-ONE","SOLIDAY-M","SOLIDAY-MA","SOLIDAY-FLEX","SOLIDAY-SANDY","SONNENSEGEL-MAß","RAFF-M-DRAHTSEIL","RAFF-M-FUEHRUNGSSCHIENE"
 - "soliday_sektion": Exakt die HAUPTSEKTION (ein Eintrag aus sektionen) unter der diese Position steht – z.B. "1 SOLIDAY-CS", "SOLIDAY-ONE", "Sonnensegel nach Mass". Alle Artikel innerhalb derselben Hauptsektion erhalten denselben Wert, egal in welchem Unterabschnitt sie stehen.
 - "segel_nr": Nummer der Hauptsektion. Einseglig: immer 1. Mehrseglig: "1 SOLIDAY-CS" → 1, "2 SOLIDAY-CS" → 2. ALLE Positionen einer Hauptsektion erhalten dieselbe segel_nr.
 - "qm_segel": Segelflaeche in qm wenn Segeltuch, sonst null
+- "beschreibung": Alle zusaetzlichen Spezifikationsangaben die im PDF unter oder bei der Positionszeile stehen – technische Details, Abmessungen, Eigenschaften. Jede Angabe als eigene Zeile im Format "Bezeichnung: Wert". Bei Raff-M Segeln (Art.-Nr. beginnt mit 75 und qm_segel gesetzt): ALLE Felder die das PDF zeigt eintragen, z.B. "Farbe: Nano Grey 936140", "Raincut: Ja", "Fläche: 9.0 m²", "Segelbreite: 2494mm", "Segellänge: 3600mm", "Effektive Länge: 3600mm", "Konfektion: Standard", "Feldanzahl: 8", "Feldbreite: 450mm", "Führungen: 2". Leerer String wenn keine Angaben vorhanden.
 - "segelform": nur bei festen Segeln nach Mass: "viereck" oder "dreieck"; bei aufrollbaren Segeln und allen anderen Positionen immer null
 - "wellenlaenge_aufrollsystem_mm": Wellenlaenge des ersten/einzigen Segels in mm aus der Segelsystem-Position, null wenn kein Aufrollsystem
 - "wellenlaenge_pro_segel": Nur bei mehrsegligen Angeboten: {"1":6000,"2":8000} in mm aus den Segelsystem-Positionen jeder Sektion. Bei einem Segel: null.
