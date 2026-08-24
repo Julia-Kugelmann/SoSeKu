@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 16:37 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 16:50 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3365,6 +3365,13 @@ async function loadPrices5(){
   // Zeile 15: Wandbefestigungspunkt 18cm          → col B (universal)
   prices5.montKalkParsed=parseMontKalkMatrix(mR,sys);
   prices5.montRowsRaw=mR;
+  // Fallback AP-Zeiten für RAFF-M (kein ap10/ap18 in RAFF-M-Sektion)
+  if(!prices5.montKalkParsed.ap10&&!prices5.montKalkParsed.ap18){
+    for(const fs of['SOLIDAY-CS','SOLIDAY-C','SOLIDAY-ONE','SOLIDAY-M']){
+      const fm=parseMontKalkMatrix(mR,fs);
+      if(fm.ap10>0||fm.ap18>0){prices5.montKalkApFallback=fm;break;}
+    }
+  }else{prices5.montKalkApFallback=null;}
 
   // ── Wellenverbinder Verzeichnis (Matrix-Format) ─────────────────────
   // Row 1: M/MA/X/XS | One | C | CS
@@ -3521,10 +3528,13 @@ function calcInstData(){
         const wCnt=fuehrungen*2;
         const apPerWP={'typ1':2,'typ2':3,'typ3':4}[fragebogen.raffWandplattenTyp||'typ1']||2;
         const totalWandAP=wCnt*apPerWP;
-        const _apRateM=_uses18?(mk_s.ap18||mk.ap18):(mk_s.ap10||mk.ap10);
+        const _mkApFbM=prices5.montKalkApFallback||{};
+        const _apRateM=_uses18?(mk_s.ap18||mk.ap18||_mkApFbM.ap18||0):(mk_s.ap10||mk.ap10||_mkApFbM.ap10||0);
         const hWand=totalWandAP*_apRateM;
         const _bedienM=fragebogen.raffBediensatz||'soliday';
-        const _bedienAPCntM=_bedienM==='hauswand-doppelt'?4:(_bedienM==='hauswand-einfach'?2:0);
+        const _ringEtM=_raffBedienPreis.items.find(it=>it.isRingschraube);
+        const _isDblM=_bedienM==='hauswand-doppelt';
+        const _bedienAPCntM=_bedienM==='soliday'?0:(_ringEtM?(_isDblM?_ringEtM.qtyD:_ringEtM.qtyE):(_isDblM?2:1));
         const hBedienWand=_bedienAPCntM*_apRateM;
         const h=hDrahtseil+hAufhaeng+hBedienseil+hWand+hBedienWand;
         sailH+=h;
@@ -3563,10 +3573,13 @@ function calcInstData(){
     const wCntR=fuehrungen*2;
     const apPerWPR={'typ1':2,'typ2':3,'typ3':4}[fragebogen.raffWandplattenTyp||'typ1']||2;
     const totalWandAPR=wCntR*apPerWPR;
-    const _apRateR=_uses18r?(mk_r.ap18||mk.ap18||0):(mk_r.ap10||mk.ap10||0);
+    const _mkApFb=prices5.montKalkApFallback||{};
+    const _apRateR=_uses18r?(mk_r.ap18||mk.ap18||_mkApFb.ap18||0):(mk_r.ap10||mk.ap10||_mkApFb.ap10||0);
     const hWandR=totalWandAPR*_apRateR;
     const _bedienR=fragebogen.raffBediensatz||'soliday';
-    const _bedienAPCntR=_bedienR==='hauswand-doppelt'?4:(_bedienR==='hauswand-einfach'?2:0);
+    const _ringEt=_raffBedienPreis.items.find(it=>it.isRingschraube);
+    const _isDblR=_bedienR==='hauswand-doppelt';
+    const _bedienAPCntR=_bedienR==='soliday'?0:(_ringEt?(_isDblR?_ringEt.qtyD:_ringEt.qtyE):(_isDblR?2:1));
     const hBedienWandR=_bedienAPCntR*_apRateR;
     const hRaff=hDrahtseilR+hAufhaengR+hBedienseilR+hWandR+hBedienWandR;
     sailH=hRaff;
@@ -4295,7 +4308,9 @@ function renderStep5(){
     const _raffSegelNrs=new Set(Object.entries(transformedData.segelSystems||{}).filter(([,s])=>s.toUpperCase().startsWith('RAFF')).map(([nr])=>Number(nr)));
     const _selBedien=fragebogen.raffBediensatz||selRaffBediensatz||'soliday';
     const _isHauswand=_selBedien!=='soliday';
-    const _bedienAPCnt=_selBedien==='hauswand-doppelt'?4:2;
+    const _isDblCard=_selBedien==='hauswand-doppelt';
+    const _ringCard=_raffBedienPreis.items.find(it=>it.isRingschraube);
+    const _bedienAPCnt=_isHauswand?(_ringCard?(_isDblCard?_ringCard.qtyD:_ringCard.qtyE):(_isDblCard?2:1)):0;
     const _bedienAPRate=apDef||0;
     const _mkRadio=(v,lbl)=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0"><input type="radio" name="raffBedien5" value="${v}"${_selBedien===v?' checked':''} onchange="selRaffBedien5('${v}')" style="accent-color:var(--accent);cursor:pointer"><strong>${lbl}</strong></label>`;
     // Bedienset-Komponenten aus Sheet
@@ -4769,7 +4784,8 @@ function selRaffBedien5(v){
 }
 function updRaffBedien(){
   const isD=selRaffBediensatz==='hauswand-doppelt';
-  const apCnt=isD?4:2;
+  const ringIt=_raffBedienPreis.items.find(it=>it.isRingschraube);
+  const apCnt=ringIt?(isD?ringIt.qtyD:ringIt.qtyE):(isD?2:1);
   const apP=parseFloat(document.getElementById('raffBedienAPP')?.value)||0;
   const lbl=document.getElementById('raffBedienAPLbl');
   const tot=document.getElementById('raffBedienTot');
