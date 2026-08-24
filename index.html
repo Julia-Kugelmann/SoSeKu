@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4303,6 +4303,9 @@ function renderStep5(){
         const nrLabel=(r.nrs&&r.nrs.length)?r.nrs.map(n=>'Segel '+n).join(' + '):'';
         const sysShortChip=_isRaffRow?'Raff-M':(MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-',''));
         const wandChip2=_isRaffRow?(r._fuehrungen?`${r._fuehrungen}&times; F&uuml;hr.`:''):((sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'');
+        const raffTuchChip=_isRaffRow&&r._aufhaengestangen?`${r._aufhaengestangen}&times; Tuchprofile`:'';
+        const raffWandChip=_isRaffRow&&r._wCnt?`${r._wCnt}&times; Wandplatten`:'';
+        const raffSfChip2=_isRaffRow?'':sfChip2;
         const sfChip2=_isRaffRow?'':(sysSFcnt>0?`${sysSFcnt}&times; SF`:'');
         let detailLines;
         if(_isRaffRow){
@@ -4321,7 +4324,7 @@ function renderStep5(){
         h+=`<div class="s5-card"${ri>0?' style="margin-top:12px"':''}>
           <div class="s5-card-hdr" style="align-items:flex-start">
             <div><strong>System Installation &ndash; ${sysLbl}</strong>${nrLabel?`<div style="font-size:11px;font-weight:600;color:#ffb300;margin-top:2px">${nrLabel}</div>`:''}</div>
-            <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${[sysShortChip,welleChip,wandChip2,sfChip2].filter(Boolean).join('<br>')}</span>
+            <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${[sysShortChip,welleChip,wandChip2,raffTuchChip,raffWandChip,raffSfChip2].filter(Boolean).join('<br>')}</span>
           </div>
           <div class="s5-card-body">
             <div class="s5-calc-detail">${detailLines}</div>
@@ -4372,8 +4375,12 @@ function renderStep5(){
       const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
       const elekHvHdr=elekHoehH2>0?'elektr. Höhenverst.':'';
       const _raffSingleRow=_instData.sailRows.length===1&&_instData.sailRows[0]?._isRaff?_instData.sailRows[0]:null;
-      const _raffHdr=sys.startsWith('RAFF')&&_raffSingleRow?`${_raffSingleRow._fuehrungen} Führ.`:(sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'');
-      const hdrChips=[welleHdr,sailHdr,plateParts.join(' '),sfHdr,elekHvHdr,_raffHdr].filter(Boolean).join('<br>');
+      const _raffHdr=sys.startsWith('RAFF')&&_raffSingleRow?`${_raffSingleRow._fuehrungen}&times; F&uuml;hr.`:(sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'');
+      const _raffTuchHdr=_raffSingleRow&&_raffSingleRow._aufhaengestangen?`${_raffSingleRow._aufhaengestangen}&times; Tuchprofile`:'';
+      const _raffWandHdr=_raffSingleRow&&_raffSingleRow._wCnt?`${_raffSingleRow._wCnt}&times; Wandplatten`:'';
+      const hdrChips=sys.startsWith('RAFF')
+        ?[_raffHdr,_raffTuchHdr,_raffWandHdr].filter(Boolean).join('<br>')
+        :[welleHdr,sailHdr,plateParts.join(' '),sfHdr,elekHvHdr].filter(Boolean).join('<br>');
       if(mk2?.ok||_raffSingleRow)_s5CachedMultiTotalSubH=totalH2;
       const _gpStoredS=Number(_gsMonPos[mi]?.preis_einheit||0);
       const _raffH=sys.startsWith('RAFF')?(fragebogen.raffMonStunden||0):0;
