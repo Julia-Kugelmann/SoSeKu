@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:13 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:22 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4335,9 +4335,9 @@ function renderStep5(){
         const sfChip=sysSFcnt>0?`${sysSFcnt}&times; SF`:'';
         const nrLabel=(r.nrs&&r.nrs.length)?r.nrs.map(n=>'Segel '+n).join(' + '):'';
         const sysShortChip=_isRaffRow?'Raff-M':(MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-',''));
-        const wandChip2=_isRaffRow?(r._fuehrungen?`${r._fuehrungen}&times; F&uuml;hr.`:''):((sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'');
-        const raffTuchChip=_isRaffRow&&r._aufhaengestangen?`${r._aufhaengestangen}&times; Tuchprofile`:'';
-        const raffWandChip=_isRaffRow&&r._wCnt?`${r._wCnt}&times; Wandplatten`:'';
+        const wandChip2=_isRaffRow?(r._fuehrungen?`${r._fuehrungen} F&uuml;hr.`:''):((sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'');
+        const raffTuchChip=_isRaffRow&&r._aufhaengestangen?`${r._feldanzahl||''} Felder &rarr; ${r._aufhaengestangen} Profile`:'';
+        const raffWandChip=_isRaffRow&&r._wCnt?`${r._wCnt}&times; Wandpl. Drahtseil`:'';
         const sfChip2=_isRaffRow?'':(sysSFcnt>0?`${sysSFcnt}&times; SF`:'');
         const raffSfChip2=sfChip2;
         let detailLines;
@@ -4408,9 +4408,9 @@ function renderStep5(){
       const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
       const elekHvHdr=elekHoehH2>0?'elektr. Höhenverst.':'';
       const _raffSingleRow=_instData.sailRows.length===1&&_instData.sailRows[0]?._isRaff?_instData.sailRows[0]:null;
-      const _raffHdr=sys.startsWith('RAFF')&&_raffSingleRow?`${_raffSingleRow._fuehrungen}&times; F&uuml;hr.`:(sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'');
-      const _raffTuchHdr=_raffSingleRow&&_raffSingleRow._aufhaengestangen?`${_raffSingleRow._aufhaengestangen}&times; Tuchprofile`:'';
-      const _raffWandHdr=_raffSingleRow&&_raffSingleRow._wCnt?`${_raffSingleRow._wCnt}&times; Wandplatten`:'';
+      const _raffHdr=sys.startsWith('RAFF')&&_raffSingleRow?`${_raffSingleRow._fuehrungen} F&uuml;hr.`:(sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'');
+      const _raffTuchHdr=_raffSingleRow&&_raffSingleRow._aufhaengestangen?`${_raffSingleRow._feldanzahl||''} Felder &rarr; ${_raffSingleRow._aufhaengestangen} Profile`:'';
+      const _raffWandHdr=_raffSingleRow&&_raffSingleRow._wCnt?`${_raffSingleRow._wCnt}&times; Wandpl. Drahtseil`:'';
       const hdrChips=sys.startsWith('RAFF')
         ?[_raffHdr,_raffTuchHdr,_raffWandHdr].filter(Boolean).join('<br>')
         :[welleHdr,sailHdr,plateParts.join(' '),sfHdr,elekHvHdr].filter(Boolean).join('<br>');
