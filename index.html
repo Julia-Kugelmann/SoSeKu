@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:25 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3950,9 +3950,10 @@ function renderStep5(){
   const _isWandSchelle=p=>!!(p.artikelnummer==='00E13000243'||(/wandschelle/i.test(p.name||'')&&!/gegenplatte/i.test(p.name||'')));
   const _isWandGegenpl=p=>!!(p.artikelnummer==='00E13000110'||/gegenplatte|abstandshalter/i.test(p.name||''));
   // Aggregate across all sails for multi-sail (merge quantities by artikelnummer)
-  const _allWandPos=transformedData.sektionen.filter(s=>s.id==='wandbefestigungen').flatMap(s=>s.positionen||[]);
+  const _allWandSeks=transformedData.sektionen.filter(s=>s.id==='wandbefestigungen');
+  const _allWandPos=_allWandSeks.flatMap(s=>(s.positionen||[]).map(p=>({...p,_segelNr:s._segelNr})));
   const _allFundPos=transformedData.sektionen.filter(s=>s.id==='fundamente').flatMap(s=>s.positionen||[]);
-  const _mergeByNr=arr=>{const m={};arr.forEach(p=>{if(!p.artikelnummer){return;}if(!m[p.artikelnummer])m[p.artikelnummer]={...p};else{m[p.artikelnummer].menge=+(m[p.artikelnummer].menge+p.menge).toFixed(4);m[p.artikelnummer].gesamt=+(m[p.artikelnummer].gesamt+p.gesamt).toFixed(2);}});return Object.values(m);};
+  const _mergeByNr=arr=>{const m={};arr.forEach(p=>{if(!p.artikelnummer){return;}if(!m[p.artikelnummer]){m[p.artikelnummer]={...p,_segelNrs:p._segelNr?new Set([p._segelNr]):new Set()};}else{m[p.artikelnummer].menge=+(m[p.artikelnummer].menge+p.menge).toFixed(4);m[p.artikelnummer].gesamt=+(m[p.artikelnummer].gesamt+p.gesamt).toFixed(2);if(p._segelNr)m[p.artikelnummer]._segelNrs.add(p._segelNr);}});return Object.values(m);};
   const wandMerged=_mergeByNr(_allWandPos);
   _wandpl=wandMerged.filter(p=>p.artikelnummer&&!_isWandSchelle(p)&&!_isWandGegenpl(p)&&(prices5.apAnzahl[p.artikelnummer]>0||WANDPLATTEN_NR.has(p.artikelnummer)));
   _wandschellen=wandMerged.filter(p=>p.artikelnummer&&_isWandSchelle(p));
@@ -4119,8 +4120,112 @@ function renderStep5(){
   // ═══ COL 2: Wandbefestigungen ═══
   h+=`<div class="s5-col">`;
   h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
+  // Helper: orange Segel-Badge aus _segelNrs Set
+  const _segelBadge=nrs=>{if(!nrs||nrs.size===0)return '';const sorted=[...nrs].sort((a,b)=>a-b);return `<span style="font-size:11px;font-weight:600;color:#ffb300;margin-left:8px">${sorted.map(n=>'Segel '+n).join(' + ')}</span>`;};
+  const _isMS5=transformedData.isMultiSegel;
+  let _wandBoxCount=0; // track for margin-top
   // RAFF-M: Hardware Bundle 75002S card (liegt in Segelsystem, Wandbefestigungen entfällt)
   const _raff75002S=transformedData.sektionen.filter(s=>s.id==='segelsystem').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S')||null;
+  if(_wandpl.length===0&&_wandschellen.length===0&&_bodenpl.length===0&&!_raff75002S){
+    h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
+  }
+  // WANDPLATTEN box (zuerst — C-System über RAFF-M)
+  if(_wandpl.length>0){
+    const totalMenge=_wandpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
+    const _wpNrs=_wandpl.reduce((s,pl)=>{(pl._segelNrs||new Set()).forEach(n=>s.add(n));return s;},new Set());
+    h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>Wandplatten</strong>${_isMS5?_segelBadge(_wpNrs):''}</div><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMenge}&times;</span></div>`;
+    h+=`<div class="s5-card-body">`;
+    _wandpl.forEach((pl,wi)=>{
+      const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+      const cnt=Math.max(1,Math.round(pl.menge));
+      const defAP=apPerUnit*cnt;
+      h+=`<div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}${_isMS5&&pl._segelNrs&&pl._segelNrs.size>0?_segelBadge(pl._segelNrs):''}</div>
+        <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
+          <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
+          <input type="number" class="s5-inp s5-w50" id="wAPU${wi}" value="${apPerUnit}" min="0" oninput="updWand(${wi})" title="Ankerpunkte pro Stk.">
+          <span class="s5-unit">AP/Stk. &times;</span>
+          <input type="number" class="s5-inp s5-w90" id="wAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWand(${wi})">
+          <span class="s5-unit">&euro;/AP</span>
+          <input type="hidden" id="wAP${wi}" value="${defAP}">
+        </div>
+        <div class="s5-calc">
+          <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wAuf${wi}">&ndash;</span> =</span>
+          <strong id="wT${wi}">&ndash;</strong><span id="wTraw${wi}" class="s5-raw"></span>
+          <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Platte</span>
+        </div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+    _wandBoxCount++;
+  }
+  // WANDSCHELLEN box
+  if(_wandschellen.length>0){
+    const totalMengeWS=_wandschellen.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
+    const _wsNrs=_wandschellen.reduce((s,pl)=>{(pl._segelNrs||new Set()).forEach(n=>s.add(n));return s;},new Set());
+    h+=`<div class="s5-card" style="margin-top:12px"><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>Mast Wandschellen</strong>${_isMS5?_segelBadge(_wsNrs):''}</div><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMengeWS}&times;</span></div>`;
+    h+=`<div class="s5-card-body">`;
+    _wandschellen.forEach((pl,wi)=>{
+      const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||2;
+      const cnt=Math.max(1,Math.round(pl.menge));
+      const defAP=apPerUnit*cnt;
+      h+=`<div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}${_isMS5&&pl._segelNrs&&pl._segelNrs.size>0?_segelBadge(pl._segelNrs):''}</div>
+        <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
+          <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
+          <input type="number" class="s5-inp s5-w50" id="wsAPU${wi}" value="${apPerUnit}" min="0" oninput="updWandS(${wi})" title="Ankerpunkte pro Stk.">
+          <span class="s5-unit">AP/Stk. &times;</span>
+          <input type="number" class="s5-inp s5-w90" id="wsAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWandS(${wi})">
+          <span class="s5-unit">&euro;/AP</span>
+          <input type="hidden" id="wsAP${wi}" value="${defAP}">
+        </div>
+        <div class="s5-calc">
+          <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wsAuf${wi}">&ndash;</span> =</span>
+          <strong id="wsT${wi}">&ndash;</strong><span id="wsTraw${wi}" class="s5-raw"></span>
+          <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Schelle</span>
+        </div>
+      </div>`;
+    });
+    if(_wandSchGegen.length>0){
+      _wandSchGegen.forEach(pl=>{
+        const cnt=Math.max(1,Math.round(pl.menge));
+        h+=`<div style="padding-top:8px;border-top:1px solid var(--border);margin-bottom:6px">
+          <div style="font-size:11px;font-weight:600;color:var(--fg)">${pl.name}</div>
+          <div style="font-size:11px;color:var(--muted)">${cnt} Stk. &times; ${fmtE(pl.preis_einheit)} &euro; &mdash; wird zwischengelegt (keine Ankerpunkte)</div>
+        </div>`;
+      });
+    }
+    h+=`</div></div>`;
+    _wandBoxCount++;
+  }
+  // BODENPLATTEN box
+  if(_bodenpl.length>0){
+    const bpPreis=withMontage?(prices5.apPreis['ziegel-10']||38):0;
+    const totalMengeB=_bodenpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
+    h+=`<div class="s5-card" style="margin-top:12px"><div class="s5-card-hdr"><strong>Mast Bodenplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMengeB}&times;</span></div>`;
+    h+=`<div class="s5-card-body">`;
+    _bodenpl.forEach((pl,bi)=>{
+      const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
+      const cnt=Math.max(1,Math.round(pl.menge));
+      const aufPerUnit=+(apPerUnit*bpPreis).toFixed(2);
+      const newUnitPrice=+(pl.preis_einheit+aufPerUnit).toFixed(2);
+      h+=`<div style="margin-bottom:10px">
+        <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.8">
+          ${apPerUnit} AP/Stk. &times; ${fmtE(bpPreis)} &euro;/AP = ${fmtE(aufPerUnit)} Aufschlag/Stk.
+        </div>
+        <div class="s5-calc">
+          <span style="color:var(--muted)">${fmtE(pl.preis_einheit)} + ${fmtE(aufPerUnit)} =</span>
+          <strong id="bpT${bi}">${fmtE(Math.ceil(newUnitPrice))}</strong>
+          <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Platte</span>
+          <span style="font-size:10px;color:var(--muted);margin-left:4px">&times; ${cnt} Stk.</span>
+        </div>
+      </div>`;
+    });
+    h+=`</div></div>`;
+    _wandBoxCount++;
+  }
+  // RAFF-M 75002S box — kommt nach den regulären Platten
   if(_raff75002S){
     const raffFuehr=_raff75002S._raffFuehrungen||0;
     const wCnt=raffFuehr*2;
@@ -4134,7 +4239,9 @@ function renderStep5(){
       {v:'typ3',label:'Raff-M Drahtseil Wandplatte Typ 3 - Viereck',ap:4}
     ];
     const _raffRadios=_raffTypDefs.map(t=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)"><input type="radio" name="raffWandTyp5" value="${t.v}"${selTyp===t.v?' checked':''} onchange="selRaffTyp5('${t.v}')" style="accent-color:var(--accent);cursor:pointer"><span><strong>${t.label}</strong>&ensp;<span style="color:var(--muted)">&#8212; ${t.ap} Klebeanker/Platte</span></span></label>`).join('');
-    h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Raff-M Wandplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${wCnt}&times; Platten</span></div>
+    // Segel-Nr des RAFF-M Segels ermitteln
+    const _raffSegelNrs=new Set(Object.entries(transformedData.segelSystems||{}).filter(([,s])=>s.toUpperCase().startsWith('RAFF')).map(([nr])=>Number(nr)));
+    h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>Raff-M Wandplatten</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><span style="font-size:14px;font-weight:700;color:var(--accent2)">${wCnt}&times; Platten</span></div>
       <div class="s5-card-body">
         <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${raffFuehr} F&uuml;hrung${raffFuehr!==1?'en':''} &times; 2 = <strong>${wCnt} Wandplatten</strong> &nbsp;&mdash;&nbsp; Typ aus Angebot entnehmen:</div>
         <div style="display:flex;flex-direction:column;margin-bottom:14px">${_raffRadios}</div>
@@ -4150,102 +4257,7 @@ function renderStep5(){
         </div>
       </div>
     </div>`;
-  }
-  if(_wandpl.length===0&&_wandschellen.length===0&&_bodenpl.length===0&&!_raff75002S){
-    h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
-  }
-  if(_wandpl.length>0||_wandschellen.length>0||_bodenpl.length>0){
-    // WANDPLATTEN box
-    if(_wandpl.length>0){
-      const totalMenge=_wandpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
-      h+=`<div class="s5-card"><div class="s5-card-hdr"><strong>Wandplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMenge}&times;</span></div>`;
-      h+=`<div class="s5-card-body">`;
-      _wandpl.forEach((pl,wi)=>{
-        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
-        const cnt=Math.max(1,Math.round(pl.menge));
-        const defAP=apPerUnit*cnt;
-        h+=`<div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
-          <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
-            <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
-            <input type="number" class="s5-inp s5-w50" id="wAPU${wi}" value="${apPerUnit}" min="0" oninput="updWand(${wi})" title="Ankerpunkte pro Stk.">
-            <span class="s5-unit">AP/Stk. &times;</span>
-            <input type="number" class="s5-inp s5-w90" id="wAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWand(${wi})">
-            <span class="s5-unit">&euro;/AP</span>
-            <input type="hidden" id="wAP${wi}" value="${defAP}">
-          </div>
-          <div class="s5-calc">
-            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wAuf${wi}">&ndash;</span> =</span>
-            <strong id="wT${wi}">&ndash;</strong><span id="wTraw${wi}" class="s5-raw"></span>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Platte</span>
-          </div>
-        </div>`;
-      });
-      h+=`</div></div>`;
-    }
-    // WANDSCHELLEN box
-    if(_wandschellen.length>0){
-      const totalMengeWS=_wandschellen.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
-      h+=`<div class="s5-card" style="margin-top:12px"><div class="s5-card-hdr"><strong>Mast Wandschellen</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMengeWS}&times;</span></div>`;
-      h+=`<div class="s5-card-body">`;
-      _wandschellen.forEach((pl,wi)=>{
-        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||2;
-        const cnt=Math.max(1,Math.round(pl.menge));
-        const defAP=apPerUnit*cnt;
-        h+=`<div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
-          <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
-            <span class="s5-lbl" style="min-width:0">${cnt} Stk. &times;</span>
-            <input type="number" class="s5-inp s5-w50" id="wsAPU${wi}" value="${apPerUnit}" min="0" oninput="updWandS(${wi})" title="Ankerpunkte pro Stk.">
-            <span class="s5-unit">AP/Stk. &times;</span>
-            <input type="number" class="s5-inp s5-w90" id="wsAPP${wi}" value="${apDef.toFixed(2)}" step="0.01" min="0" oninput="updWandS(${wi})">
-            <span class="s5-unit">&euro;/AP</span>
-            <input type="hidden" id="wsAP${wi}" value="${defAP}">
-          </div>
-          <div class="s5-calc">
-            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)}/Stk. + <span id="wsAuf${wi}">&ndash;</span> =</span>
-            <strong id="wsT${wi}">&ndash;</strong><span id="wsTraw${wi}" class="s5-raw"></span>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Schelle</span>
-          </div>
-        </div>`;
-      });
-      if(_wandSchGegen.length>0){
-        _wandSchGegen.forEach(pl=>{
-          const cnt=Math.max(1,Math.round(pl.menge));
-          h+=`<div style="padding-top:8px;border-top:1px solid var(--border);margin-bottom:6px">
-            <div style="font-size:11px;font-weight:600;color:var(--fg)">${pl.name}</div>
-            <div style="font-size:11px;color:var(--muted)">${cnt} Stk. &times; ${fmtE(pl.preis_einheit)} &euro; &mdash; wird zwischengelegt (keine Ankerpunkte)</div>
-          </div>`;
-        });
-      }
-      h+=`</div></div>`;
-    }
-    // BODENPLATTEN box
-    if(_bodenpl.length>0){
-      const bpPreis=withMontage?(prices5.apPreis['ziegel-10']||38):0;
-      const totalMengeB=_bodenpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
-      h+=`<div class="s5-card" style="margin-top:12px"><div class="s5-card-hdr"><strong>Mast Bodenplatten</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${totalMengeB}&times;</span></div>`;
-      h+=`<div class="s5-card-body">`;
-      _bodenpl.forEach((pl,bi)=>{
-        const apPerUnit=prices5.apAnzahl[pl.artikelnummer]||4;
-        const cnt=Math.max(1,Math.round(pl.menge));
-        const aufPerUnit=+(apPerUnit*bpPreis).toFixed(2);
-        const newUnitPrice=+(pl.preis_einheit+aufPerUnit).toFixed(2);
-        h+=`<div style="margin-bottom:10px">
-          <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${pl.name}</div>
-          <div style="font-size:11px;color:var(--muted);line-height:1.8">
-            ${apPerUnit} AP/Stk. &times; ${fmtE(bpPreis)} &euro;/AP = ${fmtE(aufPerUnit)} Aufschlag/Stk.
-          </div>
-          <div class="s5-calc">
-            <span style="color:var(--muted)">${fmtE(pl.preis_einheit)} + ${fmtE(aufPerUnit)} =</span>
-            <strong id="bpT${bi}">${fmtE(Math.ceil(newUnitPrice))}</strong>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">Preis/Platte</span>
-            <span style="font-size:10px;color:var(--muted);margin-left:4px">&times; ${cnt} Stk.</span>
-          </div>
-        </div>`;
-      });
-      h+=`</div></div>`;
-    }
+    _wandBoxCount++;
   }
   // WANDAUFPREIS card (when toggled in Fragebogen)
   if(fragebogen.wandaufpreis){
