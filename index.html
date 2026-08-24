@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:32 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4348,7 +4348,7 @@ function renderStep5(){
        `<div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;color:var(--muted)"><span>Klebeanker: 0 AP</span><span>${fmtE(0)}</span></div>`+
        `<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding-top:4px"><span>Material gesamt:</span><span style="color:var(--accent2)">${fmtE(_solidayBedGesamt)}</span></div></div>`
       :``;
-    h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>RAFF-M</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><span style="font-size:13px;font-weight:700;color:var(--accent2)">${raffFuehr} F&uuml;hr. &rarr; ${wCnt}&times; Wand</span></div>
+    h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>RAFF-M</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--accent2)">${raffFuehr} F&uuml;hr. &rarr; ${wCnt}&times; Wand</div>${_klebSummary?`<div style="font-size:10px;color:var(--accent2);margin-top:2px">${_klebSummary}</div>`:''}</div></div>
       <div class="s5-card-body">
         <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(56,217,169,0.08);border-left:2px solid var(--accent2);padding:5px 8px;border-radius:0 4px 4px 0;margin-bottom:8px">
           <span style="font-size:13px;font-weight:700;color:var(--fg)">F&uuml;hrungen &amp; Wandplatten</span>
@@ -4368,11 +4368,9 @@ function renderStep5(){
           <strong id="raff75Tot">${fmtE(_tot75)}</strong>
         </div>
         <div style="border-top:1px solid var(--border);margin:12px 0 10px"></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(56,217,169,0.08);border-left:2px solid var(--accent2);padding:5px 8px;border-radius:0 4px 4px 0;margin-bottom:${_klebSummary?'4':'8'}px">
+        <div style="display:flex;align-items:center;background:rgba(56,217,169,0.08);border-left:2px solid var(--accent2);padding:5px 8px;border-radius:0 4px 4px 0;margin-bottom:8px">
           <span style="font-size:13px;font-weight:700;color:var(--fg)">Bedienung</span>
-          <span style="font-size:10px;color:var(--muted)">Zugseil aus Angebot</span>
         </div>
-        ${_klebSummary?`<div style="font-size:10px;color:var(--accent2);font-weight:600;margin-bottom:8px">${_klebSummary}</div>`:''}
         <div style="border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px">${_mkRadio('soliday','Standard Soliday Bedienset (Pergola Montage)')}${_sList}</div>
         <div style="font-size:12px;font-weight:600;color:var(--fg);margin:6px 0 4px">Bedienset Wandmontage &mdash; Ziegel / Beton / Holzst&auml;nder</div>
         <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'12px':'4px'}">${_mkRadio('hauswand-einfach','einfache Umlenkung')}${_mkRadio('hauswand-doppelt','doppelte Umlenkung')}</div>
