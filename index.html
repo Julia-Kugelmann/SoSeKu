@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 10:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 11:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4033,7 +4033,7 @@ function renderStep5(){
   h+=`<div class="s5-col">`;
   h+=`<div class="s5-section"><div class="s5-sec-title">Wandbefestigungen &amp; Bodenplatten</div>`;
   // RAFF-M: Hardware Bundle 75002S card (liegt in Segelsystem, Wandbefestigungen entfällt)
-  const _raff75002S=sys.startsWith('RAFF')?transformedData.sektionen.filter(s=>s.id==='segelsystem').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S'):null;
+  const _raff75002S=transformedData.sektionen.filter(s=>s.id==='segelsystem').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S')||null;
   if(_raff75002S){
     const raffFuehr=_raff75002S._raffFuehrungen||0;
     const wCnt=raffFuehr*2;
@@ -4185,7 +4185,8 @@ function renderStep5(){
       // ═══ Multi-system: one full box per system, hardware from exact sections ═══
       const _subHs=[];
       _instData.sailRows.forEach((r,ri)=>{
-        const sysLbl=MC_SYS_LABEL[r.sys]?`Soliday ${MC_SYS_LABEL[r.sys]}`:r.sys;
+        const _isRaffRow=r.sys.toUpperCase().startsWith('RAFF');
+        const sysLbl=_isRaffRow?'Raff-M':(MC_SYS_LABEL[r.sys]?`Soliday ${MC_SYS_LABEL[r.sys]}`:r.sys);
         const sailLbl=(r.isFix&&r.hasNonFix)?'Weiteres Segel':'Grundpreis';
         const sailDetail=r.count>1
           ?`${sailLbl}: ${r.mk.grundpreis.toFixed(2)}h + ${r.count-1}&times; ${r.mk.weiteresSegel.toFixed(2)}h = ${r.h.toFixed(2)}h`
@@ -4210,7 +4211,7 @@ function renderStep5(){
         const wandChip=(sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'';
         const sfChip=sysSFcnt>0?`${sysSFcnt}&times; SF`:'';
         const nrLabel=(r.nrs&&r.nrs.length)?r.nrs.map(n=>'Segel '+n).join(' + '):'';
-        const sysShortChip=MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-','');
+        const sysShortChip=_isRaffRow?'Raff-M':(MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-',''));
         const wandChip2=(sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'';
         const sfChip2=sysSFcnt>0?`${sysSFcnt}&times; SF`:'';
         let detailLines=`<div>${r.count} Segel: ${sailDetail}</div>`;
@@ -4245,7 +4246,7 @@ function renderStep5(){
         </div>
         <div class="s5-card-body">
           <div class="s5-calc-detail">
-            ${_instData.sailRows.map((r,i)=>`<div>${MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-','')} : ${_subHs[i].toFixed(2)}h</div>`).join('')}
+            ${_instData.sailRows.map((r,i)=>`<div>${r.sys.toUpperCase().startsWith('RAFF')?'Raff-M':(MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-',''))} : ${_subHs[i].toFixed(2)}h</div>`).join('')}
           </div>
           <div class="s5-irow" style="margin-top:6px">
             <span class="s5-lbl">Zusatzstunden</span>
@@ -4675,10 +4676,9 @@ function applyPrices5(){
     }
   }
   // 5B: RAFF-M — Klebeanker für Hardware Bundle 75002S (liegt in Segelsystem)
-  if(sys.startsWith('RAFF')&&fragebogen.montage!==false){
-    const hw75=transformedData.sektionen.filter(s=>s.id==='segelsystem').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S')
-      ||(allWandSeks.flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S'));
-    if(hw75){
+  const hw75=transformedData.sektionen.filter(s=>s.id==='segelsystem').flatMap(s=>s.positionen).find(p=>p.artikelnummer==='75002S');
+  if(hw75&&fragebogen.montage!==false){
+    {
       const raffTypAP={'typ1':2,'typ2':3,'typ3':4};
       const apPerWandplatte=raffTypAP[fragebogen.raffWandplattenTyp||'typ1']||2;
       const fuehr=hw75._raffFuehrungen||0;
