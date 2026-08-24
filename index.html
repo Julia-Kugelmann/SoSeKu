@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 18:02 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 18:11 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4293,16 +4293,14 @@ function renderStep5(){
     const _isHauswand=_selBedien!=='soliday';
     const _bedienAPCnt=_selBedien==='hauswand-doppelt'?4:2;
     const _bedienAPRate=apDef||0;
-    const _bedienDefs=[
-      {v:'soliday',label:'Soliday Bedienset',sub:'Zugseillänge aus Angebot übernommen'},
-      {v:'hauswand-einfach',label:'Bedienset Hauswandmontage (Ziegel/Beton/Holzständer)',sub:'einfache Umlenkung'},
-      {v:'hauswand-doppelt',label:'Bedienset Hauswandmontage (Ziegel/Beton/Holzständer)',sub:'doppelte Umlenkung'},
-    ];
-    const _bedienRadios=_bedienDefs.map(b=>`<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><input type="radio" name="raffBedien5" value="${b.v}"${_selBedien===b.v?' checked':''} onchange="selRaffBedien5('${b.v}')" style="accent-color:var(--accent);cursor:pointer;margin-top:2px"><span><strong>${b.label}</strong><br><span style="color:var(--muted);font-size:11px">${b.sub}</span></span></label>`).join('');
+    const _mkRadio=(v,lbl)=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0"><input type="radio" name="raffBedien5" value="${v}"${_selBedien===v?' checked':''} onchange="selRaffBedien5('${v}')" style="accent-color:var(--accent);cursor:pointer"><strong>${lbl}</strong></label>`;
     h+=`<div class="s5-card" style="margin-top:12px">
       <div class="s5-card-hdr"><strong>Bediensatz</strong><span style="font-size:11px;color:var(--muted)">Zugseillänge aus Angebot</span></div>
       <div class="s5-card-body">
-        <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'14px':'0'}">${_bedienRadios}</div>
+        <div style="border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:8px">${_mkRadio('soliday','Soliday Bedienset')}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--fg);margin-bottom:2px">Bedienset Wandmontage</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Ziegel / Beton / Holzst&auml;nder</div>
+        <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'14px':'4px'}">${_mkRadio('hauswand-einfach','einfache Umlenkung')}${_mkRadio('hauswand-doppelt','doppelte Umlenkung')}</div>
         ${_isHauswand?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm Dämmung':'bis 10cm Dämmung'}):</div>
         <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
           <span class="s5-lbl">${_bedienAPCnt} AP &times;</span>
