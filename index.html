@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:25 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:40 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2466,7 +2466,7 @@ function renderStep3(){
         sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}<span style="margin-left:10px;font-size:10px;font-weight:600;color:var(--warn);letter-spacing:0.03em;vertical-align:middle">Segel ${sek._segelNr}</span></td></tr>`;
       }
     }
-    const _monDivider=sek.id==='montage'?`<tr><td colspan="7" style="padding:0"><div style="background:rgba(56,217,169,.07);border-top:2px solid var(--accent2);padding:5px 10px;margin-top:4px"><span style="color:var(--accent2);font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Montage &amp; Fracht</span></div></td></tr>`:'';
+    const _monDivider=sek.id==='montage'?`<tr><td colspan="7" style="padding:0"><div style="background:rgba(56,217,169,.07);border-top:2px solid var(--accent2);padding:7px 10px;margin-top:6px"><span style="font-family:'Syne',sans-serif;color:var(--accent2);font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Montage &amp; Fracht</span></div></td></tr>`:'';
     return sailHdr+_monDivider+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sekKey,i)).join('')}`;
   }).join('');
   document.getElementById('s3sektionen').innerHTML=
@@ -4034,7 +4034,11 @@ function renderStep5(){
       const _sailSys=((soSeKuJSON?.segelSystems||{})[_sailNr]||sys).toUpperCase();
       // RAFF-M: show sail info with puffer-based price calculation
       if(_sailSys.startsWith('RAFF')||sys.startsWith('RAFF')){
-        const _descLines=(sail.beschreibung||'').split('\n');
+        // Get beschreibung: try original sail first, then transformed segeltuch section
+        const _tSailSek=transformedData.sektionen.find(s=>s.id==='segeltuch'&&s._segelNr===_sailNr)||transformedData.sektionen.find(s=>s.id==='segeltuch');
+        const _tSailPos=_tSailSek?.positionen?.find(p=>p._raffSail||p.qm_segel>0||p.artikelnummer===sail.artikelnummer);
+        const _rawBeschr=sail.beschreibung||_tSailPos?.beschreibung||'';
+        const _descLines=_rawBeschr.split('\n');
         // Parse Fläche (physical area) — stored internally, not shown
         const _flaecheMatch=(_descLines.find(l=>/^\s*Fl[äa]che[:\s]/i.test(l))||'').match(/([\d]+[.,][\d]*|[\d]+)/);
         const _flaecheQm=_flaecheMatch?parseFloat(_flaecheMatch[0].replace(',','.')):sail.qm_segel||0;
@@ -4052,12 +4056,13 @@ function renderStep5(){
           !/^\s*Fl[äa]che[:\s]/i.test(l)&&
           !/^\s*Effektive\s+L[äa]nge[:\s]/i.test(l)
         ).join('\n').trim();
-        const _isMS5=transformedData.isMultiSegel;
-        const _nrBadge5=_isMS5?`<span style="font-size:11px;font-weight:600;color:#ffb300;margin-left:8px">&middot; Segel ${_sailNr}</span>`:'';
+        const _isMS5r=transformedData.isMultiSegel;
+        const _nrBadge5=_isMS5r?`<span style="font-size:11px;font-weight:600;color:#ffb300;margin-left:8px">&middot; Segel ${_sailNr}</span>`:'';
         h+=`<div class="s5-card"${si>0?' style="margin-top:12px"':''}>
           <div class="s5-card-hdr"><strong>Segeltuch &ndash; Raff-M</strong>${_nrBadge5}<span style="font-size:14px;font-weight:700;color:var(--accent2)">${_flaecheQm.toFixed(2)} m²</span></div>
           <div class="s5-card-body">
-            <div style="font-size:12px;white-space:pre-line;line-height:1.7;color:var(--text)">${raffDesc||sail.name||''}</div>
+            <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:4px">${sail.name||''}</div>
+            ${raffDesc?`<div style="font-size:12px;white-space:pre-line;line-height:1.7;color:var(--muted)">${raffDesc}</div>`:''}
             <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
               <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Preisberechnung mit Puffer</div>
               <div class="s5-calc-detail">
@@ -4317,8 +4322,8 @@ function renderStep5(){
         const wandChip2=_isRaffRow?(r._fuehrungen?`${r._fuehrungen}&times; F&uuml;hr.`:''):((sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'');
         const raffTuchChip=_isRaffRow&&r._aufhaengestangen?`${r._aufhaengestangen}&times; Tuchprofile`:'';
         const raffWandChip=_isRaffRow&&r._wCnt?`${r._wCnt}&times; Wandplatten`:'';
-        const raffSfChip2=_isRaffRow?'':sfChip2;
         const sfChip2=_isRaffRow?'':(sysSFcnt>0?`${sysSFcnt}&times; SF`:'');
+        const raffSfChip2=sfChip2;
         let detailLines;
         if(_isRaffRow){
           const _mk_r=r.mk||{};
