@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 11:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 13:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2431,7 +2431,7 @@ function renderStep3(){
     const _typ=_isRaffHdr?'':_aufrollTyp(_rawSys);
     const _typPart=_typ?' – '+_typ:'';
     const lbl=_nSails>1?`${_sys}${_typPart} – ${_nSails} Segel zusammengefasst`:`${_sys}${_typPart}`;
-    zusHdr=`<tr style="background:rgba(245,166,35,.05);border-top:1px solid rgba(245,166,35,.2)"><td colspan="7" style="color:var(--warn);font-size:10px;font-weight:600;letter-spacing:0.05em;padding:3px 10px;text-transform:uppercase">${lbl}</td></tr>`;
+    zusHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
   }
   let lastSailKey=null;
   const tbodyRows=sektionen.map(sek=>{
@@ -2448,7 +2448,7 @@ function renderStep3(){
         const _mc=sek._mergedCount||0;
         const _typ=_isFix?(_mc>1?'feste Sonnensegel nach Maß':'festes Sonnensegel nach Maß'):(_isRaffMrg?'':_aufrollTyp(_rawSys));
         const lbl=`${_sys}${_typ?' - '+_typ:''}${_mc>1?' – '+_mc+' Segel zusammengefasst':''}`;
-        sailHdr=`<tr style="background:rgba(245,166,35,.05);border-top:1px solid rgba(245,166,35,.2)"><td colspan="7" style="color:var(--warn);font-size:10px;font-weight:600;letter-spacing:0.05em;padding:3px 10px;text-transform:uppercase">${lbl}</td></tr>`;
+        sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
       }else{
         const _rawSys=(transformedData.segelSystems||{})[sek._segelNr]||effectiveSys||soSeKuJSON.system||'SOLIDAY';
         const _rawU=_rawSys.toUpperCase();
@@ -2456,8 +2456,8 @@ function renderStep3(){
         const _isRaffSek=_rawU.startsWith('RAFF');
         const _sys=_isFix?'Fix Segel':_isRaffSek?'SOLIDAY - Raff-M - raffbares Segel':_rawSys.replace(/-/g,' ');
         const _typ=_isFix?'festes Sonnensegel nach Maß':(_isRaffSek?'':_aufrollTyp(_rawSys));
-        const lbl=`${_sys}${_typ?' - '+_typ:''} – Segel ${sek._segelNr}`;
-        sailHdr=`<tr style="background:rgba(245,166,35,.05);border-top:1px solid rgba(245,166,35,.2)"><td colspan="7" style="color:var(--warn);font-size:10px;font-weight:600;letter-spacing:0.05em;padding:3px 10px;text-transform:uppercase">${lbl}</td></tr>`;
+        const lbl=`${_sys}${_typ?' - '+_typ:''}`;
+        sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}<span style="margin-left:10px;font-size:10px;font-weight:600;color:var(--warn);letter-spacing:0.03em;vertical-align:middle">Segel ${sek._segelNr}</span></td></tr>`;
       }
     }
     return sailHdr+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sekKey,i)).join('')}`;
