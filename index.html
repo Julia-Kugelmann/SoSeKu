@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1086,7 +1086,22 @@ const STEP_NAV={
   8:()=>{if(maxStep>=8){showView('viewStep8');setStep(8);}}
 };
 function navigateToStep(n){if(n<=maxStep&&STEP_NAV[n])STEP_NAV[n]();}
-function showError(msg){document.getElementById('errMsg').textContent=msg;showView('viewError');}
+function showError(msg){
+  const el=document.getElementById('errMsg');
+  const isCredits=/credit balance|billing|credits/i.test(msg);
+  el.innerHTML=el.textContent='';//clear
+  el.textContent=msg;
+  if(isCredits){
+    const link=document.createElement('a');
+    link.href='https://console.anthropic.com/settings/billing';
+    link.target='_blank';
+    link.rel='noopener';
+    link.textContent='→ Anthropic Credits aufladen';
+    link.style.cssText='display:block;margin-top:12px;color:var(--accent);font-weight:600;text-decoration:underline;font-size:13px';
+    el.appendChild(link);
+  }
+  showView('viewError');
+}
 function setRepMiniStep(n){
   document.getElementById('repStepsBar').classList.remove('hidden');
   for(let i=1;i<=3;i++){
