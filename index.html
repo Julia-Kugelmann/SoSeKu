@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:44 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:47 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4470,7 +4470,7 @@ function renderStep5(){
           detailLines=(r._hWand||0)>0?`<div>Wandplatten Drahtseil: ${r._wCnt}&times; ${r._apPerWP} AP &times; ${apRate2.toFixed(2)}h = ${(r._hWand||0).toFixed(2)}h</div>`:'';
           detailLines+=`<div>Drahtseil Montage: ${r._fuehrungen} F&uuml;hr. &times; ${(_mk_r.raffFuehr||0).toFixed(2)}h = ${(r._hDrahtseil||0).toFixed(2)}h</div>`;
           detailLines+=`<div>Aufh&auml;ngepunkte: (${r._feldanzahl}+1) Profile &times; ${r._fuehrungen} F&uuml;hr. = ${r._aufhaengPunkte} AP &times; ${(_mk_r.raffAP||0).toFixed(2)}h = ${(r._hAufhaeng||0).toFixed(2)}h</div>`;
-          if((r._hBedienWand||0)>0){const _selBD=fragebogen.raffBediensatz||'soliday';const _isDblD=_selBD==='hauswand-doppelt';const _apItemsD=_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDblD?it.qtyD:it.qtyE)>0);if(_apItemsD.length){_apItemsD.forEach(it=>{const q=_isDblD?it.qtyD:it.qtyE;const ap=q*it.apCount;detailLines+=`<div>${q}&times; ${it.name.split(' ').slice(0,4).join(' ')}: ${ap} AP &times; ${apRate2.toFixed(2)}h = ${(ap*apRate2).toFixed(2)}h</div>`;});}else{detailLines+=`<div>Bediensatz Wandhalter: ${r._bedienAPCnt} AP &times; ${apRate2.toFixed(2)}h = ${(r._hBedienWand||0).toFixed(2)}h</div>`;}}
+          if((r._hBedienWand||0)>0){const _selBD=fragebogen.raffBediensatz||'soliday';const _isDblD=_selBD==='hauswand-doppelt';const _apItemsD=_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDblD?it.qtyD:it.qtyE)>0);if(_apItemsD.length){_apItemsD.forEach(it=>{const q=_isDblD?it.qtyD:it.qtyE;const ap=q*it.apCount;detailLines+=`<div>${q}&times; ${(/ringschraube/i.test(it.name)?'Ringschraube':/backenklemm|wandplatte.*clamcleat|clamcleat.*wandplatte/i.test(it.name)?'Clamcleat Wandplatte':it.name.split(' ').slice(0,3).join(' '))}: ${ap} AP &times; ${apRate2.toFixed(2)}h = ${(ap*apRate2).toFixed(2)}h</div>`;});}else{detailLines+=`<div>Bediensatz Wandhalter: ${r._bedienAPCnt} AP &times; ${apRate2.toFixed(2)}h = ${(r._hBedienWand||0).toFixed(2)}h</div>`;}}
           detailLines+=`<div>Bedienseil Montage: ${(r._hBedienseil||0).toFixed(2)}h</div>`;
         }else{
           detailLines=`<div>${r.count} Segel: ${sailDetail}</div>`;
@@ -4551,7 +4551,7 @@ function renderStep5(){
             ${(_raffSingleRow._hWand||0)>0?`<div>Wandplatten Drahtseil: ${_raffSingleRow._wCnt}&times; ${_raffSingleRow._apPerWP} AP &times; ${apRate2.toFixed(2)}h = ${(_raffSingleRow._hWand||0).toFixed(2)}h</div>`:''}
             <div>Drahtseil Montage: ${_raffSingleRow._fuehrungen} F&uuml;hr. &times; ${(_raffSingleRow.mk?.raffFuehr||mk2?.raffFuehr||0).toFixed(2)}h = ${(_raffSingleRow._hDrahtseil||0).toFixed(2)}h</div>
             <div>Aufh&auml;ngepunkte: (${_raffSingleRow._feldanzahl}+1) Profile &times; ${_raffSingleRow._fuehrungen} F&uuml;hr. = ${_raffSingleRow._aufhaengPunkte} AP &times; ${(_raffSingleRow.mk?.raffAP||mk2?.raffAP||0).toFixed(2)}h = ${(_raffSingleRow._hAufhaeng||0).toFixed(2)}h</div>
-            ${(_raffSingleRow._hBedienWand||0)>0?(()=>{const _selBS=fragebogen.raffBediensatz||'soliday';const _isDblS=_selBS==='hauswand-doppelt';const _apIS=_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDblS?it.qtyD:it.qtyE)>0);return _apIS.length?_apIS.map(it=>{const q=_isDblS?it.qtyD:it.qtyE;const ap=q*it.apCount;return`<div>${q}&times; ${it.name.split(' ').slice(0,4).join(' ')}: ${ap} AP &times; ${apRate2.toFixed(2)}h = ${(ap*apRate2).toFixed(2)}h</div>`;}).join(''):`<div>Bediensatz Wandhalter: ${_raffSingleRow._bedienAPCnt} AP &times; ${apRate2.toFixed(2)}h = ${(_raffSingleRow._hBedienWand||0).toFixed(2)}h</div>`;})():''}
+            ${(_raffSingleRow._hBedienWand||0)>0?(()=>{const _selBS=fragebogen.raffBediensatz||'soliday';const _isDblS=_selBS==='hauswand-doppelt';const _apIS=_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDblS?it.qtyD:it.qtyE)>0);return _apIS.length?_apIS.map(it=>{const q=_isDblS?it.qtyD:it.qtyE;const ap=q*it.apCount;return`<div>${q}&times; ${(/ringschraube/i.test(it.name)?'Ringschraube':/backenklemm|wandplatte.*clamcleat|clamcleat.*wandplatte/i.test(it.name)?'Clamcleat Wandplatte':it.name.split(' ').slice(0,3).join(' '))}: ${ap} AP &times; ${apRate2.toFixed(2)}h = ${(ap*apRate2).toFixed(2)}h</div>`;}).join(''):`<div>Bediensatz Wandhalter: ${_raffSingleRow._bedienAPCnt} AP &times; ${apRate2.toFixed(2)}h = ${(_raffSingleRow._hBedienWand||0).toFixed(2)}h</div>`;})():''}
             <div>Bedienseil Montage: ${(_raffSingleRow._hBedienseil||0).toFixed(2)}h</div>
           </div>
           <div class="s5-irow" style="margin-top:6px">
