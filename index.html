@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 13:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 14:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3970,14 +3970,38 @@ function renderStep5(){
     _sailPos.forEach((sail,si)=>{
       const _sailNr=Number(sail.segel_nr)||1;
       const _sailSys=((soSeKuJSON?.segelSystems||{})[_sailNr]||sys).toUpperCase();
-      // RAFF-M: show sail info display-only (no stoff selection)
+      // RAFF-M: show sail info with puffer-based price calculation
       if(_sailSys.startsWith('RAFF')||sys.startsWith('RAFF')){
-        const raffDesc=(sail.beschreibung||'').split('\n').filter(l=>!/^\s*Farbe[:\s]/i.test(l)).join('\n').trim();
+        const _descLines=(sail.beschreibung||'').split('\n');
+        // Parse Fläche (physical area) — stored internally, not shown
+        const _flaecheMatch=(_descLines.find(l=>/^\s*Fl[äa]che[:\s]/i.test(l))||'').match(/([\d]+[.,][\d]*|[\d]+)/);
+        const _flaecheQm=_flaecheMatch?parseFloat(_flaecheMatch[0].replace(',','.')):sail.qm_segel||0;
+        const _preisQm=sail.preis_einheit||0;
+        const _puffer=qmExtra(_flaecheQm);
+        const _bQm=Math.round((_flaecheQm+_puffer)*100)/100;
+        const _newPreis=Math.ceil(_bQm*_preisQm);
+        // Store for Step 5D
+        sail._raffQmFlaeche=_flaecheQm;
+        sail._raffBillingQm=_bQm;
+        sail._raffPreisQm=_preisQm;
+        // Filter: exclude Farbe, Fläche, Effektive Länge from display
+        const raffDesc=_descLines.filter(l=>
+          !/^\s*Farbe[:\s]/i.test(l)&&
+          !/^\s*Fl[äa]che[:\s]/i.test(l)&&
+          !/^\s*Effektive\s+L[äa]nge[:\s]/i.test(l)
+        ).join('\n').trim();
         h+=`<div class="s5-card">
-          <div class="s5-card-hdr"><strong>Segeltuch &ndash; Raff-M</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${sail.qm_segel?sail.qm_segel.toFixed(2)+' m²':''}</span></div>
+          <div class="s5-card-hdr"><strong>Segeltuch &ndash; Raff-M</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${_flaecheQm.toFixed(2)} m²</span></div>
           <div class="s5-card-body">
             <div style="font-size:12px;white-space:pre-line;line-height:1.7;color:var(--text)">${raffDesc||sail.name||''}</div>
-            <div class="s5-calc" style="margin-top:8px"><span style="color:var(--muted)">Preis aus Angebot:</span>&nbsp;<strong>${fmtE(sail.gesamt||sail.preis_einheit||0)}</strong></div>
+            <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+              <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Preisberechnung mit Puffer</div>
+              <div class="s5-calc-detail">
+                <div>Fläche: ${_flaecheQm.toFixed(2)} m² + ${_puffer} m² Puffer = ${_bQm.toFixed(2)} m²</div>
+                <div>${_bQm.toFixed(2)} m² &times; ${fmtE(_preisQm)}/m² = ${fmtE(_newPreis)}</div>
+              </div>
+              <div class="s5-calc"><span style="color:var(--muted)">Neuer Preis:</span>&nbsp;<strong>${fmtE(_newPreis)}</strong></div>
+            </div>
           </div>
         </div>`;
         return;
@@ -4573,8 +4597,29 @@ function applyPrices5(){
       _sailPos.forEach((sail,si)=>{
         const _sailNr2=Number(sail.segel_nr)||1;
         const _sailSys2=((soSeKuJSON?.segelSystems||{})[_sailNr2]||sys).toUpperCase();
-        // RAFF-M sails: price comes from PDF, no stoff selection — skip
-        if(_sailSys2.startsWith('RAFF'))return;
+        // RAFF-M sails: price = (Fläche + puffer) × preis/m²
+        if(_sailSys2.startsWith('RAFF')){
+          const _dl2=(sail.beschreibung||'').split('\n');
+          const _fm2=(_dl2.find(l=>/^\s*Fl[äa]che[:\s]/i.test(l))||'').match(/([\d]+[.,][\d]*|[\d]+)/);
+          const _fq2=_fm2?parseFloat(_fm2[0].replace(',','.')):sail._raffQmFlaeche||sail.qm_segel||0;
+          const _pq2=sail._raffPreisQm||sail.preis_einheit||0;
+          const _bq2=Math.round((_fq2+qmExtra(_fq2))*100)/100;
+          const _np2=Math.ceil(_bq2*_pq2);
+          const _raffSailSek=transformedData.sektionen.find(s=>s._segelNr===_sailNr2&&s.id==='segeltuch')||
+                             transformedData.sektionen.find(s=>s.id==='segeltuch');
+          if(_raffSailSek){
+            const _rsp=_raffSailSek.positionen.find(p=>p._raffSail||p.qm_segel>0);
+            if(_rsp){
+              _rsp.preis_einheit=_np2;
+              _rsp.menge=1;
+              _rsp.einheit='Stk.';
+              _rsp.gesamt=_np2;
+              _rsp._modified=true;
+              modifiedArtNrsInStep5.add(_rsp.artikelnummer||'raffSegel');
+            }
+          }
+          return;
+        }
         const multiplier=sail._merged||1;
         const sel=parseInt(document.querySelector(`input[name="sail${si}st"]:checked`)?.value||'0');
         const p=parseFloat(document.getElementById(`sP${si}_${sel}`)?.value||'0')||0;
