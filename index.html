@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 16:20 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 16:37 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1037,6 +1037,7 @@ let _segelZusammenfassen=false,_segelMergeSet=new Set(),_transformedDataOrig=nul
 let _aeroCleat=false,_aeroCleatViereck=null,_aeroCleatDreieck=null,_aeroCleatPunkte=null;
 let _kopfCombined='';
 let _aeroPreis={done:false,seilspanner:29,seil:2.7,schaekel:6.7,schnapp:6.8};
+let _raffBedienPreis={done:false,items:[]};
 let modifiedArtNrsInStep5=new Set();
 let _s3DragSrc=null;
 
@@ -2628,6 +2629,25 @@ async function _loadAeroCleatPreise(){
   _aeroPreis.done=true;
   if(_aeroCleat){transformedData=_buildAeroCleatData();renderStep3();}
   else _renderSegelToggle();
+}
+async function _loadRaffBedienPreise(){
+  if(_raffBedienPreis.done)return;
+  try{
+    const rows=await fetchSheetTabAll('Raff-M Bedienset Wandmontage');
+    let hdrIdx=rows.findIndex(r=>/einfach/i.test(r[2]||''));
+    if(hdrIdx<0)hdrIdx=1;
+    const items=[];
+    for(let i=hdrIdx+1;i<rows.length;i++){
+      const r=rows[i];
+      const nm=(r[0]||'').trim();
+      if(!nm)continue;
+      const pr=parseDE(r[1])||0,qe=parseInt(r[2])||0,qd=parseInt(r[3])||0;
+      items.push({name:nm,price:pr,qtyE:qe,qtyD:qd,isRingschraube:/ringschraube/i.test(nm)});
+    }
+    _raffBedienPreis.items=items;
+  }catch(e){}
+  _raffBedienPreis.done=true;
+  renderStep5();
 }
 function _aeroSegelFormDefaults(){
   const sails=(soSeKuJSON?.positionen||[]).filter(p=>p.qm_segel>0);
@@ -4278,6 +4298,24 @@ function renderStep5(){
     const _bedienAPCnt=_selBedien==='hauswand-doppelt'?4:2;
     const _bedienAPRate=apDef||0;
     const _mkRadio=(v,lbl)=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0"><input type="radio" name="raffBedien5" value="${v}"${_selBedien===v?' checked':''} onchange="selRaffBedien5('${v}')" style="accent-color:var(--accent);cursor:pointer"><strong>${lbl}</strong></label>`;
+    // Bedienset-Komponenten aus Sheet
+    if(_isHauswand&&!_raffBedienPreis.done)_loadRaffBedienPreise();
+    const _isDbl=_selBedien==='hauswand-doppelt';
+    let _bRows='',_bTotal=0;
+    _raffBedienPreis.items.forEach(it=>{
+      const q=_isDbl?it.qtyD:it.qtyE;if(!q)return;
+      const lineP=+(it.price*q+(it.isRingschraube?q*_bedienAPRate:0)).toFixed(2);
+      _bTotal=+(_bTotal+lineP).toFixed(2);
+      const _rNote=it.isRingschraube?`&ensp;<span style="font-size:10px;color:var(--muted)">+ ${q}&times; Klebeanker</span>`:'';
+      _bRows+=`<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:2px 0;border-bottom:1px solid var(--border)">`+
+        `<span style="flex:1">${q}&times; ${it.name}${_rNote}</span>`+
+        `<span style="font-weight:600;white-space:nowrap">${fmtE(lineP)}</span></div>`;
+    });
+    const _bList=_raffBedienPreis.done
+      ?(_raffBedienPreis.items.length>0
+        ?`<div style="border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:10px">${_bRows}<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding-top:6px"><span>Material gesamt:</span><span style="color:var(--accent2)">${fmtE(_bTotal)}</span></div></div>`
+        :`<div style="font-size:11px;color:var(--warn);margin-bottom:8px">Tab "Raff-M Bedienset Wandmontage" nicht gefunden</div>`)
+      :`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wird geladen…</div>`;
     h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>RAFF-M Einstellungen</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><span style="font-size:14px;font-weight:700;color:var(--accent2)">${wCnt}&times; Platten</span></div>
       <div class="s5-card-body">
         <div style="font-size:11px;font-weight:700;color:var(--fg);margin-bottom:4px">Wandplatten-Typ</div>
@@ -4300,7 +4338,7 @@ function renderStep5(){
         <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:2px">Bedienset Wandmontage</div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Ziegel / Beton / Holzst&auml;nder</div>
         <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'14px':'4px'}">${_mkRadio('hauswand-einfach','einfache Umlenkung')}${_mkRadio('hauswand-doppelt','doppelte Umlenkung')}</div>
-        ${_isHauswand?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm D&auml;mmung':'bis 10cm D&auml;mmung'}):</div>
+        ${_isHauswand?`${_bList}<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm D&auml;mmung':'bis 10cm D&auml;mmung'}):</div>
         <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
           <span class="s5-lbl">${_bedienAPCnt} AP &times;</span>
           <input type="number" class="s5-inp s5-w90" id="raffBedienAPP" value="${_bedienAPRate.toFixed(2)}" step="0.01" min="0" oninput="updRaffBedien()">
