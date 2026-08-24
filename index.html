@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:32 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:42 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4371,8 +4371,8 @@ function renderStep5(){
         <div style="display:flex;align-items:center;background:rgba(56,217,169,0.08);border-left:2px solid var(--accent2);padding:5px 8px;border-radius:0 4px 4px 0;margin-bottom:8px">
           <span style="font-size:13px;font-weight:700;color:var(--fg)">Bedienung</span>
         </div>
-        <div style="border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px">${_mkRadio('soliday','Standard Soliday Bedienset (Pergola Montage)')}${_sList}</div>
-        <div style="font-size:12px;font-weight:600;color:var(--fg);margin:6px 0 4px">Bedienset Wandmontage &mdash; Ziegel / Beton / Holzst&auml;nder</div>
+        <div style="border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px">${_mkRadio('soliday','Standard Soliday Bedienset <span style="font-size:10px;font-weight:normal;color:var(--muted)">(Pergola Montage)</span>')}${_sList}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--fg);margin:6px 0 4px">Bedienset Wandmontage <span style="font-size:10px;font-weight:normal;color:var(--muted)">&mdash; Ziegel / Beton / Holzst&auml;nder</span></div>
         <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'12px':'4px'}">${_mkRadio('hauswand-einfach','einfache Umlenkung')}${_mkRadio('hauswand-doppelt','doppelte Umlenkung')}</div>
         ${_isHauswand?`${_bList}<div class="s5-calc" style="margin-bottom:12px"><span style="color:var(--muted)">Neuer Bedienset-Preis:</span><strong style="color:var(--accent2)">${fmtE(_bTotal)}</strong></div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm D&auml;mmung':'bis 10cm D&auml;mmung'}):</div>
         <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
