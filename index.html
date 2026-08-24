@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 09:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 10:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1777,7 +1777,7 @@ function _transformiereKern(json){
     });
     // Update 75002S (ALL-IN-ONE Hardware bundle, in Segelsystem) description with Wandplatten count
     const hw=map.segelsystem.find(p=>p.artikelnummer==='75002S');
-    if(hw){hw._raffFuehrungen=raffFuehr;hw.beschreibung=`Inkl. ${raffFuehr*2} Wandplatten mit Klebeanker`;}
+    if(hw){hw._raffFuehrungen=raffFuehr;hw.name='Raff-M Drahtseil Segelsystem';hw.beschreibung='Drahtseilaufhängung, Seilrollen, Tuchprofile + Zubehör\ninkl. Drahtseil Wandplatten\ninkl. Klebeanker';}
   } else {
     sailOriginals.forEach(p=>removed.push({...p,_transferred:true}));
     map.segeltuch=map.segeltuch.filter(p=>!(p.qm_segel>0));
@@ -4689,7 +4689,8 @@ function applyPrices5(){
       hw75.gesamt=Math.ceil(origGesamt+klebAnker);
       hw75.preis_einheit=hw75.gesamt;
       const typName={'typ1':'Typ 1','typ2':'Typ 2 extra lang','typ3':'Typ 3 Viereck'}[fragebogen.raffWandplattenTyp||'typ1']||'Typ 1';
-      hw75.beschreibung=`Inkl. ${wandplattenCnt} Wandplatten (${typName}) mit Klebeanker\n${wdesc5[wa5]||wdesc5['ziegel-10']}`;
+      hw75.name='Raff-M Drahtseil Segelsystem';
+      hw75.beschreibung=`Drahtseilaufhängung, Seilrollen, Tuchprofile + Zubehör\ninkl. Drahtseil Wandplatten ${typName}\ninkl. Klebeanker`;
       hw75._modified=true;
       modifiedArtNrsInStep5.add('75002S');
     }
