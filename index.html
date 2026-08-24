@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:47 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 23:05 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3552,12 +3552,13 @@ function calcInstData(){
         const _isDblM=_bedienM==='hauswand-doppelt';
         const _bedienAPCntM=_bedienM==='soliday'?0:_raffBedienPreis.items.reduce((s,it)=>{if(!it.apCount)return s;const q=_isDblM?it.qtyD:it.qtyE;return s+q*it.apCount;},0);
         const hBedienWand=_bedienAPCntM*_apRateM;
-        const h=hDrahtseil+hAufhaeng+hBedienseil+hWand+hBedienWand;
+        const hGrundpreis=mk_s.grundpreis||mk.grundpreis||0;
+        const h=hGrundpreis+hDrahtseil+hAufhaeng+hBedienseil+hWand+hBedienWand;
         sailH+=h;
         sailRows.push({sys:s,count,mk:mk_s,h,welle:null,fraction:count/totalCount,isFix:false,hasNonFix:true,verbCount:0,verbH:0,nrs:nrsBySys[s]||[],
           _isRaff:true,_fuehrungen:fuehrungen,_feldanzahl:feldanzahl,_aufhaengestangen:aufhaengestangen,
           _aufhaengPunkte:aufhaengPunkte,_apPerWP:apPerWP,_wCnt:wCnt,_totalWandAP:totalWandAP,
-          _hDrahtseil:hDrahtseil,_hAufhaeng:hAufhaeng,_hBedienseil:hBedienseil,_hWand:hWand,_hBedienWand:hBedienWand,_bedienAPCnt:_bedienAPCntM});
+          _hGrundpreis:hGrundpreis,_hDrahtseil:hDrahtseil,_hAufhaeng:hAufhaeng,_hBedienseil:hBedienseil,_hWand:hWand,_hBedienWand:hBedienWand,_bedienAPCnt:_bedienAPCntM});
         return;
       }
       if(!mk_s.ok)return;
@@ -3597,13 +3598,14 @@ function calcInstData(){
     const _isDblR=_bedienR==='hauswand-doppelt';
     const _bedienAPCntR=_bedienR==='soliday'?0:_raffBedienPreis.items.reduce((s,it)=>{if(!it.apCount)return s;const q=_isDblR?it.qtyD:it.qtyE;return s+q*it.apCount;},0);
     const hBedienWandR=_bedienAPCntR*_apRateR;
-    const hRaff=hDrahtseilR+hAufhaengR+hBedienseilR+hWandR+hBedienWandR;
+    const hGrundpreisR=mk_r.grundpreis||mk.grundpreis||0;
+    const hRaff=hGrundpreisR+hDrahtseilR+hAufhaengR+hBedienseilR+hWandR+hBedienWandR;
     sailH=hRaff;
     const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
     sailRows.push({sys:sysU,count:sailCount,mk:mk_r,h:hRaff,welle:null,fraction:1,isFix:false,hasNonFix:true,verbCount:0,verbH:0,nrs:[],
       _isRaff:true,_fuehrungen:fuehrungen,_feldanzahl:feldanzahlR,_aufhaengestangen:aufhaengestangenR,
       _aufhaengPunkte:aufhaengPunkteR,_apPerWP:apPerWPR,_wCnt:wCntR,_totalWandAP:totalWandAPR,
-      _hDrahtseil:hDrahtseilR,_hAufhaeng:hAufhaengR,_hBedienseil:hBedienseilR,_hWand:hWandR,_hBedienWand:hBedienWandR,_bedienAPCnt:_bedienAPCntR});
+      _hGrundpreis:hGrundpreisR,_hDrahtseil:hDrahtseilR,_hAufhaeng:hAufhaengR,_hBedienseil:hBedienseilR,_hWand:hWandR,_hBedienWand:hBedienWandR,_bedienAPCnt:_bedienAPCntR});
   }else{
     const noVerb=['M','FLEX'].includes(sysU.replace('SOLIDAY-',''))||sysU.startsWith('SONNENSEGEL');
     const isFix=mcIsFix(sysU);
@@ -4467,7 +4469,8 @@ function renderStep5(){
         let detailLines;
         if(_isRaffRow){
           const _mk_r=r.mk||{};
-          detailLines=(r._hWand||0)>0?`<div>Wandplatten Drahtseil: ${r._wCnt}&times; ${r._apPerWP} AP &times; ${apRate2.toFixed(2)}h = ${(r._hWand||0).toFixed(2)}h</div>`:'';
+          detailLines=`<div>System Grundpreis: ${(r._hGrundpreis||0).toFixed(2)}h</div>`;
+          detailLines+=(r._hWand||0)>0?`<div>Wandplatten Drahtseil: ${r._wCnt}&times; ${r._apPerWP} AP &times; ${apRate2.toFixed(2)}h = ${(r._hWand||0).toFixed(2)}h</div>`:'';
           detailLines+=`<div>Drahtseil Montage: ${r._fuehrungen} F&uuml;hr. &times; ${(_mk_r.raffFuehr||0).toFixed(2)}h = ${(r._hDrahtseil||0).toFixed(2)}h</div>`;
           detailLines+=`<div>Aufh&auml;ngepunkte: (${r._feldanzahl}+1) Profile &times; ${r._fuehrungen} F&uuml;hr. = ${r._aufhaengPunkte} AP &times; ${(_mk_r.raffAP||0).toFixed(2)}h = ${(r._hAufhaeng||0).toFixed(2)}h</div>`;
           if((r._hBedienWand||0)>0){const _selBD=fragebogen.raffBediensatz||'soliday';const _isDblD=_selBD==='hauswand-doppelt';const _apItemsD=_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDblD?it.qtyD:it.qtyE)>0);if(_apItemsD.length){_apItemsD.forEach(it=>{const q=_isDblD?it.qtyD:it.qtyE;const ap=q*it.apCount;detailLines+=`<div>${q}&times; ${(/ringschraube/i.test(it.name)?'Ringschraube':/backenklemm|wandplatte.*clamcleat|clamcleat.*wandplatte/i.test(it.name)?'Clamcleat Wandplatte':it.name.split(' ').slice(0,3).join(' '))}: ${ap} AP &times; ${apRate2.toFixed(2)}h = ${(ap*apRate2).toFixed(2)}h</div>`;});}else{detailLines+=`<div>Bediensatz Wandhalter: ${r._bedienAPCnt} AP &times; ${apRate2.toFixed(2)}h = ${(r._hBedienWand||0).toFixed(2)}h</div>`;}}
@@ -4548,6 +4551,7 @@ function renderStep5(){
         </div>
         <div class="s5-card-body">
           ${_raffSingleRow?`<div class="s5-calc-detail" style="margin-bottom:6px">
+            <div>System Grundpreis: ${(_raffSingleRow._hGrundpreis||0).toFixed(2)}h</div>
             ${(_raffSingleRow._hWand||0)>0?`<div>Wandplatten Drahtseil: ${_raffSingleRow._wCnt}&times; ${_raffSingleRow._apPerWP} AP &times; ${apRate2.toFixed(2)}h = ${(_raffSingleRow._hWand||0).toFixed(2)}h</div>`:''}
             <div>Drahtseil Montage: ${_raffSingleRow._fuehrungen} F&uuml;hr. &times; ${(_raffSingleRow.mk?.raffFuehr||mk2?.raffFuehr||0).toFixed(2)}h = ${(_raffSingleRow._hDrahtseil||0).toFixed(2)}h</div>
             <div>Aufh&auml;ngepunkte: (${_raffSingleRow._feldanzahl}+1) Profile &times; ${_raffSingleRow._fuehrungen} F&uuml;hr. = ${_raffSingleRow._aufhaengPunkte} AP &times; ${(_raffSingleRow.mk?.raffAP||mk2?.raffAP||0).toFixed(2)}h = ${(_raffSingleRow._hAufhaeng||0).toFixed(2)}h</div>
