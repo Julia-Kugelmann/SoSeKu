@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 16:12 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 16:20 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1618,7 +1618,8 @@ const NR2SEK={};
 ['00E13001787','00E13001742','00E13001741','00E13000206','00E13001937','00E13001735','00E13001734','00E13000843','00E13002149','00E13001965','00E13000042','00E13000026','00E13000066','00E13000127',
  '00E13000023','00E13000053','00E13001874','00E13001875'].forEach(n=>NR2SEK[n]='zubehoer');
 ['00E13001416','00E13001325','00E13001321','73004A001','71004A010','71004A011','70004A007','71004A003','71004A020','00E13001929','00E13001885','75936B','00E13001784'].forEach(n=>NR2SEK[n]='segeltuch');
-['00E13000263','00E13001959','00E13002067'].forEach(n=>NR2SEK[n]='segelsystem');
+['00E13000263','00E13001959'].forEach(n=>NR2SEK[n]='segelsystem');
+['00E13002067'].forEach(n=>NR2SEK[n]='zubehoer');
 ['00E13000208','00E13000988','00E13001866','00E13001865'].forEach(n=>NR2SEK[n]='masten');
 ['99FRACHT5','99FRACHT6'].forEach(n=>NR2SEK[n]='montage');
 
@@ -1854,6 +1855,7 @@ function _transformiereKern(json){
     '00E13001735':20,'00E13001734':20, // Mastschellen
     '00E13000843':30,'00E13000107':30, // Seile
     '00E13002149':40,'00E13001965':40,'00E13000042':40, // Pulleys
+    '00E13002067':45, // Seilzugsystem
     '00E13000417':50,'00E13000026':50,'00E13000066':50,'00E13000127':50 // Rest
   };
   // Feste Segel: kein Aufrollsystem → Segelsystem-Inhalte in Zubehör verschieben
