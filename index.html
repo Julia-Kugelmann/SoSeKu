@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4034,7 +4034,10 @@ function renderStep5(){
   const mk2=prices5.montKalkParsed;
   const wellenM2=_instData.wellenM||(soSeKuJSON.wellenlaenge_aufrollsystem_mm?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0);
   const sailCount2=Math.max(1,_sailPos.reduce((s,p)=>s+(p._merged||1),0)||1);
-  const sailH2=_instData.sailH;
+  const _sailH2raw=_instData.sailH;
+  // RAFF-M hours are in sailH from calcInstData — move them to hwH so they count for Termin recommendation
+  const _raffInstH=(_instData.sailRows||[]).filter(r=>r._isRaff).reduce((s,r)=>s+(r.h||0),0);
+  const sailH2=_sailH2raw-_raffInstH; // non-RAFF sail hours only (for Segeltuch day display)
   const uses18=(fragebogen.wandart||'').includes('18');
   let apH2Wand=0,apCnt2Wand=0,apH2Boden=0,apCnt2Boden=0,totalMengeWand2=0,totalMengeB2=0;
   (_wandpl||[]).forEach(pl=>{const a=prices5.apAnzahl[pl.artikelnummer]||0;const n=Math.max(1,Math.round(pl.menge));apH2Wand+=a*n*(uses18?(mk2?.ap18||0):(mk2?.ap10||0));apCnt2Wand+=a*n;totalMengeWand2+=n;});
@@ -4048,8 +4051,8 @@ function renderStep5(){
   // Use pre-summed totalVerbH from calcInstData (multi-system sums per-system verbH correctly)
   const verbH2=_instData.totalVerbH!==undefined?_instData.totalVerbH:verbCnt2*(mk2?.verbZuschlag||0);
   const elekHoehH2=(_instData.elekHoehH||0);
-  const hwH2=apH2+sfCnt2*(mk2?.schraubfund||0)+verbH2+elekHoehH2;
-  const totalH2=sailH2+hwH2;
+  const hwH2=apH2+sfCnt2*(mk2?.schraubfund||0)+verbH2+elekHoehH2+_raffInstH;
+  const totalH2=_sailH2raw+apH2+sfCnt2*(mk2?.schraubfund||0)+verbH2+elekHoehH2;
   _s5CachedTotalH=totalH2; // cache for selS5Termine button switching
   _s5CachedSailH=sailH2;
   _s5CachedHardwareH=hwH2;
