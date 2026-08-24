@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:50 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3535,7 +3535,7 @@ function calcInstData(){
         const _bedienM=fragebogen.raffBediensatz||'soliday';
         const _ringEtM=_raffBedienPreis.items.find(it=>it.isRingschraube);
         const _isDblM=_bedienM==='hauswand-doppelt';
-        const _bedienAPCntM=_bedienM==='soliday'?0:(_ringEtM?(_isDblM?_ringEtM.qtyD:_ringEtM.qtyE):(_isDblM?2:1));
+        const _bedienAPCntM=_bedienM==='soliday'?0:_raffBedienPreis.items.reduce((s,it)=>{if(!it.apCount)return s;const q=_isDblM?it.qtyD:it.qtyE;return s+q*it.apCount;},0);
         const hBedienWand=_bedienAPCntM*_apRateM;
         const h=hDrahtseil+hAufhaeng+hBedienseil+hWand+hBedienWand;
         sailH+=h;
@@ -3580,7 +3580,7 @@ function calcInstData(){
     const _bedienR=fragebogen.raffBediensatz||'soliday';
     const _ringEt=_raffBedienPreis.items.find(it=>it.isRingschraube);
     const _isDblR=_bedienR==='hauswand-doppelt';
-    const _bedienAPCntR=_bedienR==='soliday'?0:(_ringEt?(_isDblR?_ringEt.qtyD:_ringEt.qtyE):(_isDblR?2:1));
+    const _bedienAPCntR=_bedienR==='soliday'?0:_raffBedienPreis.items.reduce((s,it)=>{if(!it.apCount)return s;const q=_isDblR?it.qtyD:it.qtyE;return s+q*it.apCount;},0);
     const hBedienWandR=_bedienAPCntR*_apRateR;
     const hRaff=hDrahtseilR+hAufhaengR+hBedienseilR+hWandR+hBedienWandR;
     sailH=hRaff;
@@ -4524,11 +4524,11 @@ function renderStep5(){
       const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
       const elekHvHdr=elekHoehH2>0?'elektr. Höhenverst.':'';
       const _raffSingleRow=_instData.sailRows.length===1&&_instData.sailRows[0]?._isRaff?_instData.sailRows[0]:null;
-      const _raffHdr=sys.startsWith('RAFF')&&_raffSingleRow?`${_raffSingleRow._fuehrungen} F&uuml;hr.`:(sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'');
+      const _raffHdr=sys.startsWith('RAFF')&&_raffSingleRow?`${_raffSingleRow._fuehrungen} F&uuml;hr. &rarr; ${_raffSingleRow._wCnt} Wandpl.`:(sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'');
       const _raffTuchHdr=_raffSingleRow&&_raffSingleRow._aufhaengestangen?`${_raffSingleRow._feldanzahl||''} Felder &rarr; ${_raffSingleRow._aufhaengestangen} Profile`:'';
-      const _raffWandHdr=_raffSingleRow&&_raffSingleRow._wCnt?`${_raffSingleRow._wCnt}&times; Wandpl. Drahtseil`:'';
+      const _raffBedienHdr=(()=>{const _selBH=fragebogen.raffBediensatz||'soliday';if(_selBH==='soliday'||!_raffBedienPreis.done||!_raffBedienPreis.items.length)return '';const _isDblBH=_selBH==='hauswand-doppelt';const apItems=_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDblBH?it.qtyD:it.qtyE)>0);if(!apItems.length)return '';const _abbrH=nm=>{if(/ringschraube/i.test(nm))return'Ringschr.';if(/backenklemm|wandplatte.*clamcleat|clamcleat.*wandplatte/i.test(nm))return'Clamcleat Pl.';if(/clamcleat/i.test(nm))return'Clamcleat';return nm.split(' ').slice(0,2).join(' ');};return apItems.map(it=>`${_isDblBH?it.qtyD:it.qtyE}&times; ${_abbrH(it.name)}`).join(' &middot; ');})();
       const hdrChips=sys.startsWith('RAFF')
-        ?[_raffHdr,_raffTuchHdr,_raffWandHdr].filter(Boolean).join('<br>')
+        ?[_raffHdr,_raffTuchHdr,_raffBedienHdr].filter(Boolean).join('<br>')
         :[welleHdr,sailHdr,plateParts.join(' '),sfHdr,elekHvHdr].filter(Boolean).join('<br>');
       if(mk2?.ok||_raffSingleRow)_s5CachedMultiTotalSubH=totalH2;
       const _gpStoredS=Number(_gsMonPos[mi]?.preis_einheit||0);
