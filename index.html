@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 18:11 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 16:12 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1704,7 +1704,7 @@ function _transformiereKern(json){
     p2.beschreibung=BESCHREIBUNG[p2.artikelnummer]||(p2.qm_segel>0&&sys.startsWith('RAFF')?_origBeschr:'');
     if(WINTER_NR.includes(p2.artikelnummer)){const mm=Number(json.wellenlaenge_aufrollsystem_mm||0);const m=mm>0?Math.ceil(mm/1000):'?';const prem=['71004A011','70004A007'].includes(p2.artikelnummer);p2.name=`Winter-Schutzhülle${prem?' Premium':''} - ${m}m / Austrosail - stone`;p2.einheit='Stk.';p2.preis_einheit=p2.gesamt;p2.menge=1;}
     else if(FRACHT_NR.includes(p2.artikelnummer)){if(NAMEN[p2.artikelnummer])p2.name=NAMEN[p2.artikelnummer];p2.einheit='pauschal';}
-    else if(p2.artikelnummer==='00E13001784'){p2.einheit='pauschal';}
+    else if(p2.artikelnummer==='00E13001784'){p2.einheit='pauschal';p2.preis_einheit=p2.gesamt;p2.menge=1;}
     else if(NAMEN[p2.artikelnummer]){p2.name=NAMEN[p2.artikelnummer];}
     else{
       const _isAufr=isAufrollsystem(p2.artikelnummer);
@@ -4271,10 +4271,16 @@ function renderStep5(){
     const _raffRadios=_raffTypDefs.map(t=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)"><input type="radio" name="raffWandTyp5" value="${t.v}"${selTyp===t.v?' checked':''} onchange="selRaffTyp5('${t.v}')" style="accent-color:var(--accent);cursor:pointer"><span><strong>${t.label}</strong>&ensp;<span style="color:var(--muted)">&#8212; ${t.ap} Klebeanker/Platte</span></span></label>`).join('');
     // Segel-Nr des RAFF-M Segels ermitteln
     const _raffSegelNrs=new Set(Object.entries(transformedData.segelSystems||{}).filter(([,s])=>s.toUpperCase().startsWith('RAFF')).map(([nr])=>Number(nr)));
-    h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>Raff-M Wandplatten</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><span style="font-size:14px;font-weight:700;color:var(--accent2)">${wCnt}&times; Platten</span></div>
+    const _selBedien=fragebogen.raffBediensatz||selRaffBediensatz||'soliday';
+    const _isHauswand=_selBedien!=='soliday';
+    const _bedienAPCnt=_selBedien==='hauswand-doppelt'?4:2;
+    const _bedienAPRate=apDef||0;
+    const _mkRadio=(v,lbl)=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0"><input type="radio" name="raffBedien5" value="${v}"${_selBedien===v?' checked':''} onchange="selRaffBedien5('${v}')" style="accent-color:var(--accent);cursor:pointer"><strong>${lbl}</strong></label>`;
+    h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>RAFF-M Einstellungen</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><span style="font-size:14px;font-weight:700;color:var(--accent2)">${wCnt}&times; Platten</span></div>
       <div class="s5-card-body">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:10px">${raffFuehr} F&uuml;hrung${raffFuehr!==1?'en':''} &times; 2 = <strong>${wCnt} Wandplatten</strong> &nbsp;&mdash;&nbsp; Typ aus Angebot entnehmen:</div>
-        <div style="display:flex;flex-direction:column;margin-bottom:14px">${_raffRadios}</div>
+        <div style="font-size:11px;font-weight:700;color:var(--fg);margin-bottom:4px">Wandplatten-Typ</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:8px">${raffFuehr} F&uuml;hrung${raffFuehr!==1?'en':''} &times; 2 = <strong>${wCnt} Wandplatten</strong> &mdash; Typ aus Angebot entnehmen:</div>
+        <div style="display:flex;flex-direction:column;margin-bottom:12px">${_raffRadios}</div>
         <div class="s5-irow" style="flex-wrap:wrap;gap:4px;margin-top:4px">
           <span class="s5-lbl">Klebeanker:</span>
           <span id="raff75CalcRow" style="font-size:12px">${wCnt} &times; ${apPerWP} AP &times;</span>
@@ -4285,23 +4291,14 @@ function renderStep5(){
           <span style="color:var(--muted)">${fmtE(_raff75002S.preis_einheit)} + <span id="raff75Auf">&ndash;</span> =</span>
           <strong id="raff75Tot">&ndash;</strong>
         </div>
-      </div>
-    </div>`;
-    _wandBoxCount++;
-    // ── Bediensatz card ──
-    const _selBedien=fragebogen.raffBediensatz||selRaffBediensatz||'soliday';
-    const _isHauswand=_selBedien!=='soliday';
-    const _bedienAPCnt=_selBedien==='hauswand-doppelt'?4:2;
-    const _bedienAPRate=apDef||0;
-    const _mkRadio=(v,lbl)=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0"><input type="radio" name="raffBedien5" value="${v}"${_selBedien===v?' checked':''} onchange="selRaffBedien5('${v}')" style="accent-color:var(--accent);cursor:pointer"><strong>${lbl}</strong></label>`;
-    h+=`<div class="s5-card" style="margin-top:12px">
-      <div class="s5-card-hdr"><strong>Bediensatz</strong><span style="font-size:11px;color:var(--muted)">Zugseillänge aus Angebot</span></div>
-      <div class="s5-card-body">
+        <div style="border-top:1px solid var(--border);margin:14px 0 10px"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--fg);margin-bottom:2px">Bediensatz</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Zugseill&auml;nge aus Angebot</div>
         <div style="border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:8px">${_mkRadio('soliday','Soliday Bedienset')}</div>
-        <div style="font-size:11px;font-weight:700;color:var(--fg);margin-bottom:2px">Bedienset Wandmontage</div>
+        <div style="font-size:11px;font-weight:600;color:var(--fg);margin-bottom:2px">Bedienset Wandmontage</div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:6px">Ziegel / Beton / Holzst&auml;nder</div>
         <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'14px':'4px'}">${_mkRadio('hauswand-einfach','einfache Umlenkung')}${_mkRadio('hauswand-doppelt','doppelte Umlenkung')}</div>
-        ${_isHauswand?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm Dämmung':'bis 10cm Dämmung'}):</div>
+        ${_isHauswand?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm D&auml;mmung':'bis 10cm D&auml;mmung'}):</div>
         <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
           <span class="s5-lbl">${_bedienAPCnt} AP &times;</span>
           <input type="number" class="s5-inp s5-w90" id="raffBedienAPP" value="${_bedienAPRate.toFixed(2)}" step="0.01" min="0" oninput="updRaffBedien()">
@@ -4313,6 +4310,7 @@ function renderStep5(){
         </div>`:``}
       </div>
     </div>`;
+    _wandBoxCount++;
   }
   // WANDAUFPREIS card (when toggled in Fragebogen)
   if(fragebogen.wandaufpreis){
