@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 14:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 15:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3996,8 +3996,10 @@ function renderStep5(){
           !/^\s*Fl[äa]che[:\s]/i.test(l)&&
           !/^\s*Effektive\s+L[äa]nge[:\s]/i.test(l)
         ).join('\n').trim();
-        h+=`<div class="s5-card">
-          <div class="s5-card-hdr"><strong>Segeltuch &ndash; Raff-M</strong><span style="font-size:14px;font-weight:700;color:var(--accent2)">${_flaecheQm.toFixed(2)} m²</span></div>
+        const _isMS5=transformedData.isMultiSegel;
+        const _nrBadge5=_isMS5?`<span style="font-size:11px;font-weight:600;color:#ffb300;margin-left:8px">&middot; Segel ${_sailNr}</span>`:'';
+        h+=`<div class="s5-card"${si>0?' style="margin-top:12px"':''}>
+          <div class="s5-card-hdr"><strong>Segeltuch &ndash; Raff-M</strong>${_nrBadge5}<span style="font-size:14px;font-weight:700;color:var(--accent2)">${_flaecheQm.toFixed(2)} m²</span></div>
           <div class="s5-card-body">
             <div style="font-size:12px;white-space:pre-line;line-height:1.7;color:var(--text)">${raffDesc||sail.name||''}</div>
             <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
@@ -4026,7 +4028,7 @@ function renderStep5(){
         ?'Segel '+_allSailNrs.join(' + ')
         :(transformedData.isMultiSegel?`Segel ${sail.segel_nr||si+1}`:'');
       const _nrBadge=_sailNrLabel?`<span style="font-size:11px;font-weight:600;color:#ffb300;margin-left:6px">&middot; ${_sailNrLabel}${sail._merged?' (zusammengef.)':''}</span>`:'';
-      h+=`<div class="s5-card">
+      h+=`<div class="s5-card"${si>0?' style="margin-top:12px"':''}>
         <div class="s5-card-hdr" style="align-items:center">
           <span style="display:flex;align-items:center;gap:0;flex-wrap:wrap"><strong>Segeltuch &ndash; ${_sailLbl}</strong>${_nrBadge}</span>
           <span id="sailHdrQm${si}" style="font-size:14px;font-weight:700;color:var(--accent2)">${sailQmPrefix}${qm.toFixed(2)} m&sup2;</span>
@@ -4096,7 +4098,8 @@ function renderStep5(){
   }
   if(_wandpl.length===0&&_wandschellen.length===0&&_bodenpl.length===0&&!_raff75002S){
     h+=`<p style="font-size:12px;color:var(--muted);padding:6px 0">Keine Wandplatten im Angebot.</p>`;
-  } else if(!_raff75002S){
+  }
+  if(_wandpl.length>0||_wandschellen.length>0||_bodenpl.length>0){
     // WANDPLATTEN box
     if(_wandpl.length>0){
       const totalMenge=_wandpl.reduce((s,pl)=>s+Math.max(1,Math.round(pl.menge)),0);
@@ -4206,6 +4209,8 @@ function renderStep5(){
   h+=`</div>`; // close s5-section Wandbefestigungen
   h+=`</div>`; // close col 2
 
+  // ═══ Grüner Trennstreifen vor Montage ═══
+  h+=`<div style="grid-column:1/-1;background:rgba(56,217,169,.07);border-top:2px solid var(--accent2);padding:6px 14px;border-radius:6px;margin:4px 0"><span style="color:var(--accent2);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Montage &amp; Service</span></div>`;
   // ═══ COL 3: Montage ═══
   h+=`<div class="s5-col"><div class="s5-section"><div class="s5-sec-title">Montage</div>`;
   if(instPos){
@@ -4237,7 +4242,7 @@ function renderStep5(){
         const subH=r.h+sysApHWand+sysApHBoden+sysSFh+sysVerbH;
         const subRaw=subH*prices5.stundensatz;
         _subHs.push(subH);
-        const welleChip=r.welle?`${r.welle}m Welle`:'';
+        const welleChip=(_isRaffRow||!r.welle)?'':(`${r.welle}m Welle`);
         const wandChip=(sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'';
         const sfChip=sysSFcnt>0?`${sysSFcnt}&times; SF`:'';
         const nrLabel=(r.nrs&&r.nrs.length)?r.nrs.map(n=>'Segel '+n).join(' + '):'';
