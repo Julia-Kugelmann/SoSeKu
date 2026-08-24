@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:45 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:50 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4348,6 +4348,13 @@ function renderStep5(){
     const _klebSummary=_isHauswand&&_raffBedienPreis.done&&_raffBedienPreis.items.length>0
       ?_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDbl?it.qtyD:it.qtyE)>0).map(it=>`${_isDbl?it.qtyD:it.qtyE}&times; ${_abbrevBedien(it.name)}`).join(' &middot; ')
       :'';
+    const _klebeAPItems=_isHauswand&&_raffBedienPreis.done
+      ?_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDbl?it.qtyD:it.qtyE)>0)
+      :[];
+    const _klebeAPTotal=_klebeAPItems.reduce((s,it)=>s+((_isDbl?it.qtyD:it.qtyE)*it.apCount),0);
+    const _klebeDetail=_klebeAPItems.length>0
+      ?_klebeAPItems.map(it=>`${_isDbl?it.qtyD:it.qtyE}&times; ${_abbrevBedien(it.name)}`).join(' + ')+` = ${_klebeAPTotal} AP`
+      :'';
     h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>RAFF-M</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--accent2)">${raffFuehr} F&uuml;hr. &rarr; ${wCnt}&times; Wand</div>${_klebSummary?`<div style="font-size:10px;color:var(--accent2);margin-top:2px">${_klebSummary}</div>`:''}</div></div>
       <div class="s5-card-body">
         <div style="background:rgba(56,217,169,0.08);border-left:2px solid var(--accent2);padding:5px 8px;border-radius:0 4px 4px 0;margin-bottom:8px">
@@ -4372,7 +4379,7 @@ function renderStep5(){
         <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'12px':'4px'}">${_mkRadio('hauswand-einfach','einfache Umlenkung')}${_mkRadio('hauswand-doppelt','doppelte Umlenkung')}</div>
         ${_isHauswand?`${_bList}<div style="display:flex;flex-direction:column;gap:3px;margin-bottom:12px">
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>Komponenten</span><span>${fmtE(_bMaterial)}</span></div>
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>Klebeanker</span><span>${fmtE(_bKlebe)}</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>Klebeanker${_klebeDetail?`<span style="font-size:10px;margin-left:6px">(${_klebeDetail})</span>`:''}</span><span>${fmtE(_bKlebe)}</span></div>
           <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;border-top:1px solid var(--border);padding-top:4px;margin-top:2px"><span>Bedienset gesamt</span><span style="color:var(--accent2)">${fmtE(_bTotal)}</span></div>
         </div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm D&auml;mmung':'bis 10cm D&auml;mmung'}):</div>
         <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
