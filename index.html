@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 17:22 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 18:02 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1009,7 +1009,7 @@ let pdfFile=null,pdfBase64=null,soSeKuJSON=null,transformedData=null;
 let manualWeglass=new Set(); // pos-Nummern manuell ausgeschlossener Positionen
 let manualWeglassArtNr=new Set(); // artikelnummern-basierte Ausschlüsse (zusammengefasst-Modus)
 let _s3MengeOverride={}; // manuell geänderte Mengen im zusammengefasst-Modus {artikelnummer: menge}
-let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,selRaffWandTyp='typ1',selRaffMonStunden=0,extractAttempts=0,maxStep=0;
+let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,selRaffWandTyp='typ1',selRaffMonStunden=0,selRaffBediensatz='soliday',extractAttempts=0,maxStep=0;
 let stepState={};
 let selManualH=null;
 let _s5CachedTotalH=0; // cached from renderStep5 for selS5Termine
@@ -3137,7 +3137,8 @@ async function initStep5(){
     anfahrtVoll:selAnfahrtVoll,
     freitext:document.getElementById('fgFrei').value,
     raffWandplattenTyp:selRaffWandTyp,
-    raffMonStunden:parseFloat(document.getElementById('raffMonStunden')?.value||'0')||selRaffMonStunden||0
+    raffMonStunden:parseFloat(document.getElementById('raffMonStunden')?.value||'0')||selRaffMonStunden||0,
+    raffBediensatz:selRaffBediensatz
   };
   const _prevFb=stepState[4]?JSON.stringify(stepState[4]):null;
   stepState[4]=JSON.parse(JSON.stringify(fragebogen));
@@ -3498,13 +3499,17 @@ function calcInstData(){
         const wCnt=fuehrungen*2;
         const apPerWP={'typ1':2,'typ2':3,'typ3':4}[fragebogen.raffWandplattenTyp||'typ1']||2;
         const totalWandAP=wCnt*apPerWP;
-        const hWand=totalWandAP*(_uses18?(mk_s.ap18||mk.ap18):(mk_s.ap10||mk.ap10));
-        const h=hDrahtseil+hAufhaeng+hBedienseil+hWand;
+        const _apRateM=_uses18?(mk_s.ap18||mk.ap18):(mk_s.ap10||mk.ap10);
+        const hWand=totalWandAP*_apRateM;
+        const _bedienM=fragebogen.raffBediensatz||'soliday';
+        const _bedienAPCntM=_bedienM==='hauswand-doppelt'?4:(_bedienM==='hauswand-einfach'?2:0);
+        const hBedienWand=_bedienAPCntM*_apRateM;
+        const h=hDrahtseil+hAufhaeng+hBedienseil+hWand+hBedienWand;
         sailH+=h;
         sailRows.push({sys:s,count,mk:mk_s,h,welle:null,fraction:count/totalCount,isFix:false,hasNonFix:true,verbCount:0,verbH:0,nrs:nrsBySys[s]||[],
           _isRaff:true,_fuehrungen:fuehrungen,_feldanzahl:feldanzahl,_aufhaengestangen:aufhaengestangen,
           _aufhaengPunkte:aufhaengPunkte,_apPerWP:apPerWP,_wCnt:wCnt,_totalWandAP:totalWandAP,
-          _hDrahtseil:hDrahtseil,_hAufhaeng:hAufhaeng,_hBedienseil:hBedienseil,_hWand:hWand});
+          _hDrahtseil:hDrahtseil,_hAufhaeng:hAufhaeng,_hBedienseil:hBedienseil,_hWand:hWand,_hBedienWand:hBedienWand,_bedienAPCnt:_bedienAPCntM});
         return;
       }
       if(!mk_s.ok)return;
@@ -3536,14 +3541,18 @@ function calcInstData(){
     const wCntR=fuehrungen*2;
     const apPerWPR={'typ1':2,'typ2':3,'typ3':4}[fragebogen.raffWandplattenTyp||'typ1']||2;
     const totalWandAPR=wCntR*apPerWPR;
-    const hWandR=totalWandAPR*(_uses18r?(mk_r.ap18||mk.ap18||0):(mk_r.ap10||mk.ap10||0));
-    const hRaff=hDrahtseilR+hAufhaengR+hBedienseilR+hWandR;
+    const _apRateR=_uses18r?(mk_r.ap18||mk.ap18||0):(mk_r.ap10||mk.ap10||0);
+    const hWandR=totalWandAPR*_apRateR;
+    const _bedienR=fragebogen.raffBediensatz||'soliday';
+    const _bedienAPCntR=_bedienR==='hauswand-doppelt'?4:(_bedienR==='hauswand-einfach'?2:0);
+    const hBedienWandR=_bedienAPCntR*_apRateR;
+    const hRaff=hDrahtseilR+hAufhaengR+hBedienseilR+hWandR+hBedienWandR;
     sailH=hRaff;
     const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
     sailRows.push({sys:sysU,count:sailCount,mk:mk_r,h:hRaff,welle:null,fraction:1,isFix:false,hasNonFix:true,verbCount:0,verbH:0,nrs:[],
       _isRaff:true,_fuehrungen:fuehrungen,_feldanzahl:feldanzahlR,_aufhaengestangen:aufhaengestangenR,
       _aufhaengPunkte:aufhaengPunkteR,_apPerWP:apPerWPR,_wCnt:wCntR,_totalWandAP:totalWandAPR,
-      _hDrahtseil:hDrahtseilR,_hAufhaeng:hAufhaengR,_hBedienseil:hBedienseilR,_hWand:hWandR});
+      _hDrahtseil:hDrahtseilR,_hAufhaeng:hAufhaengR,_hBedienseil:hBedienseilR,_hWand:hWandR,_hBedienWand:hBedienWandR,_bedienAPCnt:_bedienAPCntR});
   }else{
     const noVerb=['M','FLEX'].includes(sysU.replace('SOLIDAY-',''))||sysU.startsWith('SONNENSEGEL');
     const isFix=mcIsFix(sysU);
@@ -4279,6 +4288,33 @@ function renderStep5(){
       </div>
     </div>`;
     _wandBoxCount++;
+    // ── Bediensatz card ──
+    const _selBedien=fragebogen.raffBediensatz||selRaffBediensatz||'soliday';
+    const _isHauswand=_selBedien!=='soliday';
+    const _bedienAPCnt=_selBedien==='hauswand-doppelt'?4:2;
+    const _bedienAPRate=apDef||0;
+    const _bedienDefs=[
+      {v:'soliday',label:'Soliday Bedienset',sub:'Zugseillänge aus Angebot übernommen'},
+      {v:'hauswand-einfach',label:'Bedienset Hauswandmontage (Ziegel/Beton/Holzständer)',sub:'einfache Umlenkung'},
+      {v:'hauswand-doppelt',label:'Bedienset Hauswandmontage (Ziegel/Beton/Holzständer)',sub:'doppelte Umlenkung'},
+    ];
+    const _bedienRadios=_bedienDefs.map(b=>`<label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><input type="radio" name="raffBedien5" value="${b.v}"${_selBedien===b.v?' checked':''} onchange="selRaffBedien5('${b.v}')" style="accent-color:var(--accent);cursor:pointer;margin-top:2px"><span><strong>${b.label}</strong><br><span style="color:var(--muted);font-size:11px">${b.sub}</span></span></label>`).join('');
+    h+=`<div class="s5-card" style="margin-top:12px">
+      <div class="s5-card-hdr"><strong>Bediensatz</strong><span style="font-size:11px;color:var(--muted)">Zugseillänge aus Angebot</span></div>
+      <div class="s5-card-body">
+        <div style="display:flex;flex-direction:column;margin-bottom:${_isHauswand?'14px':'0'}">${_bedienRadios}</div>
+        ${_isHauswand?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm Dämmung':'bis 10cm Dämmung'}):</div>
+        <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
+          <span class="s5-lbl">${_bedienAPCnt} AP &times;</span>
+          <input type="number" class="s5-inp s5-w90" id="raffBedienAPP" value="${_bedienAPRate.toFixed(2)}" step="0.01" min="0" oninput="updRaffBedien()">
+          <span class="s5-unit">&euro;/AP</span>
+        </div>
+        <div class="s5-calc">
+          <span style="color:var(--muted)">${_bedienAPCnt} AP &times; <span id="raffBedienAPLbl">${fmtE(_bedienAPRate)}</span> =</span>
+          <strong id="raffBedienTot">${fmtE(_bedienAPCnt*_bedienAPRate)}</strong>
+        </div>`:``}
+      </div>
+    </div>`;
   }
   // WANDAUFPREIS card (when toggled in Fragebogen)
   if(fragebogen.wandaufpreis){
@@ -4347,6 +4383,7 @@ function renderStep5(){
           detailLines+=`<div>Aufh&auml;ngepunkte: (${r._feldanzahl}+1) Stangen &times; ${r._fuehrungen} F&uuml;hr. = ${r._aufhaengPunkte} AP &times; ${(_mk_r.raffAP||0).toFixed(3)}h = ${(r._hAufhaeng||0).toFixed(2)}h</div>`;
           detailLines+=`<div>Bedienseil: ${(r._hBedienseil||0).toFixed(2)}h</div>`;
           if((r._hWand||0)>0)detailLines+=`<div>Wandplatten Drahtseil: ${r._wCnt}&times;2 Drahtseile &times; ${r._apPerWP} AP &times; ${apRate2.toFixed(3)}h = ${(r._hWand||0).toFixed(2)}h</div>`;
+          if((r._hBedienWand||0)>0)detailLines+=`<div>Bediensatz Wandhalter: ${r._bedienAPCnt} AP &times; ${apRate2.toFixed(3)}h = ${(r._hBedienWand||0).toFixed(2)}h</div>`;
         }else{
           detailLines=`<div>${r.count} Segel: ${sailDetail}</div>`;
           if(sysMengeWand>0)detailLines+=`<div>${sysMengeWand}x Wandplatte (${sysApCntWand} AP &times; ${apRate2.toFixed(2)}h): ${sysApHWand.toFixed(2)}h</div>`;
@@ -4430,6 +4467,7 @@ function renderStep5(){
             <div>Aufh&auml;ngepunkte: (${_raffSingleRow._feldanzahl}+1) Stangen &times; ${_raffSingleRow._fuehrungen} F&uuml;hr. = ${_raffSingleRow._aufhaengPunkte} AP &times; ${(_raffSingleRow.mk?.raffAP||mk2?.raffAP||0).toFixed(3)}h = ${(_raffSingleRow._hAufhaeng||0).toFixed(2)}h</div>
             <div>Bedienseil: ${(_raffSingleRow._hBedienseil||0).toFixed(2)}h</div>
             ${(_raffSingleRow._hWand||0)>0?`<div>Wandplatten Drahtseil: ${_raffSingleRow._wCnt}&times;2 Drahtseile &times; ${_raffSingleRow._apPerWP} AP &times; ${apRate2.toFixed(3)}h = ${(_raffSingleRow._hWand||0).toFixed(2)}h</div>`:''}
+            ${(_raffSingleRow._hBedienWand||0)>0?`<div>Bediensatz Wandhalter: ${_raffSingleRow._bedienAPCnt} AP &times; ${apRate2.toFixed(3)}h = ${(_raffSingleRow._hBedienWand||0).toFixed(2)}h</div>`:''}
           </div>
           <div class="s5-irow" style="margin-top:6px">
             <span class="s5-lbl">Zusatzstunden</span>
@@ -4687,6 +4725,20 @@ function selRaffTyp5(v){
   selRaffWandTyp=v;
   fragebogen.raffWandplattenTyp=v;
   updRaff75();
+}
+function selRaffBedien5(v){
+  selRaffBediensatz=v;
+  fragebogen.raffBediensatz=v;
+  renderStep5();
+}
+function updRaffBedien(){
+  const isD=selRaffBediensatz==='hauswand-doppelt';
+  const apCnt=isD?4:2;
+  const apP=parseFloat(document.getElementById('raffBedienAPP')?.value)||0;
+  const lbl=document.getElementById('raffBedienAPLbl');
+  const tot=document.getElementById('raffBedienTot');
+  if(lbl)lbl.textContent=fmtE(apP);
+  if(tot)tot.textContent=fmtE(apCnt*apP);
 }
 function updWandS(wi){
   const pl=_wandschellen[wi];
