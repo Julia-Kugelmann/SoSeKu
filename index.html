@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:42 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 21:50 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4355,14 +4355,8 @@ function renderStep5(){
           <span style="font-size:10px;color:var(--muted)">${raffFuehr} F&uuml;hr. &rarr; ${wCnt} Platten</span>
         </div>
         <div style="display:flex;flex-direction:column;margin-bottom:10px">${_raffRadios}</div>
-        <div style="font-size:10px;color:var(--muted);margin-bottom:6px">${_raff75002S.pos?`Pos.&nbsp;${_raff75002S.pos}: `:''}${_raff75002S.name||'RAFF-M Drahtseil System'} &rarr; ${fmtE(_raff75002S.preis_einheit)}&thinsp;&euro; (aus Soliday-PDF)</div>
-        <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
-          <span class="s5-lbl">Klebeanker:</span>
-          <span id="raff75CalcRow" style="font-size:12px">${wCnt} &times; ${apPerWP} AP &times;</span>
-          <input type="number" class="s5-inp s5-w90" id="raff75APP" value="${ap2.toFixed(2)}" step="0.01" min="0" oninput="updRaff75()">
-          <span class="s5-unit">&euro;/AP</span>
-        </div>
         <div style="font-size:10px;color:var(--muted);margin:4px 0 2px">${wCnt}&times; Platten &times; ${apPerWP} AP/Platte = ${wCnt*apPerWP} AP &times; ${fmtE(ap2)}&thinsp;&euro;/AP = <span id="raff75AufExp">${fmtE(_auf75)}</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">${_raff75002S.pos?`Pos.&nbsp;${_raff75002S.pos}: `:''}${_raff75002S.name||'RAFF-M Drahtseil System'} &rarr; ${fmtE(_raff75002S.preis_einheit)}&thinsp;&euro; (aus Soliday-PDF)</div>
         <div class="s5-calc">
           <span style="color:var(--muted)">${fmtE(_raff75002S.preis_einheit)} + <span id="raff75Auf">${fmtE(_auf75)}</span> =</span>
           <strong id="raff75Tot">${fmtE(_tot75)}</strong>
