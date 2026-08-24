@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:20 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4399,15 +4399,6 @@ function renderStep5(){
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>Komponenten</span><span>${fmtE(_bMaterial)}</span></div>
           <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>Klebeanker${_klebeDetail?`<span style="font-size:10px;margin-left:6px">(${_klebeDetail})</span>`:''}</span><span>${fmtE(_bKlebe)}</span></div>
           <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;border-top:1px solid var(--border);padding-top:4px;margin-top:2px"><span>Bedienset gesamt</span><span style="color:var(--accent2)">${fmtE(_bTotal)}</span></div>
-        </div><div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wandhalterung Klebeanker (${(fragebogen.wandart||'').includes('18')?'18cm D&auml;mmung':'bis 10cm D&auml;mmung'}):</div>
-        <div class="s5-irow" style="flex-wrap:wrap;gap:4px">
-          <span class="s5-lbl">${_bedienAPCnt} AP &times;</span>
-          <input type="number" class="s5-inp s5-w90" id="raffBedienAPP" value="${_bedienAPRate.toFixed(2)}" step="0.01" min="0" oninput="updRaffBedien()">
-          <span class="s5-unit">&euro;/AP</span>
-        </div>
-        <div class="s5-calc">
-          <span style="color:var(--muted)">${_bedienAPCnt} AP &times; <span id="raffBedienAPLbl">${fmtE(_bedienAPRate)}</span> =</span>
-          <strong id="raffBedienTot">${fmtE(_bedienAPCnt*_bedienAPRate)}</strong>
         </div>`:``}
       </div>
     </div>`;
