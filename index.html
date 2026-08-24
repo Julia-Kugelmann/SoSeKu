@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 15:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 16:45 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3356,7 +3356,7 @@ function findMontSysCol(hdrRow,sysU){
   return 1; // fallback: col B
 }
 function parseMontKalkMatrix(rows,sysU){
-  const result={grundpreis:0,weiteresSegel:0,schraubfund:0,verbZuschlag:0,ap10:0,ap18:0,elekHoeh:0,ok:false};
+  const result={grundpreis:0,weiteresSegel:0,schraubfund:0,verbZuschlag:0,ap10:0,ap18:0,elekHoeh:0,raffFuehr:0,raffAP:0,raffBedienseil:0,ok:false};
   if(!rows||rows.length<4)return result;
   // Find header row: first row where col B or C has system-like text
   let hdrIdx=-1;
@@ -3376,6 +3376,10 @@ function parseMontKalkMatrix(rows,sysU){
     else if(lbl.includes('10cm')||lbl.includes('10 cm')) result.ap10=parseDE(r[1])||result.ap10;
     else if(lbl.includes('18cm')||lbl.includes('18 cm')) result.ap18=parseDE(r[1])||result.ap18;
     else if(lbl.includes('elektrisch')&&(lbl.includes('höhenverstellung')||lbl.includes('c-system')||lbl.includes('c system'))) result.elekHoeh=parseDE(r[1])||result.elekHoeh;
+    // Raff-M Drahtseil Zeitbausteine (col B, system-unabhängig)
+    else if(lbl.includes('raff')&&lbl.includes('führung')&&lbl.includes('drahtseil')) result.raffFuehr=parseDE(r[1])||result.raffFuehr;
+    else if(lbl.includes('raff')&&(lbl.includes('aufhäng')||lbl.includes('aufhaeng'))) result.raffAP=parseDE(r[1])||result.raffAP;
+    else if(lbl.includes('raff')&&lbl.includes('bedienseil')) result.raffBedienseil=parseDE(r[1])||result.raffBedienseil;
   }
   result.ok=result.grundpreis>0;
   return result;
@@ -3431,7 +3435,7 @@ function parseVerbinderMatrix(rows,sysU){
 // ── Montagekosten-Berechnung ─────────────────────────────────────────────
 function calcInstData(){
   const mk=prices5.montKalkParsed;
-  if(!mk||!mk.ok||!prices5.stundensatz) return{price:0,sailH:0,hwH:0,totalH:0,sailRows:[]};
+  if(!mk||!prices5.stundensatz) return{price:0,sailH:0,hwH:0,totalH:0,sailRows:[]};
   const sysU=(soSeKuJSON.system||'').toUpperCase();
   const wellenM=soSeKuJSON.wellenlaenge_aufrollsystem_mm?Math.ceil(soSeKuJSON.wellenlaenge_aufrollsystem_mm/1000):0;
 
@@ -3463,8 +3467,33 @@ function calcInstData(){
       (nrsBySys[s]||(nrsBySys[s]=[])).push(nr);
     });
     const totalCount=Object.values(sailsBySys).reduce((a,b)=>a+b,0)||1;
+    const _uses18=(fragebogen.wandart||'').includes('18');
     Object.entries(sailsBySys).forEach(([s,count])=>{
       const mk_s=parseMontKalkMatrix(prices5.montRowsRaw,s);
+      // ── RAFF-M: separate time calculation ──
+      if(s.startsWith('RAFF')){
+        const hw75=transformedData.sektionen.filter(sk=>sk.id==='segelsystem').flatMap(sk=>sk.positionen).find(p=>p.artikelnummer==='75002S');
+        const fuehrungen=hw75?._raffFuehrungen||0;
+        const raffSail=(_sailPos||[]).find(p=>(segelSys[Number(p.segel_nr)||1]||'').toUpperCase().startsWith('RAFF'));
+        const _rdLines=(raffSail?.beschreibung||'').split('\n');
+        const feldanzahl=parseInt((_rdLines.find(l=>/^\s*Feldanzahl[:\s]/i.test(l))||'').match(/\d+/)?.[0]||'0')||0;
+        const aufhaengestangen=feldanzahl+1;
+        const aufhaengPunkte=aufhaengestangen*fuehrungen;
+        const hDrahtseil=fuehrungen*(mk.raffFuehr||0);
+        const hAufhaeng=aufhaengPunkte*(mk.raffAP||0);
+        const hBedienseil=mk.raffBedienseil||0;
+        const wCnt=fuehrungen*2;
+        const apPerWP={'typ1':2,'typ2':3,'typ3':4}[fragebogen.raffWandplattenTyp||'typ1']||2;
+        const totalWandAP=wCnt*apPerWP;
+        const hWand=totalWandAP*(_uses18?(mk_s.ap18||mk.ap18):(mk_s.ap10||mk.ap10));
+        const h=hDrahtseil+hAufhaeng+hBedienseil+hWand;
+        sailH+=h;
+        sailRows.push({sys:s,count,mk:mk_s,h,welle:null,fraction:count/totalCount,isFix:false,hasNonFix:true,verbCount:0,verbH:0,nrs:nrsBySys[s]||[],
+          _isRaff:true,_fuehrungen:fuehrungen,_feldanzahl:feldanzahl,_aufhaengestangen:aufhaengestangen,
+          _aufhaengPunkte:aufhaengPunkte,_apPerWP:apPerWP,_wCnt:wCnt,_totalWandAP:totalWandAP,
+          _hDrahtseil:hDrahtseil,_hAufhaeng:hAufhaeng,_hBedienseil:hBedienseil,_hWand:hWand});
+        return;
+      }
       if(!mk_s.ok)return;
       const isFix=mcIsFix(s);
       const hasNonFix=Object.keys(sailsBySys).some(s2=>!mcIsFix(s2));
@@ -3477,6 +3506,31 @@ function calcInstData(){
       const verbH=verbCount*(mk_s.verbZuschlag||mk.verbZuschlag||0);
       sailRows.push({sys:s,count,mk:mk_s,h,welle,fraction:count/totalCount,isFix,hasNonFix,verbCount,verbH,nrs:nrsBySys[s]||[]});
     });
+  }else if(sysU.startsWith('RAFF')){
+    // Pure RAFF-M system (single system, possibly multiple sails)
+    const _uses18r=(fragebogen.wandart||'').includes('18');
+    const mk_r=parseMontKalkMatrix(prices5.montRowsRaw,sysU);
+    const hw75r=transformedData.sektionen.filter(sk=>sk.id==='segelsystem').flatMap(sk=>sk.positionen).find(p=>p.artikelnummer==='75002S');
+    const fuehrungen=hw75r?._raffFuehrungen||0;
+    const raffSailR=(_sailPos||[]).find(p=>true);
+    const _rdLinesR=(raffSailR?.beschreibung||'').split('\n');
+    const feldanzahlR=parseInt((_rdLinesR.find(l=>/^\s*Feldanzahl[:\s]/i.test(l))||'').match(/\d+/)?.[0]||'0')||0;
+    const aufhaengestangenR=feldanzahlR+1;
+    const aufhaengPunkteR=aufhaengestangenR*fuehrungen;
+    const hDrahtseilR=fuehrungen*(mk_r.raffFuehr||mk.raffFuehr||0);
+    const hAufhaengR=aufhaengPunkteR*(mk_r.raffAP||mk.raffAP||0);
+    const hBedienseilR=mk_r.raffBedienseil||mk.raffBedienseil||0;
+    const wCntR=fuehrungen*2;
+    const apPerWPR={'typ1':2,'typ2':3,'typ3':4}[fragebogen.raffWandplattenTyp||'typ1']||2;
+    const totalWandAPR=wCntR*apPerWPR;
+    const hWandR=totalWandAPR*(_uses18r?(mk_r.ap18||mk.ap18||0):(mk_r.ap10||mk.ap10||0));
+    const hRaff=hDrahtseilR+hAufhaengR+hBedienseilR+hWandR;
+    sailH=hRaff;
+    const sailCount=Math.max(1,(_sailPos||[]).reduce((s,p)=>s+(p._merged||1),0)||1);
+    sailRows.push({sys:sysU,count:sailCount,mk:mk_r,h:hRaff,welle:null,fraction:1,isFix:false,hasNonFix:true,verbCount:0,verbH:0,nrs:[],
+      _isRaff:true,_fuehrungen:fuehrungen,_feldanzahl:feldanzahlR,_aufhaengestangen:aufhaengestangenR,
+      _aufhaengPunkte:aufhaengPunkteR,_apPerWP:apPerWPR,_wCnt:wCntR,_totalWandAP:totalWandAPR,
+      _hDrahtseil:hDrahtseilR,_hAufhaeng:hAufhaengR,_hBedienseil:hBedienseilR,_hWand:hWandR});
   }else{
     const noVerb=['M','FLEX'].includes(sysU.replace('SOLIDAY-',''))||sysU.startsWith('SONNENSEGEL');
     const isFix=mcIsFix(sysU);
@@ -4216,7 +4270,7 @@ function renderStep5(){
   if(instPos){
     const mi=monPosIdx[instPos.artikelnummer];
     const gp=gsMonPreis(instPos.artikelnummer);
-    if(mk2?.ok && _instData.sailRows.length>1){
+    if(_instData.sailRows.length>1&&(mk2?.ok||_instData.sailRows.some(r=>r._isRaff))){
       // ═══ Multi-system: one full box per system, hardware from exact sections ═══
       const _subHs=[];
       _instData.sailRows.forEach((r,ri)=>{
@@ -4239,7 +4293,7 @@ function renderStep5(){
         sysBodenpl.forEach(pl=>{const ap=prices5.apAnzahl[pl.artikelnummer]||0;const cnt=Math.max(1,Math.round(pl.menge));sysApHBoden+=ap*cnt*(mk2?.ap10||0);sysApCntBoden+=ap*cnt;sysMengeBoden+=cnt;});
         const sysSFh=sysSFcnt*(mk2.schraubfund||0);
         const sysVerbH=r.verbH||0;
-        const subH=r.h+sysApHWand+sysApHBoden+sysSFh+sysVerbH;
+        const subH=_isRaffRow?r.h:(r.h+sysApHWand+sysApHBoden+sysSFh+sysVerbH);
         const subRaw=subH*prices5.stundensatz;
         _subHs.push(subH);
         const welleChip=(_isRaffRow||!r.welle)?'':(`${r.welle}m Welle`);
@@ -4247,13 +4301,22 @@ function renderStep5(){
         const sfChip=sysSFcnt>0?`${sysSFcnt}&times; SF`:'';
         const nrLabel=(r.nrs&&r.nrs.length)?r.nrs.map(n=>'Segel '+n).join(' + '):'';
         const sysShortChip=_isRaffRow?'Raff-M':(MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-',''));
-        const wandChip2=(sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'';
-        const sfChip2=sysSFcnt>0?`${sysSFcnt}&times; SF`:'';
-        let detailLines=`<div>${r.count} Segel: ${sailDetail}</div>`;
-        if(sysMengeWand>0)detailLines+=`<div>${sysMengeWand}x Wandplatte (${sysApCntWand} AP &times; ${apRate2.toFixed(2)}h): ${sysApHWand.toFixed(2)}h</div>`;
-        if(sysMengeBoden>0)detailLines+=`<div>${sysMengeBoden}x Bodenplatte (${sysApCntBoden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${sysApHBoden.toFixed(2)}h</div>`;
-        if(sysSFcnt>0)detailLines+=`<div>Schraubfundamente (${sysSFcnt} &times; ${(mk2.schraubfund||0).toFixed(2)}h): ${sysSFh.toFixed(2)}h</div>`;
-        if(r.verbCount>0)detailLines+=`<div>Wellen-Verbinder ${r.welle}m (${r.verbCount} &times; ${(mk2.verbZuschlag||0).toFixed(2)}h): ${sysVerbH.toFixed(2)}h</div>`;
+        const wandChip2=_isRaffRow?(r._fuehrungen?`${r._fuehrungen}&times; F&uuml;hr.`:''):((sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'');
+        const sfChip2=_isRaffRow?'':(sysSFcnt>0?`${sysSFcnt}&times; SF`:'');
+        let detailLines;
+        if(_isRaffRow){
+          const _mk_r=r.mk||{};
+          detailLines=`<div>Drahtseil Montage: ${r._fuehrungen} F&uuml;hr. &times; ${(_mk_r.raffFuehr||0).toFixed(3)}h = ${(r._hDrahtseil||0).toFixed(2)}h</div>`;
+          detailLines+=`<div>Aufh&auml;ngepunkte: (${r._feldanzahl}+1) Stangen &times; ${r._fuehrungen} F&uuml;hr. = ${r._aufhaengPunkte} AP &times; ${(_mk_r.raffAP||0).toFixed(3)}h = ${(r._hAufhaeng||0).toFixed(2)}h</div>`;
+          detailLines+=`<div>Bedienseil: ${(r._hBedienseil||0).toFixed(2)}h</div>`;
+          if((r._hWand||0)>0)detailLines+=`<div>Wandplatten Drahtseil: ${r._wCnt}&times;2 Drahtseile &times; ${r._apPerWP} AP &times; ${apRate2.toFixed(3)}h = ${(r._hWand||0).toFixed(2)}h</div>`;
+        }else{
+          detailLines=`<div>${r.count} Segel: ${sailDetail}</div>`;
+          if(sysMengeWand>0)detailLines+=`<div>${sysMengeWand}x Wandplatte (${sysApCntWand} AP &times; ${apRate2.toFixed(2)}h): ${sysApHWand.toFixed(2)}h</div>`;
+          if(sysMengeBoden>0)detailLines+=`<div>${sysMengeBoden}x Bodenplatte (${sysApCntBoden} AP &times; ${(mk2?.ap10||0).toFixed(2)}h): ${sysApHBoden.toFixed(2)}h</div>`;
+          if(sysSFcnt>0)detailLines+=`<div>Schraubfundamente (${sysSFcnt} &times; ${(mk2.schraubfund||0).toFixed(2)}h): ${sysSFh.toFixed(2)}h</div>`;
+          if(r.verbCount>0)detailLines+=`<div>Wellen-Verbinder ${r.welle}m (${r.verbCount} &times; ${(mk2.verbZuschlag||0).toFixed(2)}h): ${sysVerbH.toFixed(2)}h</div>`;
+        }
         h+=`<div class="s5-card"${ri>0?' style="margin-top:12px"':''}>
           <div class="s5-card-hdr" style="align-items:flex-start">
             <div><strong>System Installation &ndash; ${sysLbl}</strong>${nrLabel?`<div style="font-size:11px;font-weight:600;color:#ffb300;margin-top:2px">${nrLabel}</div>`:''}</div>
@@ -4307,19 +4370,31 @@ function renderStep5(){
       const sailHdr=sailCount2>1?`<span style="color:#ffb300">${sailCount2}× Segel</span>`:'';
       const welleHdr=wellenM2>0?`${wellenM2}m Welle`:'';
       const elekHvHdr=elekHoehH2>0?'elektr. Höhenverst.':'';
-      const _raffHdr=sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'';
+      const _raffSingleRow=_instData.sailRows.length===1&&_instData.sailRows[0]?._isRaff?_instData.sailRows[0]:null;
+      const _raffHdr=sys.startsWith('RAFF')&&_raffSingleRow?`${_raffSingleRow._fuehrungen} Führ.`:(sys.startsWith('RAFF')&&fragebogen.raffMonStunden>0?`${fragebogen.raffMonStunden}h manuell`:'');
       const hdrChips=[welleHdr,sailHdr,plateParts.join(' '),sfHdr,elekHvHdr,_raffHdr].filter(Boolean).join('<br>');
-      if(mk2?.ok)_s5CachedMultiTotalSubH=totalH2;
+      if(mk2?.ok||_raffSingleRow)_s5CachedMultiTotalSubH=totalH2;
       const _gpStoredS=Number(_gsMonPos[mi]?.preis_einheit||0);
       const _raffH=sys.startsWith('RAFF')?(fragebogen.raffMonStunden||0):0;
-      const _gpInitS=_gpStoredS>0?_gpStoredS:(_raffH>0?Math.ceil(_raffH*(prices5.stundensatz||0)/10)*10:(mk2?.ok?Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10:gp));
+      const _raffAutoH=_raffSingleRow?totalH2:0;
+      const _gpInitS=_gpStoredS>0?_gpStoredS:(_raffAutoH>0?Math.ceil(_raffAutoH*(prices5.stundensatz||0)/10)*10:(_raffH>0?Math.ceil(_raffH*(prices5.stundensatz||0)/10)*10:(mk2?.ok?Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10:gp)));
       h+=`<div class="s5-card">
         <div class="s5-card-hdr" style="align-items:flex-start">
           <strong>${instPos.name}</strong>
           <span style="font-size:14px;font-weight:700;color:var(--accent2);text-align:right;line-height:1.7;white-space:nowrap">${hdrChips}</span>
         </div>
         <div class="s5-card-body">
-          ${sys.startsWith('RAFF')?`<div class="s5-calc-detail" style="margin-bottom:6px"><div>Manuelle Stunden aus Schritt 4: ${_raffH}h</div>${_raffH>0&&prices5.stundensatz>0?`<div>${_raffH}h &times; ${fmtE(prices5.stundensatz)} = ${fmtE(Math.ceil(_raffH*(prices5.stundensatz||0)/10)*10)}</div>`:''}</div>`:''}
+          ${_raffSingleRow?`<div class="s5-calc-detail" style="margin-bottom:6px">
+            <div>Drahtseil Montage: ${_raffSingleRow._fuehrungen} F&uuml;hr. &times; ${(_raffSingleRow.mk?.raffFuehr||mk2?.raffFuehr||0).toFixed(3)}h = ${(_raffSingleRow._hDrahtseil||0).toFixed(2)}h</div>
+            <div>Aufh&auml;ngepunkte: (${_raffSingleRow._feldanzahl}+1) Stangen &times; ${_raffSingleRow._fuehrungen} F&uuml;hr. = ${_raffSingleRow._aufhaengPunkte} AP &times; ${(_raffSingleRow.mk?.raffAP||mk2?.raffAP||0).toFixed(3)}h = ${(_raffSingleRow._hAufhaeng||0).toFixed(2)}h</div>
+            <div>Bedienseil: ${(_raffSingleRow._hBedienseil||0).toFixed(2)}h</div>
+            ${(_raffSingleRow._hWand||0)>0?`<div>Wandplatten Drahtseil: ${_raffSingleRow._wCnt}&times;2 Drahtseile &times; ${_raffSingleRow._apPerWP} AP &times; ${apRate2.toFixed(3)}h = ${(_raffSingleRow._hWand||0).toFixed(2)}h</div>`:''}
+          </div>
+          <div class="s5-irow" style="margin-top:6px">
+            <span class="s5-lbl">Zusatzstunden</span>
+            <input type="number" class="s5-inp s5-w70" id="mInstExtraH" value="0" step="0.25" min="0" oninput="_updInstGesamt(${mi})" style="text-align:right">
+            <span class="s5-unit">h</span>
+          </div>`:(sys.startsWith('RAFF')?`<div class="s5-calc-detail" style="margin-bottom:6px"><div>Manuelle Stunden aus Schritt 4: ${_raffH}h</div>${_raffH>0&&prices5.stundensatz>0?`<div>${_raffH}h &times; ${fmtE(prices5.stundensatz)} = ${fmtE(Math.ceil(_raffH*(prices5.stundensatz||0)/10)*10)}</div>`:''}</div>`:(!mk2?.ok?'':null))}
           ${!sys.startsWith('RAFF')&&mk2?.ok?`<div class="s5-calc-detail">
             <div>Segel (${sailCount2}${sailCount2>1?` Stk. &middot; GP+${mk2.weiteresSegel}h/Stk.`:''} &times; GP ${mk2.grundpreis}h): ${sailH2.toFixed(2)}h</div>
             ${apCnt2Wand>0?`<div>${totalMengeWand2}x Wandplatte (${apCnt2Wand} AP &times; ${apRate2.toFixed(2)}h): ${apH2Wand.toFixed(2)}h</div>`:''}
@@ -4337,7 +4412,7 @@ function renderStep5(){
             <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${_gpInitS.toFixed(2)}" step="0.01" min="0" oninput="updMonSum();updGv('mP${mi}')">
             <span class="s5-unit">&euro;</span>
           </div>
-          ${!sys.startsWith('RAFF')&&mk2?.ok?`<div class="s5-calc">
+          ${(_raffSingleRow||(!sys.startsWith('RAFF')&&mk2?.ok))?`<div class="s5-calc">
             <span style="color:var(--muted)" id="mInstGesamtCalcLbl">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
             <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10)}</strong><span class="s5-raw" id="mInstGesamtRaw">${(()=>{const raw=totalH2*(prices5.stundensatz||0);const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
           </div>`:''}
