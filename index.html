@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:22 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 22:28 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4459,9 +4459,9 @@ function renderStep5(){
         const sfChip=sysSFcnt>0?`${sysSFcnt}&times; SF`:'';
         const nrLabel=(r.nrs&&r.nrs.length)?r.nrs.map(n=>'Segel '+n).join(' + '):'';
         const sysShortChip=_isRaffRow?'Raff-M':(MC_SYS_LABEL[r.sys]||r.sys.replace('SOLIDAY-',''));
-        const wandChip2=_isRaffRow?(r._fuehrungen?`${r._fuehrungen} F&uuml;hr.`:''):((sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'');
+        const wandChip2=_isRaffRow?(r._fuehrungen?`${r._fuehrungen} F&uuml;hr. &rarr; ${r._wCnt} Wandpl.`:''):((sysMengeWand+sysMengeBoden)>0?`${sysMengeWand+sysMengeBoden}&times; Wand`:'');
         const raffTuchChip=_isRaffRow&&r._aufhaengestangen?`${r._feldanzahl||''} Felder &rarr; ${r._aufhaengestangen} Profile`:'';
-        const raffWandChip=_isRaffRow&&r._wCnt?`${r._wCnt}&times; Wandpl. Drahtseil`:'';
+        const raffWandChip=(()=>{if(!_isRaffRow)return '';const _selBR=fragebogen.raffBediensatz||'soliday';if(_selBR==='soliday'||!_raffBedienPreis.done||!_raffBedienPreis.items.length)return '';const _isDblR=_selBR==='hauswand-doppelt';const apItemsR=_raffBedienPreis.items.filter(it=>it.apCount>0&&(_isDblR?it.qtyD:it.qtyE)>0);if(!apItemsR.length)return '';const _ab=nm=>{if(/ringschraube/i.test(nm))return'Ringschr.';if(/backenklemm|wandplatte.*clamcleat|clamcleat.*wandplatte/i.test(nm))return'Clamcleat Pl.';return nm.split(' ').slice(0,2).join(' ');};return apItemsR.map(it=>`${_isDblR?it.qtyD:it.qtyE}&times; ${_ab(it.name)}`).join(' &middot; ');})();
         const sfChip2=_isRaffRow?'':(sysSFcnt>0?`${sysSFcnt}&times; SF`:'');
         const raffSfChip2=sfChip2;
         let detailLines;
