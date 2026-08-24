@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 14:46 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 15:04 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1774,11 +1774,21 @@ function _transformiereKern(json){
       const rawDesc=p.beschreibung||'';
       const fuM=rawDesc.match(/F[üu]hrungen[:\s,]*(\d+)/i);
       if(fuM)raffFuehr=Math.max(raffFuehr,parseInt(fuM[1])||0);
-      p.beschreibung=rawDesc.split('\n').filter(l=>
-        !/^\s*Farbe[:\s]/i.test(l)&&
-        !/^\s*Fl[äa]che[:\s]/i.test(l)&&
-        !/^\s*Effektive\s+L[äa]nge[:\s]/i.test(l)
-      ).join('\n').trim();
+      const _rls=rawDesc.split('\n');
+      const _rv=re=>((_rls.find(l=>re.test(l))||'').replace(re,'').replace(/^[\s:]+/,'').trim());
+      const _sb=_rv(/^\s*Segelbreite\s*:/i).replace(/mm$/i,'');
+      const _sl=_rv(/^\s*Segell[äa]nge\s*:/i).replace(/mm$/i,'');
+      const _ko=_rv(/^\s*Konfektion\s*:/i);
+      const _rc=_rv(/^\s*Raincut\s*:/i);
+      const _fa=_rv(/^\s*Feldanzahl\s*:/i);
+      const _fu=_rv(/^\s*F[üu]hrungen\s*:/i);
+      const _dp=[];
+      if(_sb&&_sl)_dp.push(`${_sb} × ${_sl}mm`);
+      if(_ko)_dp.push(`Konfektion: ${_ko}`);
+      if(/^ja$/i.test(_rc))_dp.push('Raincut');
+      if(_fa)_dp.push(`Feldanzahl: ${_fa}`);
+      if(_fu)_dp.push(`Führungen: ${_fu}`);
+      p.beschreibung=_dp.join('\n');
       p._raffSail=true;
       return p;
     });
@@ -4051,12 +4061,16 @@ function renderStep5(){
         sail._raffQmFlaeche=_flaecheQm;
         sail._raffBillingQm=_bQm;
         sail._raffPreisQm=_preisQm;
-        // Filter: exclude Farbe, Fläche, Effektive Länge from display
-        const raffDesc=_descLines.filter(l=>
-          !/^\s*Farbe[:\s]/i.test(l)&&
-          !/^\s*Fl[äa]che[:\s]/i.test(l)&&
-          !/^\s*Effektive\s+L[äa]nge[:\s]/i.test(l)
-        ).join('\n').trim();
+        // Display: use pre-formatted beschreibung from transformedData (already structured)
+        // Fallback: format from raw sail.beschreibung if transformedData not available
+        const _fmtRaffDesc=raw=>{
+          const L=(raw||'').split('\n');
+          const rv=re=>(L.find(l=>re.test(l))||'').replace(re,'').replace(/^[\s:]+/,'').trim();
+          const sb=rv(/^\s*Segelbreite\s*:/i).replace(/mm$/i,''),sl=rv(/^\s*Segell[äa]nge\s*:/i).replace(/mm$/i,'');
+          const ko=rv(/^\s*Konfektion\s*:/i),rc=rv(/^\s*Raincut\s*:/i),fa=rv(/^\s*Feldanzahl\s*:/i),fu=rv(/^\s*F[üu]hrungen\s*:/i);
+          return [[sb&&sl,`${sb} × ${sl}mm`],[ko,`Konfektion: ${ko}`],[/^ja$/i.test(rc),'Raincut'],[fa,`Feldanzahl: ${fa}`],[fu,`Führungen: ${fu}`]].filter(([c])=>c).map(([,v])=>v).join('\n');
+        };
+        const raffDesc=_tSailPos?.beschreibung||_fmtRaffDesc(sail.beschreibung);
         const _isMS5r=transformedData.isMultiSegel;
         const _nrBadge5=_isMS5r?`<span style="font-size:11px;font-weight:600;color:#ffb300;margin-left:8px">&middot; Segel ${_sailNr}</span>`:'';
         h+=`<div class="s5-card"${si>0?' style="margin-top:12px"':''}>
