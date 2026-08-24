@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 20:12 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-24 20:28 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4305,7 +4305,7 @@ function renderStep5(){
       {v:'typ2',label:'Raff-M Drahtseil Wandplatte Typ 2 - extra lang',ap:3},
       {v:'typ3',label:'Raff-M Drahtseil Wandplatte Typ 3 - Viereck',ap:4}
     ];
-    const _raffRadios=_raffTypDefs.map(t=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)"><input type="radio" name="raffWandTyp5" value="${t.v}"${selTyp===t.v?' checked':''} onchange="selRaffTyp5('${t.v}')" style="accent-color:var(--accent);cursor:pointer"><span><strong>${t.label}</strong>&ensp;<span style="color:var(--muted)">&#8212; ${t.ap} Klebeanker/Platte</span></span></label>`).join('');
+    const _raffRadios=_raffTypDefs.map(t=>`<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:12px;padding:5px 0;border-bottom:1px solid var(--border)"><input type="radio" name="raffWandTyp5" value="${t.v}"${selTyp===t.v?' checked':''} onchange="selRaffTyp5('${t.v}')" style="accent-color:var(--accent);cursor:pointer"><span style="display:flex;flex-direction:column;gap:1px"><strong>${t.label}</strong><span style="font-size:10px;color:var(--muted)">${t.ap} Klebeanker/Platte</span></span></label>`).join('');
     // Segel-Nr des RAFF-M Segels ermitteln
     const _raffSegelNrs=new Set(Object.entries(transformedData.segelSystems||{}).filter(([,s])=>s.toUpperCase().startsWith('RAFF')).map(([nr])=>Number(nr)));
     const _selBedien=fragebogen.raffBediensatz||selRaffBediensatz||'soliday';
@@ -4335,6 +4335,9 @@ function renderStep5(){
         ?`<div style="border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:10px">${_bRows}<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding-top:6px"><span>Material gesamt:</span><span style="color:var(--accent2)">${fmtE(_bTotal)}</span></div></div>`
         :`<div style="font-size:11px;color:var(--warn);margin-bottom:8px">Tab "Raff-M Bedienset Wandmontage" nicht gefunden</div>`)
       :`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">Wird geladen…</div>`;
+    const _bedienSummary=_isHauswand&&_raffBedienPreis.done&&_raffBedienPreis.items.length>0
+      ?_raffBedienPreis.items.filter(it=>(_isDbl?it.qtyD:it.qtyE)>0).map(it=>`${_isDbl?it.qtyD:it.qtyE}&times; ${it.name}`).join(' &middot; ')
+      :'';
     const _sList=!_isHauswand&&_solidayBedPos
       ?`<div style="border:1px solid var(--border);border-radius:6px;padding:8px;margin:6px 0 4px">`+
        `<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:2px 0;border-bottom:1px solid var(--border)">`+
@@ -4343,7 +4346,7 @@ function renderStep5(){
        `<div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;color:var(--muted)"><span>Klebeanker: 0 AP</span><span>${fmtE(0)}</span></div>`+
        `<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding-top:4px"><span>Material gesamt:</span><span style="color:var(--accent2)">${fmtE(_solidayBedGesamt)}</span></div></div>`
       :``;
-    h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>RAFF-M</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><span style="font-size:14px;font-weight:700;color:var(--accent2)">${wCnt}&times; Platten</span></div>
+    h+=`<div class="s5-card"${_wandBoxCount>0?' style="margin-top:12px"':''}><div class="s5-card-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><strong>RAFF-M</strong>${_isMS5?_segelBadge(_raffSegelNrs):''}</div><span style="font-size:13px;font-weight:700;color:var(--accent2)">${raffFuehr} F&uuml;hr. &rarr; ${wCnt}&times; Wand</span></div>
       <div class="s5-card-body">
         <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:11px;font-weight:700;color:var(--fg)">F&uuml;hrungen &amp; Wandplatten</span>
@@ -4363,7 +4366,7 @@ function renderStep5(){
         <div style="border-top:1px solid var(--border);margin:12px 0 10px"></div>
         <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
           <span style="font-size:11px;font-weight:700;color:var(--fg)">Bedienung</span>
-          <span style="font-size:10px;color:var(--muted)">Zugseil aus Angebot</span>
+          <span style="font-size:10px;color:${_isHauswand&&_bedienSummary?'var(--accent2)':'var(--muted)'}">${_isHauswand&&_bedienSummary?_bedienSummary:'Zugseil aus Angebot'}</span>
         </div>
         <div style="border-bottom:1px solid var(--border);padding-bottom:6px;margin-bottom:6px">${_mkRadio('soliday','Standard Soliday Bedienset (Pergola Montage)')}${_sList}</div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Bedienset Wandmontage &mdash; Ziegel / Beton / Holzst&auml;nder</div>
