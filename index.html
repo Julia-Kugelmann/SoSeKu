@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 12:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 12:28 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -5018,8 +5018,25 @@ function applyPrices5(){
   // 5B: RAFF-M — Bedienset Wandmontage (only for hauswand-einfach / hauswand-doppelt)
   {
     const _raffBedSel=fragebogen.raffBediensatz||'soliday';
-    const _bedSekTarget=transformedData.sektionen.find(s=>s.id==='wandbefestigungen')
-                      ||transformedData.sektionen.find(s=>s.id==='zubehoer');
+    const _raffSek75=transformedData.sektionen.find(s=>s.id==='segelsystem'&&s.positionen.some(p=>p.artikelnummer==='75002S'));
+    const _raffSegelNr=_raffSek75?._segelNr;
+    const _bedSekTarget=(_raffSegelNr!=null
+      ? transformedData.sektionen.find(s=>s._segelNr===_raffSegelNr&&s.id==='zubehoer')
+        ||transformedData.sektionen.find(s=>s._segelNr===_raffSegelNr&&s.id==='wandbefestigungen')
+      : null)
+      ||transformedData.sektionen.find(s=>s.id==='zubehoer')
+      ||transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
+    // Mark/unmark Soliday standard bedienset positions in RAFF-M sections
+    const _raffSeksAll=_raffSegelNr!=null
+      ? transformedData.sektionen.filter(s=>s._segelNr===_raffSegelNr)
+      : transformedData.sektionen;
+    _raffSeksAll.forEach(sk=>{
+      sk.positionen.forEach(p=>{
+        if(/(seilzugsystem|spannseil)/i.test(p.name||'')){
+          p._skipForBedienset=_raffBedSel!=='soliday';
+        }
+      });
+    });
     if(_bedSekTarget){
       if(_raffBedSel!=='soliday'&&_raffBedienPreis.done&&_raffBedienPreis.items.length>0){
         const _isDblB=_raffBedSel==='hauswand-doppelt';
@@ -5154,7 +5171,7 @@ function _buildKopfCombined(){
 }
 function buildSevdeskPositions(){
   const rows=[];
-  const addPos=p=>rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});
+  const addPos=p=>{if(p._skipForBedienset)return;rows.push({type:'pos',name:p.name,beschreibung:p.beschreibung||'',menge:Number((p.menge||1).toFixed(4)),einheit:p.einheit||'Stk.',preis_einheit:Number(p.preis_einheit||0),gesamt:Number(p.gesamt||0),artikelnummer:p.artikelnummer||''});};
   if(transformedData.isMultiSegel){
     const sysFull=transformedData.effectiveSys||soSeKuJSON.system||'SOLIDAY-C';
     const segelNrs=transformedData.segelNrs||[];
