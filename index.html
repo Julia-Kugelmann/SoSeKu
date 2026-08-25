@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 13:28 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 19:40 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1012,6 +1012,7 @@ let _s3MengeOverride={}; // manuell geänderte Mengen im zusammengefasst-Modus {
 let fragebogen={},selZoneNr=2,selWandart='ziegel-10',selDach=false,selEigenleistung=false,selWandaufpreis=false,selTermine=2,selMontage=true,selAnfahrtVoll=false,selRaffWandTyp='typ1',selRaffMonStunden=0,selRaffBediensatz='soliday',extractAttempts=0,maxStep=0;
 let stepState={};
 let selManualH=null;
+let _s5FrachtTyp='VERSAND'; // 'VERSAND' | 'VORFRACHT', set in renderStep5
 let _s5CachedTotalH=0; // cached from renderStep5 for selS5Termine
 let _s5CachedSailH=0;
 let _s5CachedHardwareH=0;
@@ -4008,6 +4009,8 @@ function renderStep5(){
   // Fallback: if system not extracted, infer from data
   if(!sys) sys=(soSeKuJSON.wellenlaenge_aufrollsystem_mm||0)>0?'SOLIDAY':'SONNENSEGEL-MASS';
   const sysLabel2=sys.startsWith('SOLIDAY-')?'Soliday '+sys.replace('SOLIDAY-',''):sys.startsWith('SONNENSEGEL')?'Fix Segel':sys;
+  const _isRaffSys5=sys.startsWith('RAFF')||(soSeKuJSON.system||'').toUpperCase().startsWith('RAFF')||(Object.values(soSeKuJSON.segelSystems||{}).some(s=>(s||'').toUpperCase().startsWith('RAFF')));
+  _s5FrachtTyp=_isRaffSys5?'VORFRACHT':(_s5FrachtTyp||'VERSAND');
   const withMontage=fragebogen.montage!==false;
   const wandartForAP=(fragebogen.wandart==='freistehend'||!fragebogen.wandart)?'ziegel-10':fragebogen.wandart;
   const apDef=withMontage?(prices5.apPreis[wandartForAP]||0):0;
@@ -4688,20 +4691,22 @@ function renderStep5(){
       </div>
     </div>`;
   }
-  frachtPosList.forEach(pos=>{
-    const mi=monPosIdx[pos.artikelnummer];
-    const gp=gsMonPreis(pos.artikelnummer);
+  {
+    const _fGp=prices5.fracht[_s5FrachtTyp]||0;
+    const _fName=_s5FrachtTyp==='VORFRACHT'?'Vorfrachtpauschale':'Versandkosten';
+    const _fBtns=[['VERSAND','Paketversand'],['VORFRACHT','Spedition']].map(([t,lbl])=>`<div class="mc-pick s5-frTypBtn${_s5FrachtTyp===t?' sel':''}" data-typ="${t}" onclick="selS5FrachtTyp('${t}')">${lbl}</div>`).join('');
     h+=`<div class="s5-card">
-      <div class="s5-card-hdr"><strong>${pos.name}</strong></div>
+      <div class="s5-card-hdr"><strong id="s5FrachtName">${_fName}</strong></div>
       <div class="s5-card-body">
+        <div class="s5-irow" style="margin-bottom:8px"><span class="s5-lbl">Art</span><div class="mc-pick-row">${_fBtns}</div></div>
         <div class="s5-irow"><span class="s5-lbl">Preis</span>
-          <input type="number" class="s5-inp s5-w120" id="mP${mi}" value="${gp.toFixed(2)}" step="0.01" min="0" oninput="updGv('mP${mi}')">
+          <input type="number" class="s5-inp s5-w120" id="s5FrachtInp" value="${_fGp.toFixed(2)}" step="0.01" min="0" oninput="updGv('s5FrachtInp')">
           <span class="s5-unit">&euro;</span>
         </div>
-        <div class="s5-calc"><strong id="gv_mP${mi}">${fmtE(gp)}</strong></div>
+        <div class="s5-calc"><strong id="gv_s5FrachtInp">${fmtE(_fGp)}</strong></div>
       </div>
     </div>`;
-  });
+  }
   _gsFundPos.forEach((pos,fi)=>{
     const gp=gsMonPreis(pos.artikelnummer);
     h+=`<div class="s5-card">
@@ -4828,6 +4833,16 @@ function selRaffBedien5(v){
   selRaffBediensatz=v;
   fragebogen.raffBediensatz=v;
   renderStep5();
+}
+function selS5FrachtTyp(typ){
+  _s5FrachtTyp=typ;
+  document.querySelectorAll('.s5-frTypBtn').forEach(b=>b.classList.toggle('sel',b.getAttribute('data-typ')===typ));
+  const name=typ==='VORFRACHT'?'Vorfrachtpauschale':'Versandkosten';
+  const pr=prices5.fracht[typ]||0;
+  const nEl=document.getElementById('s5FrachtName');
+  const iEl=document.getElementById('s5FrachtInp');
+  if(nEl)nEl.textContent=name;
+  if(iEl){iEl.value=pr.toFixed(2);updGv('s5FrachtInp');}
 }
 function updRaffBedien(){
   const isD=selRaffBediensatz==='hauswand-doppelt';
@@ -5121,15 +5136,22 @@ function applyPrices5(){
   if(mSek){
     const isCCS=['SOLIDAY-C','SOLIDAY-CS','SOLIDAY-CS-DREIECK','SOLIDAY-CS-TWIN'].includes(sys);
     _gsMonPos.forEach((orig,mi)=>{
+      if(['VERSAND','VORFRACHT'].includes(orig.artikelnummer)) return; // handled separately via s5FrachtInp
       const p=parseFloat(document.getElementById(`mP${mi}`)?.value||'0')||0;
       const pos=mSek.positionen.find(pp=>pp.artikelnummer===orig.artikelnummer);
       if(pos){
         pos.preis_einheit=p;pos.gesamt=p;pos._gs=false;
-        if(orig.artikelnummer==='VORFRACHT'&&fragebogen.montage!==false){
-          pos.beschreibung='Baustromgestellung bauseits: 230V - 16A'+(isCCS?'\nElektrische Anschlüsse sind bauseits vorzunehmen.':'');
-        }
       }
     });
+    // Fracht: update based on toggle selection (_s5FrachtTyp) and s5FrachtInp
+    {
+      const _fTyp=_s5FrachtTyp||'VERSAND';
+      const _fP=parseFloat(document.getElementById('s5FrachtInp')?.value||'0')||0;
+      const _fName=_fTyp==='VORFRACHT'?'Vorfrachtpauschale':'Versandkosten';
+      // Remove any existing VERSAND/VORFRACHT positions and add the selected one
+      mSek.positionen=mSek.positionen.filter(p=>!['VERSAND','VORFRACHT'].includes(p.artikelnummer));
+      mSek.positionen.push({artikelnummer:_fTyp,name:_fName,beschreibung:'',preis_einheit:_fP,menge:1,einheit:'pauschal',gesamt:_fP,_gs:false});
+    }
     if(fragebogen.dachterrasse&&!mSek.positionen.find(p=>p.artikelnummer==='DACH')){
       const dp=parseFloat(document.getElementById('mDach')?.value||'0')||0;
       const svcI=mSek.positionen.findIndex(p=>p.artikelnummer==='SERV-LOG');
