@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 12:28 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 12:56 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -5010,7 +5010,8 @@ function applyPrices5(){
       hw75.preis_einheit=hw75.gesamt;
       const typName={'typ1':'Typ 1','typ2':'Typ 2 extra lang','typ3':'Typ 3 Viereck'}[fragebogen.raffWandplattenTyp||'typ1']||'Typ 1';
       hw75.name='Raff-M Drahtseil Segelsystem';
-      hw75.beschreibung=`Drahtseilaufhängung, Seilrollen, Tuchprofile + Zubehör\ninkl. Drahtseil Wandplatten ${typName}\ninkl. Klebeanker`;
+      const _hw75DammLabel=(wa5||'').includes('18')?'bis max. 18 cm Dämmung':'bis max. 10 cm Dämmung';
+      hw75.beschreibung=`Drahtseilaufhängung, Seilrollen, Tuchprofile + Zubehör\ninkl. Drahtseil Wandplatten ${typName}\ninkl. Klebeanker an Wand (${_hw75DammLabel})`;
       hw75._modified=true;
       modifiedArtNrsInStep5.add('75002S');
     }
@@ -5020,12 +5021,9 @@ function applyPrices5(){
     const _raffBedSel=fragebogen.raffBediensatz||'soliday';
     const _raffSek75=transformedData.sektionen.find(s=>s.id==='segelsystem'&&s.positionen.some(p=>p.artikelnummer==='75002S'));
     const _raffSegelNr=_raffSek75?._segelNr;
-    const _bedSekTarget=(_raffSegelNr!=null
-      ? transformedData.sektionen.find(s=>s._segelNr===_raffSegelNr&&s.id==='zubehoer')
-        ||transformedData.sektionen.find(s=>s._segelNr===_raffSegelNr&&s.id==='wandbefestigungen')
-      : null)
-      ||transformedData.sektionen.find(s=>s.id==='zubehoer')
-      ||transformedData.sektionen.find(s=>s.id==='wandbefestigungen');
+    // Bedienset goes into C-system wandbefestigungen (first occurrence) — this matches desired sevdesk layout
+    const _bedSekTarget=transformedData.sektionen.find(s=>s.id==='wandbefestigungen')
+                      ||transformedData.sektionen.find(s=>s.id==='zubehoer');
     // Mark/unmark Soliday standard bedienset positions in RAFF-M sections
     const _raffSeksAll=_raffSegelNr!=null
       ? transformedData.sektionen.filter(s=>s._segelNr===_raffSegelNr)
