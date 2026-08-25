@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 00:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 00:35 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -5011,6 +5011,40 @@ function applyPrices5(){
       hw75.beschreibung=`Drahtseilaufhängung, Seilrollen, Tuchprofile + Zubehör\ninkl. Drahtseil Wandplatten ${typName}\ninkl. Klebeanker`;
       hw75._modified=true;
       modifiedArtNrsInStep5.add('75002S');
+    }
+  }
+  // 5B: RAFF-M — Bedienset Wandmontage (only for hauswand-einfach / hauswand-doppelt)
+  {
+    const _raffBedSel=fragebogen.raffBediensatz||'soliday';
+    const _bedSekTarget=transformedData.sektionen.find(s=>s.id==='wandbefestigungen')
+                      ||transformedData.sektionen.find(s=>s.id==='zubehoer');
+    if(_bedSekTarget){
+      if(_raffBedSel!=='soliday'&&_raffBedienPreis.done&&_raffBedienPreis.items.length>0){
+        const _isDblB=_raffBedSel==='hauswand-doppelt';
+        const _bedAPrate=prices5.apPreis[wa5]||prices5.apPreis['ziegel-10']||0;
+        let _bedTotal=0;
+        _raffBedienPreis.items.forEach(it=>{
+          const qty=_isDblB?it.qtyD:it.qtyE;
+          if(qty<=0)return;
+          _bedTotal+=qty*it.price+qty*it.apCount*_bedAPrate;
+        });
+        _bedTotal=Math.ceil(_bedTotal);
+        const _bedLabel=_isDblB?'Doppelte Umlenkung':'Einfache Umlenkung';
+        const _bedName=`Bedienset Wandmontage - ${_bedLabel}`;
+        const _bedDesc='Seilrollen, Seilklemmen, Wandbefestigungen inkl. Klebeanker';
+        const existing=_bedSekTarget.positionen.find(p=>p.artikelnummer==='BEDIENSETZ-RAFF');
+        if(existing){
+          existing.name=_bedName;existing.beschreibung=_bedDesc;
+          existing.preis_einheit=_bedTotal;existing.gesamt=_bedTotal;existing._modified=true;
+        }else{
+          _bedSekTarget.positionen.push({artikelnummer:'BEDIENSETZ-RAFF',name:_bedName,beschreibung:_bedDesc,preis_einheit:_bedTotal,menge:1,einheit:'pauschal',gesamt:_bedTotal,_modified:true});
+        }
+        modifiedArtNrsInStep5.add('BEDIENSETZ-RAFF');
+      }else{
+        // Remove if switching back to soliday
+        const _bedSeks=transformedData.sektionen;
+        _bedSeks.forEach(sk=>{sk.positionen=sk.positionen.filter(p=>p.artikelnummer!=='BEDIENSETZ-RAFF');});
+      }
     }
   }
   // 5B: Bodenplatten — update ALL fundamente sektionen (multi-sail)
