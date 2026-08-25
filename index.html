@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 00:35 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 12:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4499,11 +4499,13 @@ function renderStep5(){
       // ═══ Summary box: sum all hours, round once ═══
       const _totalSubH=_subHs.reduce((a,b)=>a+b,0);
       _s5CachedMultiTotalSubH=_totalSubH;
-      // Sync hwH2/totalH2 and Termin caches to actual Gesamt total (avoids path discrepancies)
-      hwH2=_totalSubH-sailH2;
+      // Sync hwH2/totalH2 and Termin caches to actual Gesamt total
+      // genS5TermBreakdown displays dispSailH=1.5×sailCount, so hwH2 must use the same offset
+      const _dispSailH2=sailCount2>0?(sys.startsWith('SONNENSEGEL')?0.5:1.5)*sailCount2:sailH2;
+      hwH2=_totalSubH-_dispSailH2;
       totalH2=_totalSubH;
       _s5CachedTotalH=_totalSubH;
-      _s5CachedHardwareH=_totalSubH-sailH2;
+      _s5CachedHardwareH=_totalSubH-_dispSailH2;
       const _gesamtRounded=Math.ceil(_totalSubH*(prices5.stundensatz||0)/10)*10;
       const _gpStored=Number(_gsMonPos[mi]?.preis_einheit||0);
       const _gpInit=_gpStored>0?_gpStored:_gesamtRounded;
