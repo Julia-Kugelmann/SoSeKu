@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 13:05 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 13:28 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4427,7 +4427,10 @@ function renderStep5(){
 
   // ═══ COL 3: Montage ═══
   h+=`<div class="s5-col"><div class="s5-section"><div class="s5-sec-title">Montage</div>`;
-  if(instPos){
+  if(!withMontage){
+    h+=`<div class="s5-card"><div class="s5-card-body" style="color:var(--muted);font-size:12px;text-align:center;padding:20px">Keine Montage &ndash; nur Material</div></div>`;
+  }
+  if(withMontage&&instPos){
     const mi=monPosIdx[instPos.artikelnummer];
     const gp=gsMonPreis(instPos.artikelnummer);
     if(_instData.sailRows.length>1&&(mk2?.ok||_instData.sailRows.some(r=>r._isRaff))){
@@ -4592,7 +4595,7 @@ function renderStep5(){
       </div>`;
     }
   }
-  if(servPos){
+  if(withMontage&&servPos){
     const mi=monPosIdx['SERV-LOG'];
     // Pre-select empfohlene Termine BEFORE computing gp (so gp uses correct termine)
     const _s5AH=((ZONE_MIN[fragebogen.zone||2]||0)*2)/60;
@@ -4642,7 +4645,7 @@ function renderStep5(){
       </div>
     </div>`;
   }
-  if(instPos||servPos){
+  if(withMontage&&(instPos||servPos)){
     const instId=instPos?`mP${monPosIdx[instPos.artikelnummer]}`:'';
     const slId=servPos?`mP${monPosIdx['SERV-LOG']}`:'';
     const instV=instPos?gsMonPreis(instPos.artikelnummer):0;
@@ -4657,7 +4660,7 @@ function renderStep5(){
       </div>
     </div>`;
   }
-  otherMonList.forEach(pos=>{
+  if(withMontage)otherMonList.forEach(pos=>{
     const mi=monPosIdx[pos.artikelnummer];
     const gp=gsMonPreis(pos.artikelnummer);
     h+=`<div class="s5-card">
