@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 19:59 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 22:09 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4898,15 +4898,16 @@ function applyPrices5(){
           const _pq2=sail._raffPreisQm||sail.preis_einheit||0;
           const _bq2=Math.round((_fq2+qmExtra(_fq2))*100)/100;
           const _np2=Math.ceil(_bq2*_pq2);
+          const _raffMultiplier=sail._merged||1;
           const _raffSailSek=transformedData.sektionen.find(s=>s._segelNr===_sailNr2&&s.id==='segeltuch')||
                              transformedData.sektionen.find(s=>s.id==='segeltuch');
           if(_raffSailSek){
             const _rsp=_raffSailSek.positionen.find(p=>p._raffSail||p.qm_segel>0);
             if(_rsp){
               _rsp.preis_einheit=_np2;
-              _rsp.menge=1;
+              _rsp.menge=_raffMultiplier;
               _rsp.einheit='Stk.';
-              _rsp.gesamt=_np2;
+              _rsp.gesamt=_np2*_raffMultiplier;
               _rsp._modified=true;
               modifiedArtNrsInStep5.add(_rsp.artikelnummer||'raffSegel');
             }
