@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-08-25 22:09 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-08-29 19:12 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2425,9 +2425,10 @@ function renderStep3(){
   const remSum=removedPositionen.filter(p=>!p._transferred).reduce((s,p)=>s+(p.gesamt||0),0);
   const _sumAdj=transformedData._sumAdjust||0;
   const _aeroAdj=transformedData._aeroSumAdjust||0;
-  const check=skSum+remSum+teu+_sumAdj+_aeroAdj;
+  const versandNetto=Number(soSeKuJSON.versand_netto||0);
+  const check=skSum+remSum+teu+_sumAdj+_aeroAdj+versandNetto;
   const ok=Math.abs(check-solidayTotal)<0.02;
-  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+(_sumAdj>0?`<span class='op'>+</span><span class='lbl2'>zusammengef.</span><span class='v'>${fmtE(_sumAdj)}</span>`:'')+(_aeroAdj!==0?`<span class='op'>${_aeroAdj<0?'-':'+'}</span><span class='lbl2'>aero</span><span class='v'>${fmtE(Math.abs(_aeroAdj))}</span>`:'');
+  const _parts=`<span class='v'>${fmtE(skSum)}</span>`+(remSum>0?`<span class='op'>+</span><span class='lbl2'>entfernt</span><span class='v'>${fmtE(remSum)}</span>`:'')+(teu>0?`<span class='op'>+</span><span class='lbl2'>teuerung</span><span class='v'>${fmtE(teu)}</span>`:'')+(_sumAdj>0?`<span class='op'>+</span><span class='lbl2'>zusammengef.</span><span class='v'>${fmtE(_sumAdj)}</span>`:'')+(_aeroAdj!==0?`<span class='op'>${_aeroAdj<0?'-':'+'}</span><span class='lbl2'>aero</span><span class='v'>${fmtE(Math.abs(_aeroAdj))}</span>`:'')+(versandNetto>0?`<span class='op'>+</span><span class='lbl2'>versand Soliday</span><span class='v'>${fmtE(versandNetto)}</span>`:'');
   document.getElementById('s3sum').innerHTML=
     `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div><div class='s3-big' style='color:${ok?"var(--accent2)":"var(--error)"}'>${fmtE(check)}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
   const posCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
