@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-10-01 09:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-10-26 09:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2436,6 +2436,21 @@ async function retransform(){
   else{_applyTransformReset(soSeKuJSON);renderStep3();}
 }
 
+function _computeDisplayData(json){
+  // Returns transformedData including manually-excluded positions (only auto-WEGLASS excluded)
+  const savedMW=manualWeglass,savedMWA=manualWeglassArtNr;
+  manualWeglass=new Set();manualWeglassArtNr=new Set();
+  const orig=transformiere(json);
+  manualWeglass=savedMW;manualWeglassArtNr=savedMWA;
+  if(_segelMergeSet.size>0&&_transformedDataOrig){
+    const savedOrig=_transformedDataOrig;
+    _transformedDataOrig=JSON.parse(JSON.stringify(orig));
+    const merged=_buildSelectiveMergeData();
+    _transformedDataOrig=savedOrig;
+    return merged;
+  }
+  return _applyMengeOverridesToData(orig);
+}
 function renderStep3(){
   const{sektionen,removedPositionen,effectiveSys}=transformedData;
   const displaySys=effectiveSys||soSeKuJSON.system||'–';
@@ -2453,24 +2468,40 @@ function renderStep3(){
   document.getElementById('s3sum').innerHTML=
     `<div class='s3-sum-wrap'><div class='s3-sum-left'><div class='s3-lbl'>Soliday Original</div><div class='s3-big'>${fmtE(solidayTotal)}</div></div><div class='s3-sum-right'><div class='s3-lbl'>SoSeKu Vergleichssumme</div><div class='s3-eq'>${_parts}</div><div class='s3-big' style='color:${ok?"var(--accent2)":"var(--error)"}'>${fmtE(check)}</div></div><div class='s3-sum-badge ${ok?"ok":"err"}'>${ok?'✓ OK':'✕ '+fmtE(Math.abs(check-solidayTotal))}</div></div>`;
   const posCount=sektionen.reduce((s,sek)=>s+sek.positionen.length,0);
-  const manExcl=removedPositionen.filter(p=>manualWeglass.has(String(p.pos))||(p.artikelnummer&&manualWeglassArtNr.has(p.artikelnummer)));
-  const _cb=(p)=>p.pos!=null&&!p._gs
-    ?`<input type="checkbox" checked onchange="toggleManualWeglass(${p.pos},this.checked,'${p.artikelnummer||''}')" style="cursor:pointer">`
+  const manExclCount=removedPositionen.filter(p=>manualWeglass.has(String(p.pos))||(p.artikelnummer&&manualWeglassArtNr.has(p.artikelnummer))).length;
+  // Display data: positions stay in their original sections, manually excluded ones are rendered in-place
+  const displayData=_computeDisplayData(soSeKuJSON);
+  // pidxMap: lookup correct position index within transformedData.sektionen (for drag-drop)
+  const pidxMap={};
+  sektionen.forEach(sek=>{
+    const key=sek._segelNr?`${sek.id}|${sek._segelNr}`:sek._mergedSys?`${sek.id}|MRG_${sek._mergedSys}`:sek.id;
+    const m=new Map();
+    sek.positionen.forEach((p,i)=>{const pk=p.pos!=null?'p:'+p.pos:'a:'+p.artikelnummer;m.set(pk,i);});
+    pidxMap[key]=m;
+  });
+  const _cb=(p,isExcl)=>p.pos!=null&&!p._gs
+    ?`<input type="checkbox" ${isExcl?'':'checked'} onchange="toggleManualWeglass(${p.pos},this.checked,'${p.artikelnummer||''}')" style="cursor:pointer">`
     :'';
-  const _row=(p,sekId='',pidx=0)=>`<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''} ondragover="s3RowDragOver(event,this)" ondrop="s3RowDrop(event,'${sekId}',${pidx})">` +
-    `<td>${_cb(p)}</td>` +
-    `<td>${!p._gs?`<span class="s3-move-btn" onclick="s3ShowMover(event,'${sekId}',${pidx})" title="Verschieben">⇅</span>`:''}${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
-    `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'&#216; Preis aus Schritt 5'}${(p._mergedSegelCount||0)>1?' &ndash; '+p._mergedSegelCount+' Segel zusammengefasst':''}</div>`:''}${p.beschreibung?`<div style="font-size:9px;color:var(--muted);white-space:pre-line;margin-top:2px">${escHtml(p.beschreibung)}</div>`:''}</td>` +
-    `<td class="num-r">${p.artikelnummer&&!(p.qm_segel>0)&&!p._gs?`<input type="number" value="${Number(p.menge||0)}" step="0.01" min="0" style="width:52px;text-align:right;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--text);font-size:11px;font-family:inherit" onchange="s3SetMenge('${p.artikelnummer}',this.value)">`:Number(p.menge||0).toLocaleString('de-DE')}</td>` +
-    `<td style="color:var(--muted)">${p.einheit||'–'}</td>` +
-    `<td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td>` +
-    `<td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
-  const exclRows=manExcl.length
-    ?`<tr class="sek-hdr-row excl"><td colspan="7">Manuell entfernt</td></tr>`
-     +manExcl.map(p=>`<tr class="s3-row-excl"><td><input type="checkbox" onchange="toggleManualWeglass(${p.pos},this.checked,'${p.artikelnummer||''}')" style="cursor:pointer"></td><td><span class="tag">${p.artikelnummer||'–'}</span></td><td>${p.name}</td><td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td><td style="color:var(--muted)">${p.einheit||'–'}</td><td class="num-r">${fmt(p.preis_einheit)}</td><td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`).join('')
-    :'';
+  const _row=(p,sekId='',pidx=0,isExcl=false)=>{
+    if(isExcl)return `<tr class="s3-row-excl">` +
+      `<td>${_cb(p,true)}</td>` +
+      `<td>${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
+      `<td>${escHtml(p.name)}${p.beschreibung?`<div style="font-size:9px;white-space:pre-line;margin-top:2px">${escHtml(p.beschreibung)}</div>`:''}</td>` +
+      `<td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td>` +
+      `<td>${p.einheit||'–'}</td>` +
+      `<td class="num-r">${fmt(p.preis_einheit)}</td>` +
+      `<td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`;
+    return `<tr${!p._gs?` draggable="true" ondragstart="s3DragStart(event,'${sekId}',${pidx})"`:''} ondragover="s3RowDragOver(event,this)" ondrop="s3RowDrop(event,'${sekId}',${pidx})">` +
+      `<td>${_cb(p,false)}</td>` +
+      `<td>${!p._gs?`<span class="s3-move-btn" onclick="s3ShowMover(event,'${sekId}',${pidx})" title="Verschieben">⇅</span>`:''}${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
+      `<td><div class="s3-editable" contenteditable="true" onblur="s3SaveName(this,'${sekId}',${pidx})" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}">${escHtml(p.name)}</div>${p._gs?`<div style="font-size:9px;color:var(--warn)">${p.gesamt>0?'Preis aus Soliday – wird in Schritt 5 neu berechnet':'&#216; Preis aus Schritt 5'}${(p._mergedSegelCount||0)>1?' &ndash; '+p._mergedSegelCount+' Segel zusammengefasst':''}</div>`:''}${p.beschreibung?`<div style="font-size:9px;color:var(--muted);white-space:pre-line;margin-top:2px">${escHtml(p.beschreibung)}</div>`:''}</td>` +
+      `<td class="num-r">${p.artikelnummer&&!(p.qm_segel>0)&&!p._gs?`<input type="number" value="${Number(p.menge||0)}" step="0.01" min="0" style="width:52px;text-align:right;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 4px;color:var(--text);font-size:11px;font-family:inherit" onchange="s3SetMenge('${p.artikelnummer}',this.value)">`:Number(p.menge||0).toLocaleString('de-DE')}</td>` +
+      `<td style="color:var(--muted)">${p.einheit||'–'}</td>` +
+      `<td class="num-r">${(p._gs&&!p.gesamt)?'–':fmt(p.preis_einheit)}</td>` +
+      `<td class="num-r"><strong>${(p._gs&&!p.gesamt)?'–':fmt(p.gesamt)}</strong></td></tr>`;
+  };
   // Build tbody with optional sail headers for multi-sail
-  const isMS=transformedData.isMultiSegel;
+  const isMS=displayData.isMultiSegel;
   // Header for zusammengefasst view (single merged block)
   let zusHdr='';
   const _aufrollTyp=sys=>{
@@ -2482,7 +2513,7 @@ function renderStep3(){
     if(s.startsWith('RAFF'))return 'raffbar';
     return 'manuell aufrollbar';
   };
-  if(_segelMergeSet.size>0&&_transformedDataOrig&&!transformedData.isMultiSegel){
+  if(_segelMergeSet.size>0&&_transformedDataOrig&&!displayData.isMultiSegel){
     const _nSails=(_transformedDataOrig.segelNrs||[]).length||Object.keys(_transformedDataOrig.segelTypes||{}).length;
     const _rawSys=effectiveSys||soSeKuJSON.system||'SOLIDAY';
     const _isRaffHdr=_rawSys.toUpperCase().startsWith('RAFF');
@@ -2493,7 +2524,7 @@ function renderStep3(){
     zusHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
   }
   let lastSailKey=null;
-  const tbodyRows=sektionen.map(sek=>{
+  const tbodyRows=displayData.sektionen.map(sek=>{
     const sekKey=sek._segelNr?`${sek.id}|${sek._segelNr}`:sek._mergedSys?`${sek.id}|MRG_${sek._mergedSys}`:sek.id;
     let sailHdr='';
     const _sailKey=sek._segelNr||(sek._mergedSys?'MRG_'+sek._mergedSys:null);
@@ -2509,7 +2540,7 @@ function renderStep3(){
         const lbl=`${_sys}${_typ?' - '+_typ:''}${_mc>1?' – '+_mc+' Segel zusammengefasst':''}`;
         sailHdr=`<tr style="background:rgba(56,217,169,.08);border-top:2px solid var(--accent2)"><td colspan="7" style="color:var(--accent2);font-size:13px;font-weight:800;letter-spacing:0;padding:8px 10px">${lbl}</td></tr>`;
       }else{
-        const _rawSys=(transformedData.segelSystems||{})[sek._segelNr]||effectiveSys||soSeKuJSON.system||'SOLIDAY';
+        const _rawSys=(displayData.segelSystems||{})[sek._segelNr]||effectiveSys||soSeKuJSON.system||'SOLIDAY';
         const _rawU=_rawSys.toUpperCase();
         const _isFix=_rawU.startsWith('SONNENSEGEL');
         const _isRaffSek=_rawU.startsWith('RAFF');
@@ -2520,11 +2551,17 @@ function renderStep3(){
       }
     }
     const _monDivider=sek.id==='montage'?`<tr><td colspan="7" style="padding:0"><div style="background:rgba(56,217,169,.07);border-top:2px solid var(--accent2);padding:7px 10px;margin-top:6px"><span style="font-family:'Syne',sans-serif;color:var(--accent2);font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Montage &amp; Fracht</span></div></td></tr>`:'';
-    return sailHdr+_monDivider+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${sek.positionen.map((p,i)=>_row(p,sekKey,i)).join('')}`;
+    const posRows=sek.positionen.map((p,i)=>{
+      const isExcl=(p.pos!=null&&manualWeglass.has(String(p.pos)))||(p.artikelnummer&&manualWeglassArtNr.has(p.artikelnummer));
+      const pk=p.pos!=null?'p:'+p.pos:'a:'+p.artikelnummer;
+      const actualPidx=isExcl?i:((pidxMap[sekKey]||new Map()).get(pk)??i);
+      return _row(p,sekKey,actualPidx,isExcl);
+    }).join('');
+    return sailHdr+_monDivider+`<tr class="sek-hdr-row" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="s3Drop(event,'${sekKey}');this.classList.remove('drag-over')"><td colspan="7">${sek.name}</td></tr>${posRows}`;
   }).join('');
   document.getElementById('s3sektionen').innerHTML=
-    `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${displaySys} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen</span></div>`+
-    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${zusHdr}${tbodyRows}${exclRows}</tbody></table></div>`;
+    `<div class="card-hdr" style="position:sticky;top:0;z-index:5;background:var(--bg);border-radius:0;margin-bottom:10px;border-bottom:1px solid var(--border)"><strong>SoSeKu-JSON</strong><span>${displaySys} &middot; ${soSeKuJSON.kommission||'–'} &middot; ${posCount} Positionen${manExclCount>0?' &middot; <span style="color:var(--error)">'+manExclCount+' ausgeblendet</span>':''}</span></div>`+
+    `<div class="sektion-body"><table class="jtable"><colgroup><col class="col-cb"><col class="col-nr"><col><col class="col-qty"><col class="col-unit"><col class="col-pe"><col class="col-tot"></colgroup><thead><tr><th></th><th>Art.-Nr.</th><th>Name</th><th class="num-r">Menge</th><th>Einh.</th><th class="num-r">Preis/E.</th><th class="num-r">Gesamt</th></tr></thead><tbody>${zusHdr}${tbodyRows}</tbody></table></div>`;
   _renderSegelToggle();
   showView('viewStep3');setStep(3);
 }
