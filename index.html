@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-10-26 11:10 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-10-26 11:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1277,15 +1277,11 @@ Format:
 "teuerungszuschlag_netto":number/null,"versand_netto":number/null,"netto_gesamt":number,"mwst":number,"brutto_gesamt":number}`;
 
 // === CLAUDE API ===
-async function callClaude(base64,model,sysPrompt,userPrompt){
-  const{anthropic}=getKeys();
+async function _claudeFetch(anthropic,payload){
   const r=await fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json','x-api-key':anthropic,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-    body:JSON.stringify({model,max_tokens:model.includes('haiku')?8192:16384,system:sysPrompt,messages:[{role:'user',content:[
-      {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
-      {type:'text',text:userPrompt||'Extrahiere alle Positionen aus diesem Soliday-Angebot.'}
-    ]}]})
+    body:JSON.stringify(payload)
   });
   if(!r.ok){
     const e=await r.json().catch(()=>({}));
@@ -1294,6 +1290,33 @@ async function callClaude(base64,model,sysPrompt,userPrompt){
     throw new Error(`Anthropic API ${r.status}: ${msg}`);
   }
   return r.json();
+}
+async function callClaude(base64,model,sysPrompt,userPrompt){
+  const{anthropic}=getKeys();
+  // Sonnet: 64 000 tokens – deckt auch große SNAP-Angebote mit 100+ Positionen ab
+  const maxTok=model.includes('haiku')?8192:64000;
+  const userContent=[
+    {type:'document',source:{type:'base64',media_type:'application/pdf',data:base64}},
+    {type:'text',text:userPrompt||'Extrahiere alle Positionen aus diesem Soliday-Angebot.'}
+  ];
+  let data=await _claudeFetch(anthropic,{model,max_tokens:maxTok,system:sysPrompt,messages:[{role:'user',content:userContent}]});
+  // Sonnet: bei Abschneiden Fortsetzung via assistant-prefill (bis zu 2×)
+  if(model.includes('sonnet')){
+    let full=(data.content||[]).find(b=>b.type==='text')?.text||'';
+    for(let c=0;c<2&&data.stop_reason==='max_tokens';c++){
+      data=await _claudeFetch(anthropic,{
+        model,max_tokens:maxTok,system:sysPrompt,
+        messages:[
+          {role:'user',content:userContent},
+          {role:'assistant',content:full},
+          {role:'user',content:'Weiter – schreibe das JSON genau dort weiter, wo du aufgehört hast.'}
+        ]
+      });
+      full+=(data.content||[]).find(b=>b.type==='text')?.text||'';
+    }
+    return{...data,content:[{type:'text',text:full}]};
+  }
+  return data;
 }
 
 // === DRAG & DROP ===
