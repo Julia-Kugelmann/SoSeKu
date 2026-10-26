@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-10-26 10:40 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-10-26 11:10 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1412,6 +1412,25 @@ function normalizeExtractedSystem(json){
   }
   return json;
 }
+function _tryRepairJSON(str){
+  if(!str)return null;
+  const stack=[];let inStr=false,esc=false;
+  for(let i=0;i<str.length;i++){
+    const c=str[i];
+    if(esc){esc=false;continue;}
+    if(c==='\\'&&inStr){esc=true;continue;}
+    if(c==='"'){inStr=!inStr;continue;}
+    if(inStr)continue;
+    if(c==='{')stack.push('}');
+    else if(c==='[')stack.push(']');
+    else if((c==='}'||c===']')&&stack.length)stack.pop();
+  }
+  let r=str;
+  if(inStr)r+='"';
+  r=r.replace(/,\s*"[^"]*$/,'').replace(/,\s*$/,'');
+  while(stack.length)r+=stack.pop();
+  try{JSON.parse(r);return r;}catch(e){return null;}
+}
 async function processFile(file,correctionHint){
   if(file)pdfFile=file;
   showView('viewLoading');setStep(1);
@@ -1464,12 +1483,16 @@ async function processFile(file,correctionHint){
       if(!clean.startsWith('{'))data=await trySonnet('JSON-Retry fehlgeschlagen');
       clean=_extractClean(data);
     }
-    // If still truncated after potential Sonnet fallback, try one more time with Sonnet
+    // If still truncated: try Sonnet fallback, then attempt JSON repair
     if(!clean.endsWith('}')){
-      if(!usedSonnet){data=await trySonnet('Antwort unvollständig');prog.style.width='75%';}
-      const clean2=_extractClean(data);
-      if(!clean2.endsWith('}'))throw new Error('Claude-Antwort konnte nicht vollständig geladen werden. Mögliche Ursache: Das PDF enthält verschiedene Soliday-Systeme (z.B. SOLIDAY-ONE + SOLIDAY-C). Mehrere Segel desselben Systems werden unterstützt, aber unterschiedliche Systemtypen bitte in separate Angebote aufteilen.');
-      const parsed2=JSON.parse(clean2);soSeKuJSON=normalizeExtractedSystem(parsed2);_showUpf=_isNurFestSegel(soSeKuJSON);prog.style.width='100%';setTimeout(renderStep2,300);return;
+      let finalClean=clean;
+      if(!usedSonnet){data=await trySonnet('Antwort unvollständig');prog.style.width='75%';finalClean=_extractClean(data);}
+      if(!finalClean.endsWith('}')){
+        sub.textContent='Antwort unvollständig – JSON-Reparatur...';
+        finalClean=_tryRepairJSON(finalClean)||'';
+      }
+      if(!finalClean)throw new Error('Die Claude-Antwort war zu lang und konnte nicht repariert werden. Bitte nochmal versuchen.');
+      const parsed2=JSON.parse(finalClean);soSeKuJSON=normalizeExtractedSystem(parsed2);_showUpf=_isNurFestSegel(soSeKuJSON);prog.style.width='100%';setTimeout(renderStep2,300);return;
     }
     soSeKuJSON=normalizeExtractedSystem(JSON.parse(clean));
     _showUpf=_isNurFestSegel(soSeKuJSON);
