@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-10-26 10:20 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-10-26 10:40 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -4593,7 +4593,7 @@ function renderStep5(){
           <input type="hidden" id="mP${mi}" value="${_gpInit.toFixed(2)}">
           <div class="s5-calc">
             <span style="color:var(--muted)" id="mInstGesamtCalcLbl">${_totalSubH.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
-            <strong id="gv_mP${mi}">${fmtE(_gesamtRounded)}</strong><span class="s5-raw" id="mInstGesamtRaw">${_gesamtRounded!==Math.round(_totalSubH*prices5.stundensatz*100)/100?`(${fmt(_totalSubH*prices5.stundensatz)})`:''}</span>
+            <strong id="gv_mP${mi}">${fmtE(_gesamtRounded)}</strong><span class="s5-raw" id="mInstGesamtRaw">${(()=>{const _r=Math.round(_totalSubH*prices5.stundensatz*100)/100;return _gesamtRounded!==_r?`(${fmt(_r)})`:''})()}</span>
           </div>
         </div>
       </div>`;
@@ -4653,7 +4653,7 @@ function renderStep5(){
           <input type="hidden" id="mP${mi}" value="${_gpInitS.toFixed(2)}">
           ${(_raffSingleRow||(!sys.startsWith('RAFF')&&mk2?.ok))?`<div class="s5-calc">
             <span style="color:var(--muted)" id="mInstGesamtCalcLbl">${totalH2.toFixed(2)}h &times; ${fmtE(prices5.stundensatz)} =</span>
-            <strong id="gv_mP${mi}">${fmtE(Math.ceil(totalH2*(prices5.stundensatz||0)/10)*10)}</strong><span class="s5-raw" id="mInstGesamtRaw">${(()=>{const raw=totalH2*(prices5.stundensatz||0);const ceil=Math.ceil(raw/10)*10;return ceil!==Math.round(raw*100)/100?`(${fmt(raw)})`:''})()}</span>
+            <strong id="gv_mP${mi}">${fmtE(Math.ceil(Math.round(totalH2*(prices5.stundensatz||0)*100)/100/10)*10)}</strong><span class="s5-raw" id="mInstGesamtRaw">${(()=>{const _r2=Math.round(totalH2*(prices5.stundensatz||0)*100)/100;const _c2=Math.ceil(_r2/10)*10;return _c2!==_r2?`(${fmt(_r2)})`:''})()}</span>
           </div>`:''}
         </div>
       </div>`;
@@ -4811,8 +4811,9 @@ function updMonSum(){
 }
 function _updInstGesamt(mi){
   const extraH=parseFloat(document.getElementById('mInstExtraH')?.value||'0')||0;
-  const totalH=(_s5CachedMultiTotalSubH||0)+extraH;
-  const raw=totalH*(prices5.stundensatz||0);
+  const totalH=Math.round(((_s5CachedMultiTotalSubH||0)+extraH)*1000)/1000; // avoid float drift
+  const rawExact=totalH*(prices5.stundensatz||0);
+  const raw=Math.round(rawExact*100)/100; // round to cents before ceil
   const rounded=Math.ceil(raw/10)*10;
   const inp=document.getElementById(`mP${mi}`);
   const lbl=document.getElementById('mInstGesamtCalcLbl');
@@ -4821,7 +4822,7 @@ function _updInstGesamt(mi){
   if(inp){inp.value=rounded.toFixed(2);updMonSum();}
   if(lbl) lbl.textContent=`${totalH.toFixed(2)}h × ${fmtE(prices5.stundensatz)} =`;
   if(gv) gv.textContent=fmtE(rounded);
-  if(rawEl) rawEl.textContent=rounded!==Math.round(raw*100)/100?`(${fmt(raw)})`:'';
+  if(rawEl) rawEl.textContent=rounded!==raw?`(${fmt(raw)})`:'';
 }
 
 function updSail(si){
