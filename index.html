@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-10-28 09:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-10-28 17:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -3326,14 +3326,16 @@ function parseStoffeMatrix(rows,sys){
   const ci=findStoffeCol(hdr,variants);
   if(ci<0)return[];
   const upfCol=hdr.findIndex(h=>/(upf)/i.test((h||'').trim()));
-  return rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm').map(r=>({name:r[0].trim(),preis:parseDE(r[ci]),upf:upfCol>=0?(r[upfCol]||'').trim():''})).filter(s=>s.preis>0);
+  const _noRein=r=>!/reinigung/i.test(r[0]||'');
+  return rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm'&&_noRein(r)).map(r=>({name:r[0].trim(),preis:parseDE(r[ci]),upf:upfCol>=0?(r[upfCol]||'').trim():''})).filter(s=>s.preis>0);
 }
 function parseStoffeMatrixAll(rows){
   if(!rows||rows.length<2)return{};const hdr=rows[0];const result={};
   const upfCol=hdr.findIndex(h=>/(upf)/i.test((h||'').trim()));
+  const _noRein=r=>!/reinigung/i.test(r[0]||'');
   Object.entries(SYS2COL).forEach(([sys,variants])=>{
     const ci=findStoffeCol(hdr,variants);if(ci<0)return;
-    const st=rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm').map(r=>({name:r[0].trim(),preis:parseDE(r[ci]),upf:upfCol>=0?(r[upfCol]||'').trim():''})).filter(s=>s.preis>0);
+    const st=rows.slice(1).filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm'&&_noRein(r)).map(r=>({name:r[0].trim(),preis:parseDE(r[ci]),upf:upfCol>=0?(r[upfCol]||'').trim():''})).filter(s=>s.preis>0);
     if(st.length>0)result[sys]=st;
   });
   return result;
@@ -3353,7 +3355,7 @@ function parseSizeTierMatrix(rows){
   let upfCol=-1;
   for(let i=0;i<=hdrIdx&&upfCol<0;i++){upfCol=rows[i].findIndex(h=>/(upf)/i.test((h||'').trim()));}
   return rows.slice(hdrIdx+1)
-    .filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm')
+    .filter(r=>r[0]&&!r[0].trim().startsWith('*')&&r[0].trim()!=='Preise pro qm'&&!/reinigung/i.test(r[0]))
     .map(r=>({name:r[0].trim(),tierLabels:labels,tierPrices:labels.map((_,i)=>parseDE(r[i+1])),upf:upfCol>=0?(r[upfCol]||'').trim():''}))
     .filter(s=>s.tierPrices.some(p=>p>0));
 }
