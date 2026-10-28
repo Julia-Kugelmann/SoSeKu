@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-10-28 17:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-10-28 18:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1552,7 +1552,7 @@ function renderStep2(){
     const qmStr=totalQm>0?` &nbsp;·&nbsp; ${totalQm.toLocaleString('de-DE',{maximumFractionDigits:2})} m² Segel`:'';
     const _segelNrs2=[...new Set(d.positionen.map(p=>Number(p.segel_nr)||1))];
     const _multiSail2=_segelNrs2.length>1;
-    const _sysLabels2=_segelNrs2.map(nr=>{const grp=d.positionen.filter(p=>(Number(p.segel_nr)||1)===nr);const det=(soSeKuJSON?._segelNrSysMap||{})[nr]||detectSysFromPos(grp);const grpSys=(det||(soSeKuJSON?.system||'')).toUpperCase();const isFix2=grpSys.startsWith('SONNENSEGEL')&&!grp.some(p=>isAufrollsystem(p.artikelnummer||''))&&grp.some(p=>p.qm_segel>0);return isFix2?'Fix Segel':det?det.replace('SOLIDAY-',''):grpSys.replace('SOLIDAY-','')||`Segel ${nr}`;});
+    const _sysLabels2=_segelNrs2.map(nr=>{const grp=d.positionen.filter(p=>(Number(p.segel_nr)||1)===nr);const det=(soSeKuJSON?._segelNrSysMap||{})[nr]||detectSysFromPos(grp);const grpSys=(det||(soSeKuJSON?.system||'')).toUpperCase();if(grpSys.startsWith('SONNENSEGEL'))return 'Fix Segel';return det?det.replace('SOLIDAY-',''):grpSys.replace('SOLIDAY-','')||`Segel ${nr}`;});
     badge.innerHTML=`<div class="val-ok">&#10003; Summenprüfung OK — ${fmtE(v.total)} &nbsp;·&nbsp; ${d.positionen.length} Positionen${qmStr}</div>`
       +(_multiSail2?`<div class="val-ok" style="margin-left:8px">&#10003; ${_segelNrs2.length} Segel erkannt &nbsp;·&nbsp; ${_sysLabels2.join(' + ')}</div>`:'');
   }
@@ -2868,8 +2868,8 @@ function _renderSegelToggle(){
       const grp=(soSeKuJSON?.positionen||[]).filter(x=>(Number(x.segel_nr)||1)===nr);
       const det=(soSeKuJSON?._segelNrSysMap||{})[nr]||detectSysFromPos(grp);
       const grpSysU=(det||(soSeKuJSON?.system||'')).toUpperCase();
-      const isFix=grpSysU.startsWith('SONNENSEGEL')&&!grp.some(p=>isAufrollsystem(p.artikelnummer||''))&&grp.some(p=>p.qm_segel>0);
-      return isFix?'Fix Segel':det?det.replace('SOLIDAY-',''):grpSysU.replace('SOLIDAY-','')||`Segel ${nr}`;
+      if(grpSysU.startsWith('SONNENSEGEL'))return 'Fix Segel';
+      return det?det.replace('SOLIDAY-',''):grpSysU.replace('SOLIDAY-','')||`Segel ${nr}`;
     });
     const _lcounts={};_rawLabels.forEach(l=>{_lcounts[l]=(_lcounts[l]||0)+1;});
     const _lidx={};
@@ -2977,6 +2977,9 @@ function swapSegelNr(nrA,nrB){
     if(n===nrA)p.segel_nr=nrB;
     else if(n===nrB)p.segel_nr=nrA;
   });
+  // Swap system maps so transformiere() sees the updated order
+  if(soSeKuJSON._segelNrSysMap){const t=soSeKuJSON._segelNrSysMap[nrA];soSeKuJSON._segelNrSysMap[nrA]=soSeKuJSON._segelNrSysMap[nrB];soSeKuJSON._segelNrSysMap[nrB]=t;}
+  if(soSeKuJSON.segelSystems){const t=soSeKuJSON.segelSystems[nrA];soSeKuJSON.segelSystems[nrA]=soSeKuJSON.segelSystems[nrB];soSeKuJSON.segelSystems[nrB]=t;}
   manualWeglass=new Set();
   manualWeglassArtNr=new Set();
   _applyTransformReset(soSeKuJSON,false);
