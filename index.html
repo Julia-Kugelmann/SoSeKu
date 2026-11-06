@@ -364,7 +364,6 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
     <div class="field"><label>Anthropic API-Key *</label><input type="password" id="iAnt" placeholder="sk-ant-api03-..." autocomplete="off"></div>
     <div class="field"><label>sevdesk API-Key</label><input type="password" id="iSev" placeholder="32-stelliger Hex-Key (optional)" autocomplete="off"></div>
     <div class="field"><label>Google Sheet ID</label><input type="text" id="iSheet" placeholder="Sheet-ID aus der URL (optional)" autocomplete="off"></div>
-    <div class="field"><label>API Proxy URL <span style="color:var(--muted);font-weight:400">(optional, für iOS Safari)</span></label><input type="text" id="iProxy" placeholder="https://soseku.NAME.workers.dev" autocomplete="off"></div>
     <div class="setup-note"><strong>Sicherheit:</strong> Keys werden im <code>localStorage</code> des Browsers gespeichert und nie in den Code geschrieben.</div>
     <div class="btn-row" style="justify-content:flex-start;margin-top:20px"><button class="btn btn-p" onclick="saveSetup()">Weiter &rarr;</button></div>
   </div>
@@ -1153,7 +1152,7 @@ function getKeys(){
   const rawSid=localStorage.getItem('sid')||'';
   const sidM=rawSid.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
   const sheetId=sidM?sidM[1]:rawSid;
-  return{anthropic:localStorage.getItem('ant')||'',sevdesk:localStorage.getItem('sev')||'',sheetId,proxy:(localStorage.getItem('prx')||'').trim()};
+  return{anthropic:localStorage.getItem('ant')||'',sevdesk:localStorage.getItem('sev')||'',sheetId};
 }
 function saveSetup(){
   const ant=document.getElementById('iAnt').value.trim();
@@ -1163,7 +1162,6 @@ function saveSetup(){
   const rawSheet=document.getElementById('iSheet').value.trim();
   const sheetM=rawSheet.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
   localStorage.setItem('sid',sheetM?sheetM[1]:rawSheet);
-  localStorage.setItem('prx',(document.getElementById('iProxy')||{}).value?.trim()||'');
   document.getElementById('btnReset').style.display='';
   const mode=new URLSearchParams(location.search).get('mode');
   if(mode==='adresse'){showView('viewAdresse');initAdresseMode();}
@@ -1174,7 +1172,7 @@ function saveSetup(){
 function resetKeys(){
   ['ant','sev','sid','prx'].forEach(k=>localStorage.removeItem(k));
   document.getElementById('btnReset').style.display='none';
-  ['iAnt','iSev','iSheet','iProxy'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['iAnt','iSev','iSheet'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   showView('viewSetup');
 }
 window.addEventListener('DOMContentLoaded',()=>{
@@ -1183,8 +1181,6 @@ window.addEventListener('DOMContentLoaded',()=>{
   const _ta=document.getElementById('chatStep2');if(_ta)_ta.value='Es sind nicht alle Positionen richtig erfasst, gehe das PDF nochmal sorgfältig durch';
   const _si=document.getElementById('iSheet');
   if(_si&&!_si.value)_si.value=localStorage.getItem('sid')||DEF_SHEET_ID;
-  const _px=document.getElementById('iProxy');
-  if(_px&&!_px.value)_px.value=localStorage.getItem('prx')||'';
   const mode=new URLSearchParams(location.search).get('mode');
   const mA=document.getElementById('modeAngebot'),mAd=document.getElementById('modeAdresse'),mM=document.getElementById('modeMontage'),mR=document.getElementById('modeReparatur'),mRn=document.getElementById('modeReinigung');
   const activeStyle='background:var(--accent);color:#fff';const inactiveStyle='color:var(--muted)';
@@ -1290,10 +1286,8 @@ async function _claudeFetch(anthropic,payload){
     const err=new Error('Ungültiges Zeichen im Anthropic API-Key. Bitte unter "Keys ändern" den Key löschen und direkt von console.anthropic.com neu einfügen.');
     err.isBadKey=true;throw err;
   }
-  const _proxyUrl=(localStorage.getItem('prx')||'').trim();
-  const _url=_proxyUrl||'https://api.anthropic.com/v1/messages';
-  const _hdrs={'Content-Type':'application/json','x-api-key':anthropic,'anthropic-version':'2023-06-01'};
-  if(!_proxyUrl)_hdrs['anthropic-dangerous-direct-browser-access']='true';
+  const _url='https://api.anthropic.com/v1/messages';
+  const _hdrs={'Content-Type':'application/json','x-api-key':anthropic,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
   const _body=JSON.stringify(payload);
   function _parseApiResp(status,text){
     let e;try{e=JSON.parse(text);}catch{e={};}
@@ -1301,7 +1295,7 @@ async function _claudeFetch(anthropic,payload){
     if(status===400&&/context|length|too long|too large/i.test(msg)){const ex=new Error(msg);ex.isContextError=true;throw ex;}
     throw new Error(`Anthropic API ${status}: ${msg}`);
   }
-  // Try fetch first; fall back to XHR for iOS Safari compatibility
+  // Try fetch first; fall back to XHR for robustness
   let r;
   try{
     r=await fetch(_url,{method:'POST',mode:'cors',credentials:'omit',cache:'no-store',headers:_hdrs,body:_body});
