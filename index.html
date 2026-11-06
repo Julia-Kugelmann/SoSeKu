@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 14:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 15:30 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -2555,6 +2555,24 @@ function renderStep3(){
   const manExclCount=removedPositionen.filter(p=>manualWeglass.has(String(p.pos))||(p.artikelnummer&&manualWeglassArtNr.has(p.artikelnummer))).length;
   // Display data: positions stay in their original sections, manually excluded ones are rendered in-place
   const displayData=_computeDisplayData(soSeKuJSON);
+  // When Aero Clamcleat is active: mark replaced items crossed out + inject new aero items
+  if(_aeroCleat&&transformedData._aeroCleat){
+    displayData.sektionen.forEach(sek=>{
+      sek.positionen.forEach(p=>{if(/karabiner|spanngurt/i.test(p.name||''))p._aeroCrossed=true;});
+    });
+    const _aeroArtNrs=new Set(['AEROCLEAT','AEROSEIL','AEROSCHAEKEL','AEROSCHNAPP']);
+    transformedData.sektionen.forEach(tdSek=>{
+      const newPos=tdSek.positionen.filter(p=>_aeroArtNrs.has(p.artikelnummer));
+      if(!newPos.length)return;
+      const match=displayData.sektionen.find(ds=>{
+        if(ds.id!==tdSek.id)return false;
+        if(tdSek._segelNr!==undefined)return ds._segelNr===tdSek._segelNr;
+        if(tdSek._mergedSys!==undefined)return ds._mergedSys===tdSek._mergedSys;
+        return true;
+      });
+      if(match)newPos.forEach(p=>match.positionen.push({...p,_aeroNew:true}));
+    });
+  }
   // pidxMap: lookup correct position index within transformedData.sektionen (for drag-drop)
   const pidxMap={};
   sektionen.forEach(sek=>{
@@ -2567,6 +2585,22 @@ function renderStep3(){
     ?`<input type="checkbox" ${isExcl?'':'checked'} onchange="toggleManualWeglass(${p.pos},this.checked,'${p.artikelnummer||''}')" style="cursor:pointer">`
     :'';
   const _row=(p,sekId='',pidx=0,isExcl=false)=>{
+    if(p._aeroNew)return `<tr style="background:rgba(56,217,169,0.07);border-left:2px solid var(--accent2)">` +
+      `<td></td>` +
+      `<td>${p.artikelnummer?`<span class="tag" style="border-color:var(--accent2);color:var(--accent2)">${p.artikelnummer}</span>`:'–'}</td>` +
+      `<td>${escHtml(p.name)}<div style="font-size:9px;color:var(--accent2);margin-top:1px">&#10133; Aero Clamcleat</div></td>` +
+      `<td class="num-r">${Number(p.menge||0).toLocaleString('de-DE')}</td>` +
+      `<td style="color:var(--muted)">${p.einheit||'–'}</td>` +
+      `<td class="num-r">${fmt(p.preis_einheit)}</td>` +
+      `<td class="num-r"><strong>${fmt(p.gesamt)}</strong></td></tr>`;
+    if(p._aeroCrossed)return `<tr style="opacity:0.35;pointer-events:none">` +
+      `<td></td>` +
+      `<td>${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
+      `<td style="text-decoration:line-through">${escHtml(p.name)}${p.beschreibung?`<div style="font-size:9px;white-space:pre-line;margin-top:2px">${escHtml(p.beschreibung)}</div>`:''}</td>` +
+      `<td class="num-r" style="text-decoration:line-through">${Number(p.menge||0).toLocaleString('de-DE')}</td>` +
+      `<td style="text-decoration:line-through;color:var(--muted)">${p.einheit||'–'}</td>` +
+      `<td class="num-r" style="text-decoration:line-through">${fmt(p.preis_einheit)}</td>` +
+      `<td class="num-r"><strong style="text-decoration:line-through">${fmt(p.gesamt)}</strong></td></tr>`;
     if(isExcl)return `<tr class="s3-row-excl">` +
       `<td>${_cb(p,true)}</td>` +
       `<td>${p.artikelnummer?`<span class="tag">${p.artikelnummer}</span>`:'–'}</td>` +
