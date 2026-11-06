@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 12:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 13:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1299,13 +1299,14 @@ async function _claudeFetch(anthropic,payload){
   // Try fetch first; fall back to XHR for iOS Safari compatibility
   let r;
   try{
-    r=await fetch(_url,{method:'POST',mode:'cors',cache:'no-store',headers:_hdrs,body:_body});
+    r=await fetch(_url,{method:'POST',mode:'cors',credentials:'omit',cache:'no-store',headers:_hdrs,body:_body});
   }catch(fe){
     // XHR fallback – iOS Safari kann fetch() mit TypeError abbrechen
     try{
       return await new Promise((res,rej)=>{
         const xhr=new XMLHttpRequest();
         xhr.open('POST',_url,true);
+        xhr.withCredentials=false;
         Object.entries(_hdrs).forEach(([k,v])=>xhr.setRequestHeader(k,v));
         xhr.timeout=300000;
         xhr.onload=()=>{
