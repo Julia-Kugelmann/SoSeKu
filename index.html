@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 15:30 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 20:15 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -364,9 +364,9 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
     <div class="field"><label>Anthropic API-Key *</label><input type="password" id="iAnt" placeholder="sk-ant-api03-..." autocomplete="off"></div>
     <div class="field"><label>sevdesk API-Key</label><input type="password" id="iSev" placeholder="32-stelliger Hex-Key (optional)" autocomplete="off"></div>
     <div class="field"><label>Google Sheet ID</label><input type="text" id="iSheet" placeholder="Sheet-ID aus der URL (optional)" autocomplete="off"></div>
-    <div class="field"><label>API Proxy URL <span style="color:var(--muted);font-weight:400">(optional, für iOS Safari)</span></label><input type="text" id="iProxy" placeholder="https://soseku.NAME.workers.dev" autocomplete="off"></div>
+    <div id="setupErr" style="display:none;color:var(--error);font-size:12px;padding:10px 14px;background:rgba(255,107,107,.08);border-radius:8px;border:1px solid rgba(255,107,107,.3);margin-top:10px"></div>
     <div class="setup-note"><strong>Sicherheit:</strong> Keys werden im <code>localStorage</code> des Browsers gespeichert und nie in den Code geschrieben.</div>
-    <div class="btn-row" style="justify-content:flex-start;margin-top:20px"><button class="btn btn-p" onclick="saveSetup()">Weiter &rarr;</button></div>
+    <div class="btn-row" style="justify-content:flex-start;margin-top:20px"><button id="btnWeiter" class="btn btn-p" onclick="saveSetup()">Weiter &rarr;</button></div>
   </div>
 </div>
 
@@ -1153,17 +1153,38 @@ function getKeys(){
   const rawSid=localStorage.getItem('sid')||'';
   const sidM=rawSid.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
   const sheetId=sidM?sidM[1]:rawSid;
-  return{anthropic:localStorage.getItem('ant')||'',sevdesk:localStorage.getItem('sev')||'',sheetId,proxy:(localStorage.getItem('prx')||'').trim()};
+  return{anthropic:localStorage.getItem('ant')||'',sevdesk:localStorage.getItem('sev')||'',sheetId};
 }
-function saveSetup(){
+async function saveSetup(){
+  const errEl=document.getElementById('setupErr');
+  const btn=document.getElementById('btnWeiter');
+  const showErr=msg=>{if(errEl){errEl.textContent=msg;errEl.style.display='';}};
+  if(errEl)errEl.style.display='none';
+
   const ant=document.getElementById('iAnt').value.trim();
-  if(!ant){alert('Anthropic API-Key fehlt');return;}
+  if(!ant){showErr('Anthropic API-Key fehlt.');return;}
+  if(!/^sk-ant-/.test(ant)){showErr('Ungültiger Anthropic API-Key — muss mit "sk-ant-api03-…" beginnen. Bitte direkt von console.anthropic.com kopieren.');return;}
+  if(/[^\x20-\x7E]/.test(ant)){showErr('Ungültiges Zeichen im Anthropic API-Key — bitte direkt von console.anthropic.com neu kopieren.');return;}
+
+  const sev=document.getElementById('iSev').value.trim();
+  if(sev&&!/^[0-9a-fA-F]{32}$/.test(sev)){showErr('Ungültiger sevdesk API-Key — muss genau 32 Hexadezimalzeichen sein.');return;}
+
   localStorage.setItem('ant',ant);
-  localStorage.setItem('sev',document.getElementById('iSev').value.trim());
+  localStorage.setItem('sev',sev);
   const rawSheet=document.getElementById('iSheet').value.trim();
   const sheetM=rawSheet.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  localStorage.setItem('sid',sheetM?sheetM[1]:rawSheet);
-  localStorage.setItem('prx',(document.getElementById('iProxy')||{}).value?.trim()||'');
+  const sheetId=sheetM?sheetM[1]:rawSheet;
+  localStorage.setItem('sid',sheetId);
+
+  if(sheetId){
+    if(btn)btn.textContent='Prüfe Sheet …';
+    try{
+      const r=await fetch(`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv`,{cache:'no-store'});
+      if(!r.ok){showErr(`Google Sheet nicht erreichbar (HTTP ${r.status}). Prüfen ob das Sheet öffentlich lesbar ist (Freigabe → "Jeder mit dem Link kann anzeigen").`);if(btn)btn.textContent='Weiter →';return;}
+    }catch(e){showErr('Google Sheet nicht erreichbar — Internetverbindung prüfen.');if(btn)btn.textContent='Weiter →';return;}
+    if(btn)btn.textContent='Weiter →';
+  }
+
   document.getElementById('btnReset').style.display='';
   const mode=new URLSearchParams(location.search).get('mode');
   if(mode==='adresse'){showView('viewAdresse');initAdresseMode();}
@@ -1174,7 +1195,7 @@ function saveSetup(){
 function resetKeys(){
   ['ant','sev','sid','prx'].forEach(k=>localStorage.removeItem(k));
   document.getElementById('btnReset').style.display='none';
-  ['iAnt','iSev','iSheet','iProxy'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  ['iAnt','iSev','iSheet'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   showView('viewSetup');
 }
 window.addEventListener('DOMContentLoaded',()=>{
@@ -1183,8 +1204,6 @@ window.addEventListener('DOMContentLoaded',()=>{
   const _ta=document.getElementById('chatStep2');if(_ta)_ta.value='Es sind nicht alle Positionen richtig erfasst, gehe das PDF nochmal sorgfältig durch';
   const _si=document.getElementById('iSheet');
   if(_si&&!_si.value)_si.value=localStorage.getItem('sid')||DEF_SHEET_ID;
-  const _px=document.getElementById('iProxy');
-  if(_px&&!_px.value)_px.value=localStorage.getItem('prx')||'';
   const mode=new URLSearchParams(location.search).get('mode');
   const mA=document.getElementById('modeAngebot'),mAd=document.getElementById('modeAdresse'),mM=document.getElementById('modeMontage'),mR=document.getElementById('modeReparatur'),mRn=document.getElementById('modeReinigung');
   const activeStyle='background:var(--accent);color:#fff';const inactiveStyle='color:var(--muted)';
@@ -1290,18 +1309,17 @@ async function _claudeFetch(anthropic,payload){
     const err=new Error('Ungültiges Zeichen im Anthropic API-Key. Bitte unter "Keys ändern" den Key löschen und direkt von console.anthropic.com neu einfügen.');
     err.isBadKey=true;throw err;
   }
-  const _proxyUrl=(localStorage.getItem('prx')||'').trim();
-  const _url=_proxyUrl||'https://api.anthropic.com/v1/messages';
-  const _hdrs={'Content-Type':'application/json','x-api-key':anthropic,'anthropic-version':'2023-06-01'};
-  if(!_proxyUrl)_hdrs['anthropic-dangerous-direct-browser-access']='true';
+  const _url='https://api.anthropic.com/v1/messages';
+  const _hdrs={'Content-Type':'application/json','x-api-key':anthropic,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
   const _body=JSON.stringify(payload);
   function _parseApiResp(status,text){
     let e;try{e=JSON.parse(text);}catch{e={};}
     const msg=e.error?.message||text||'Unbekannter Fehler';
     if(status===400&&/context|length|too long|too large/i.test(msg)){const ex=new Error(msg);ex.isContextError=true;throw ex;}
+    if(status===401||status===403){throw new Error('Anthropic API-Key ungültig oder abgelaufen. Bitte unter "Keys ändern" den Key löschen und direkt von console.anthropic.com neu eingeben.');}
     throw new Error(`Anthropic API ${status}: ${msg}`);
   }
-  // Try fetch first; fall back to XHR for iOS Safari compatibility
+  // Try fetch first; fall back to XHR for robustness
   let r;
   try{
     r=await fetch(_url,{method:'POST',mode:'cors',credentials:'omit',cache:'no-store',headers:_hdrs,body:_body});
@@ -4232,6 +4250,7 @@ function renderStep5(){
   const dbgBar=document.getElementById('s5debugBar');
   if(dbgBar) dbgBar.innerHTML=`<span style="color:${sheetOk?'var(--accent2)':'var(--warn)'}">${sheetOk?'✓':'!'} Sheet</span>&ensp;${sheetOk?`sys:${sys||"?"} · AR:${prices5.stoffe.length} · FE:${prices5.stofFeste.length} · Anfahrt: ${prices5.anfahrtSatz}€/h · ${mkInfo} · Verbinder: ${vvK.length} · AP: ${Object.keys(prices5.apAnzahl).length} · PL: ${prices5.preislisteZeilen||0}Z · Std: ${prices5.stundensatz}€ · Dach: ${prices5.dachterrasse}€ · SF: ${prices5.schraubfundament}€`:'Preisdaten nicht geladen — Sheet ID prüfen'}`;
   let h=``;
+  if(!sheetOk) h+=`<div style="background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.35);border-radius:10px;padding:14px 18px;margin-bottom:18px;color:var(--error)"><strong style="font-size:14px">⚠ Google Sheet nicht geladen — alle Preise sind 0,00 €</strong><div style="font-size:12px;margin-top:6px;color:var(--text)">Bitte unter <button onclick="showView('viewSetup')" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-size:12px;text-decoration:underline">Keys ändern</button> die Google Sheet ID eintragen. Die ID steht in der URL deines Sheets:<br><code style="font-size:11px">docs.google.com/spreadsheets/d/<strong>HIER-STEHT-DIE-ID</strong>/edit</code></div></div>`;
 
   // Calc breakdown for INST card — uses calcInstData() so display = price
   const _instData=calcInstData();
