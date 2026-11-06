@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 10:00 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 11:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1281,22 +1281,40 @@ Format:
 
 // === CLAUDE API ===
 async function _claudeFetch(anthropic,payload){
+  const _url='https://api.anthropic.com/v1/messages';
+  const _hdrs={'Content-Type':'application/json','x-api-key':anthropic,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'};
+  const _body=JSON.stringify(payload);
+  function _parseApiResp(status,text){
+    let e;try{e=JSON.parse(text);}catch{e={};}
+    const msg=e.error?.message||text||'Unbekannter Fehler';
+    if(status===400&&/context|length|too long|too large/i.test(msg)){const ex=new Error(msg);ex.isContextError=true;throw ex;}
+    throw new Error(`Anthropic API ${status}: ${msg}`);
+  }
+  // Try fetch first; fall back to XHR for iOS Safari compatibility
   let r;
   try{
-    r=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':anthropic,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify(payload)
-    });
+    r=await fetch(_url,{method:'POST',mode:'cors',cache:'no-store',headers:_hdrs,body:_body});
   }catch(fe){
-    throw new Error('Netzwerkfehler – bitte Internetverbindung prüfen und nochmals versuchen. ('+fe.message+')');
+    // XHR fallback – iOS Safari kann fetch() mit TypeError abbrechen
+    try{
+      return await new Promise((res,rej)=>{
+        const xhr=new XMLHttpRequest();
+        xhr.open('POST',_url,true);
+        Object.entries(_hdrs).forEach(([k,v])=>xhr.setRequestHeader(k,v));
+        xhr.timeout=300000;
+        xhr.onload=()=>{
+          if(xhr.status>=200&&xhr.status<300){try{res(JSON.parse(xhr.responseText));}catch(je){rej(new Error('JSON parse: '+je.message));}}
+          else{try{_parseApiResp(xhr.status,xhr.responseText);}catch(ae){rej(ae);}}
+        };
+        xhr.onerror=()=>rej(new Error('XHR Netzwerkfehler'));
+        xhr.ontimeout=()=>rej(new Error('Timeout'));
+        xhr.send(_body);
+      });
+    }catch(xe){
+      throw new Error('Netzwerkfehler – bitte Internetverbindung prüfen und nochmals versuchen. (fetch: '+fe.message+' / xhr: '+xe.message+')');
+    }
   }
-  if(!r.ok){
-    const e=await r.json().catch(()=>({}));
-    const msg=e.error?.message||JSON.stringify(e);
-    if(r.status===400&&/context|length|too long|too large/i.test(msg)){const ex=new Error(msg);ex.isContextError=true;throw ex;}
-    throw new Error(`Anthropic API ${r.status}: ${msg}`);
-  }
+  if(!r.ok){const t=await r.text().catch(()=>'');_parseApiResp(r.status,t);}
   try{return await r.json();}catch(je){throw new Error('Antwort konnte nicht gelesen werden – bitte nochmals versuchen. ('+je.message+')');}
 }
 async function callClaude(base64,model,sysPrompt,userPrompt){
