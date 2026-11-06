@@ -1185,6 +1185,7 @@ async function saveSetup(){
     if(btn)btn.textContent='Weiter →';
   }
 
+
   document.getElementById('btnReset').style.display='';
   const mode=new URLSearchParams(location.search).get('mode');
   if(mode==='adresse'){showView('viewAdresse');initAdresseMode();}
