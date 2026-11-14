@@ -312,7 +312,7 @@ tr.rep-auto-row .rep-auto-badge{display:inline-block;font-size:9px;font-weight:7
 <header>
   <div>
     <div class="logo"><span class="s1">Soliday</span><span class="arr">→</span><span class="s2">SoSeKu</span><span class="arr">→</span><span style="color:#E5253C">sevdesk</span></div>
-    <div class="subtitle">Angebot Import Tool &middot; 2026-11-06 20:15 UTC</div>
+    <div class="subtitle">Angebot Import Tool &middot; 2026-11-14 10:00 UTC</div>
   </div>
   <div style="display:flex;align-items:center;gap:10px">
     <div id="modeBtns" style="display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:3px">
@@ -1035,6 +1035,7 @@ let _s5CachedSailH=0;
 let _s5CachedHardwareH=0;
 let _s5CachedSailCount=0;
 let _s5CachedIsFest=false;
+let _s5CachedDispSailH=0;
 let _s5CachedMultiTotalSubH=0; // sum of raw per-system hours in multi mode
 function _isNurFestSegel(json){
   if(!json)return false;
@@ -1184,6 +1185,7 @@ async function saveSetup(){
     }catch(e){showErr('Google Sheet nicht erreichbar — Internetverbindung prüfen.');if(btn)btn.textContent='Weiter →';return;}
     if(btn)btn.textContent='Weiter →';
   }
+
 
   document.getElementById('btnReset').style.display='';
   const mode=new URLSearchParams(location.search).get('mode');
@@ -3147,7 +3149,7 @@ function selS5Termine(n){
   const warn=emp>0&&emp>n;
   const col=warn?'#ffb300':'var(--accent2)';
   const empEl=document.getElementById('s5termEmpf');
-  if(empEl){empEl.innerHTML=genS5TermBreakdown(hwH5,sH5,ah,n,emp,col,_s5CachedSailCount,_s5CachedIsFest);empEl.style.color='#ffb300';}
+  if(empEl){empEl.innerHTML=genS5TermBreakdown(hwH5,_s5CachedDispSailH,ah,n,emp,col,0,false);empEl.style.color='#ffb300';}
   // Update mcTerminePicks in Montage Kalkulator too
   document.querySelectorAll('#mcTerminePicks .mc-pick').forEach(el=>el.classList.toggle('sel',el.dataset.v===String(n)));
 }
@@ -4281,6 +4283,7 @@ function renderStep5(){
   _s5CachedHardwareH=hwH2;
   _s5CachedSailCount=sailCount2;
   _s5CachedIsFest=sys.startsWith('SONNENSEGEL');
+  _s5CachedDispSailH=sailCount2>0?(sys.startsWith('SONNENSEGEL')?0.5:1.5)*sailCount2:sailH2;
   const apRate2=uses18?(mk2?.ap18||0):(mk2?.ap10||0);
 
   // Separate _gsMonPos by role
@@ -4710,7 +4713,9 @@ function renderStep5(){
       _s5CachedMultiTotalSubH=_totalSubH;
       // Sync hwH2/totalH2 and Termin caches to actual Gesamt total
       // genS5TermBreakdown displays dispSailH=1.5×sailCount, so hwH2 must use the same offset
-      const _dispSailH2=sailCount2>0?(sys.startsWith('SONNENSEGEL')?0.5:1.5)*sailCount2:sailH2;
+      const _perSysDispH2=(_instData.sailRows||[]).filter(r=>!r._isRaff).reduce((s,r)=>s+(r.isFix?0.5:1.5)*(r.count||1),0);
+      const _dispSailH2=sailCount2>0?(_perSysDispH2>0?_perSysDispH2:(sys.startsWith('SONNENSEGEL')?0.5:1.5)*sailCount2):sailH2;
+      _s5CachedDispSailH=_dispSailH2;
       hwH2=_totalSubH-_dispSailH2;
       totalH2=_totalSubH;
       _s5CachedTotalH=_totalSubH;
@@ -4816,7 +4821,7 @@ function renderStep5(){
     const tAnz2=fragebogen.termine||2;
     const _s5Warn=_s5Empf>0&&_s5Empf>tAnz2;
     const _s5Col=_s5Warn?'#ffb300':'var(--accent2)';
-    const _s5EmpfHtml=genS5TermBreakdown(hwH2,sailH2,_s5AH,tAnz2,_s5Empf,_s5Col,sailCount2,_s5CachedIsFest);
+    const _s5EmpfHtml=genS5TermBreakdown(hwH2,_s5CachedDispSailH,_s5AH,tAnz2,_s5Empf,_s5Col,0,false);
     const _s5TBtns=[2,3,4].map(n=>'<div class="mc-pick s5-termineBtn'+(tAnz2===n?' sel':'')+'" data-v="'+n+'" onclick="selS5Termine('+n+')">'+n+' Termine</div>').join('');
     h+=`<div class="s5-card" style="margin-top:16px">
       <div class="s5-card-hdr" style="align-items:flex-start">
